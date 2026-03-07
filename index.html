@@ -573,7 +573,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
  </div>
  <div class="ticker" id="tickerBar">
-  <div class="ticker-label">&#128308; LIVE</div>
+  <div class="ticker-label" id="liveIndicator">&#128308; LIVE</div>
   <div class="ticker-track" id="tickerTrack"></div>
  </div>
 
@@ -859,14 +859,15 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <input type="text" class="form-control" id="bDesc" placeholder="z.B. Einnahme Marktstand Samstag"></div>
    <div class="form-row">
     <div class="form-group"><label class="form-label">Kategorie</label>
-     <select class="form-control" id="bCat"><option>Umsatz</option><option>Dienstleistung</option><option>Material</option><option>Marketing</option><option>Sonstiges</option></select></div>
+     <select class="form-control" id="bCat"><option>Umsatz</option><option>Dienstleistung</option><option>Material</option><option>Marketing</option><option>Kapital</option><option>Sonstiges</option></select></div>
     <div class="form-group"><label class="form-label">Datum <span class="req">*</span></label>
      <input type="date" class="form-control" id="bDate"></div>
    </div>
    <div class="form-group"><label class="form-label">Beleg (optional)</label>
     <div class="upload-zone" onclick="document.getElementById('bFile').click()">
      <div class="upload-icon">&#128206;</div><p>Klicken zum Hochladen &#183; JPG, PNG, PDF bis 5 MB</p>
-     <input type="file" id="bFile" style="display:none;" accept=".jpg,.jpeg,.png,.pdf">
+     <input type="file" id="bFile" style="display:none;" accept=".jpg,.jpeg,.png,.pdf" onchange="handleReceiptUpload(event)">
+     <div id="bFileLabel" style="font-size:11px;color:var(--green);margin-top:4px;"></div>
     </div>
    </div>
   </div>
@@ -1438,9 +1439,25 @@ function showLoginRolePreview(code){
   const user=CODES[code.toUpperCase()];
   if(!user){preview.style.display='none';return;}
   const icons={superadmin:'👑',admin:'⚙️',team:'👥',member:'👤'};
-  const labels={superadmin:'Superadmin',admin:'Admin',team:'Teamleiter',member:'Mitglied'};
+  // Privacy: show team name + role, NOT the real name
+  let displayText='';
+  if(user.role==='member'){
+    // find team via member
+    const mem=MEMBERS.find(m=>m.code===code.toUpperCase());
+    const team=mem?TEAMS.find(t=>t.id===mem.teamId):null;
+    const roleLabel=mem?mem.role:'Mitglied';
+    displayText=(icons.member)+' '+(team?team.logo+' '+team.name:'Team')+' &middot; '+roleLabel;
+  } else if(user.role==='team'){
+    const team=TEAMS.find(t=>t.code===code.toUpperCase());
+    displayText=(icons.team)+' '+(team?team.logo+' '+team.name:'Team')+' &middot; Teamleiter';
+  } else if(user.role==='admin'){
+    const game=GAMES.find(g=>g.id===user.gameId);
+    displayText=(icons.admin)+' Admin &middot; '+(game?game.name:user.uni||'');
+  } else {
+    displayText=(icons[user.role]||'?')+' '+(user.role==='superadmin'?'Superadmin':user.role);
+  }
   preview.style.display='block';
-  preview.innerHTML=(icons[user.role]||'?')+' <strong>'+user.name+'</strong> &middot; '+(labels[user.role]||user.role);
+  preview.innerHTML=displayText;
 }
 function doLoginStep1(){
   const code=document.getElementById('loginCode').value.trim().toUpperCase();
@@ -1516,10 +1533,15 @@ function finishLogin(code){
 function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new Date(_sessionStart).getTime())/1000)+'s'});
   flushTrackBuffer(true);
 
-  state.currentUser=null;
+  state.currentUser=null;state.prevUser=null;
   document.getElementById('appShell').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
+  // Reset to step 1 (code entry), hide password step
+  const step2=document.getElementById('loginStep2');if(step2) step2.style.display='none';
+  const loginPwd=document.getElementById('loginPwd');if(loginPwd) loginPwd.value='';
+  const loginPwdErr=document.getElementById('loginPwdError');if(loginPwdErr) loginPwdErr.style.display='none';
+  const loginPreview=document.getElementById('loginRolePreview');if(loginPreview) loginPreview.style.display='none';
   ['revenueChart','superChart'].forEach(k=>{if(state[k]){state[k].destroy();state[k]=null;}});
 }
 
@@ -1528,7 +1550,7 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
 // ════════════════════════════════════════════════════════════════════
 function initApp(){
   const u=state.currentUser;
-  buildNavigation();updateTopbar();
+  buildNavigation();updateTopbar();updateLiveIndicator();
   logEvent('page_view', {page: p});buildTicker();
   const def=u.role==='superadmin'?'superadmin':u.role==='admin'?'admin':'dashboard';
   navigateTo(def);
@@ -1552,6 +1574,9 @@ function buildNavigation(){
     pages.push({id:'myteam',     label:'👥 Mein Team'});
     pages.push({id:'profile',    label:'👤 Mein Profil'});
     pages.push({id:'reflection', label:'🔒 Reflexion'});
+    // Only CFO gets direct Buchung nav item
+    const _me=getMyMember();
+    if(_me&&_me.role==='CFO') pages.push({id:'__booking',label:'💰 Buchung'});
     pages.push({id:'blog',       label:'📖 Blog'});
     pages.push({id:'feedback',   label:'💬 Feedback'});
     pages.push({id:'konzept',    label:'📐 Konzept'});
@@ -1576,7 +1601,7 @@ function buildNavigation(){
   pages.forEach(p=>{
     const btn=document.createElement('button');
     btn.innerHTML=p.label;btn.className=p.cls||'';btn.dataset.page=p.id;
-    btn.onclick=()=>navigateTo(p.id);nav.appendChild(btn);
+    btn.onclick=()=>{if(p.id==='__booking'){openModal('modalBooking');}else{navigateTo(p.id);}};nav.appendChild(btn);
   });
 }
 
@@ -1688,9 +1713,60 @@ function renderDokumente(){
     +'<input class="form-control" id="gameAdminEmail" value="'+(game.adminEmail||'')+'" placeholder="dozent@hochschule.de"></div>'
     +'<div class="form-group"><label class="form-label">noreply-Domain</label>'
     +'<input class="form-control" id="gameNoreply" value="'+(game.noreplyDomain||'5euro-business.de')+'"></div>'
-    +'</div><button class="btn btn-primary btn-sm" onclick="saveGameSettings(\''+game.id+'\')">Speichern</button></div></div>';
+    +'</div>'
+    +'<div style="margin:12px 0;"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;">'
+    +'<input type="checkbox" id="gameIsLive" '+(game.isLive?'checked':'')+' style="width:18px;height:18px;">'
+    +'<span><strong>&#128994; Spiel ist LIVE / aktiv</strong> &mdash; Ticker zeigt gr&uuml;nes LIVE-Symbol</span></label></div>'
+    +'<button class="btn btn-primary btn-sm" onclick="saveGameSettings(\''+game.id+'\')">Speichern</button></div></div>'
+    +'<div id="adminFaqSection"></div>';
+  setTimeout(function(){renderAdminFaq(effectiveGameId);},30);
 }
 
+function renderAdminFaq(gameId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game) return;
+  if(!game.faqs) game.faqs=[];
+  const el=document.getElementById('dokumenteContent');
+  if(!el) return;
+  // append FAQ editor section
+  const faqSection=document.getElementById('adminFaqSection');
+  if(!faqSection) return;
+  faqSection.innerHTML='<div class="section-header" style="margin-top:24px;"><div class="section-title admin-title">&#10067; Häufige Fragen verwalten</div></div>'
+    +'<div class="card"><div class="card-body">'
+    +'<div id="adminFaqList">'
+    +game.faqs.map(function(f){return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;background:var(--bg-light);padding:10px;border-radius:var(--radius);">'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+f.question+'</div>'
+      +'<div style="font-size:12px;color:var(--gray-mid);">'+f.answer+'</div></div>'
+      +'<button class="btn btn-danger btn-xs" onclick="removeGameFaq(\''+gameId+'\',\''+f.id+'\')">&#10005;</button>'
+      +'</div>';}).join('')
+    +'</div>'
+    +'<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">'
+    +'<div class="form-group"><label class="form-label">Neue Frage</label>'
+    +'<input class="form-control" id="faqNewQ" placeholder="z.B. Wie funktioniert die Abrechnung?"></div>'
+    +'<div class="form-group"><label class="form-label">Antwort</label>'
+    +'<textarea class="form-control" id="faqNewA" rows="2" placeholder="Antwort..."></textarea></div>'
+    +'<button class="btn btn-primary btn-sm" onclick="addGameFaq(\''+gameId+'\')">&#10133; Frage hinzufügen</button>'
+    +'</div></div></div>';
+}
+function addGameFaq(gameId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game) return;
+  if(!game.faqs) game.faqs=[];
+  const q=document.getElementById('faqNewQ').value.trim();
+  const a=document.getElementById('faqNewA').value.trim();
+  if(!q||!a){showToast('Frage und Antwort ausfüllen','error');return;}
+  game.faqs.push({id:'faq-'+Date.now(),question:q,answer:a,createdAt:new Date().toISOString()});
+  saveData();
+  renderAdminFaq(gameId);
+  showToast('FAQ hinzugefügt','success');
+}
+function removeGameFaq(gameId,faqId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game||!game.faqs) return;
+  game.faqs=game.faqs.filter(function(f){return f.id!==faqId;});
+  saveData();
+  renderAdminFaq(gameId);
+}
 function uploadGamePdf(gameId,input){
   const files=Array.from(input.files);
   if(!files.length) return;
@@ -1768,9 +1844,12 @@ function saveGameSettings(gameId){
   if(!game) return;
   game.adminEmail=document.getElementById('gameAdminEmail').value.trim();
   game.noreplyDomain=document.getElementById('gameNoreply').value.trim();
+  const liveEl=document.getElementById('gameIsLive');
+  if(liveEl) game.isLive=liveEl.checked;
   saveData();
+  updateLiveIndicator();
   showToast('Gespeichert','success');
-  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail});
+  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail,isLive:game.isLive});
 }
 
 
@@ -1788,7 +1867,7 @@ function renderMessaging(){
     +'<div class="form-group"><label class="form-label">Empfaenger</label>'
     +'<select class="form-control" id="msgRecipient"><option value="all">Alle ('+members.length+')</option>'
     +teams.map(function(t){var tm=members.filter(function(m){return m.teamId===t.id;});return tm.length>0?'<option value="team:'+t.id+'">'+t.logo+' '+t.name+' ('+tm.length+')</option>':''}).join('')
-    +members.map(function(m){return '<option value="member:'+m.id+'">'+m.name+'</option>'}).join('')
+    +members.map(function(m){return '<option value="member:'+m.id+'">'+m.name+' ('+m.role+')</option>'}).join('')
     +'</select></div>'
     +'<div class="form-group"><label class="form-label">Betreff</label><input class="form-control" id="msgSubject" placeholder="..."></div>'
     +'<div class="form-group"><label class="form-label">Nachricht</label><textarea class="form-control" id="msgBody" rows="5"></textarea></div>'
@@ -1908,6 +1987,7 @@ function renderEmptyDashboard(){
 }
 function renderDashboard(){
   const teams=getVisibleTeams();
+  if(teams.length===0){renderEmptyDashboard();return;}
   const allTx=TRANSACTIONS.filter(tx=>teams.some(t=>t.id===tx.teamId));
   const totalRev=allTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const totalExp=allTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
@@ -1932,6 +2012,7 @@ function renderDashboard(){
         <div class="act-time">${fmtDate(tx.date)}</div></div></div>`;
     }).join('');
   // Chart — echte Wochendaten
+  try{
   if(state.revenueChart) state.revenueChart.destroy();
   const ctx=document.getElementById('revenueChart').getContext('2d');
   const chartGame=u.gameId?GAMES.find(g=>g.id===u.gameId):GAMES[0];
@@ -1968,6 +2049,7 @@ function renderDashboard(){
         tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtEur(c.parsed.y)+' (kum.)'}}},
       scales:{y:{ticks:{callback:v=>fmtEur(v)},grid:{color:'#E0E7F0'},beginAtZero:true},
         x:{grid:{display:false}}}}});
+  }catch(e){console.warn('Chart error:',e);}
 }
 
 function renderLeaderboard(elId,teams){
@@ -2075,10 +2157,11 @@ function renderMyTeamOverview(team){
   const myTx=TRANSACTIONS.filter(tx=>tx.teamId===team.id);
   const profit=team.revenue-team.expenses;
   document.getElementById('myTeamKpis').innerHTML=`
-    <div class="kpi-card"><div class="kpi-label">Umsatz</div><div class="kpi-value">${fmtEur(team.revenue)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='income').length} Einnahmen</div></div>
-    <div class="kpi-card"><div class="kpi-label">Ausgaben</div><div class="kpi-value neg">${fmtEur(team.expenses)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='expense').length} Ausgaben</div></div>
+    <div class="kpi-card"><div class="kpi-label">Umsatz</div><div class="kpi-value">${fmtEur(team.revenue)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='income'&&t.cat!=='Kapital').length} Einnahmen</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ausgaben</div><div class="kpi-value neg">${fmtEur(team.expenses)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='expense'&&t.cat!=='Kapital').length} Ausgaben</div></div>
     <div class="kpi-card"><div class="kpi-label">Gewinn</div><div class="kpi-value ${profit>=0?'pos':'neg'}">${profit>=0?'+':''}${fmtEur(profit)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">ROI</div><div class="kpi-value pos">${((profit/5)*100).toFixed(0)}%</div><div class="kpi-trend">auf 5€ Start</div></div>`;
+    <div class="kpi-card"><div class="kpi-label">ROI</div><div class="kpi-value pos">${((profit/5)*100).toFixed(0)}%</div><div class="kpi-trend">auf 5€ Start</div></div>
+    ${team.capital?`<div class="kpi-card" style="border-left:3px solid var(--blue-mid);"><div class="kpi-label">Startkapital</div><div class="kpi-value" style="color:var(--blue-mid);">${fmtEur(team.capital)}</div><div class="kpi-trend">nicht im ROI</div></div>`:''}`;
   // MVP section
   const mvpEl=document.getElementById('myTeamMvpSection');
   const mvps=team.mvps||[];
@@ -2182,14 +2265,15 @@ function renderMyBlogs(team){
   const submitBtn=document.getElementById('btnSubmitBlog');
   if(submitBtn) submitBtn.disabled=team.weekStatus==='submitted';
   if(myBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';return;}
-  el.innerHTML=myBlogs.map(b=>`<div class="card" style="margin-bottom:10px;">
+  el.innerHTML=myBlogs.sort((a,b)=>b.week-a.week).map(b=>`<div class="card" style="margin-bottom:10px;">
     <div class="card-body" style="padding:12px 16px;">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;">
         <div><div style="font-size:10px;font-weight:700;color:var(--blue-mid);text-transform:uppercase;margin-bottom:1px;">Woche ${b.week}</div>
           <div style="font-size:13px;font-weight:700;color:var(--blue-dark);">${b.title}</div></div>
         <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
       </div>
-      <p style="font-size:12px;color:var(--gray-mid);">${b.body.substring(0,90)}...</p>
+      <p style="font-size:12px;color:var(--gray-mid);">${(b.body||'').substring(0,90)}${(b.body||'').length>90?'...':''}</p>
+      ${b.status==='draft'?'<button class="btn btn-outline btn-xs" onclick="openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
     </div>
   </div>`).join('');
 }
@@ -2239,11 +2323,11 @@ function renderProfile(){
     <div class="form-section-title" style="margin-top:18px;">${state.lang==='en'?'Notifications':'Benachrichtigungen'} <span style="font-size:11px;font-weight:400;color:var(--gray-mid);">${state.lang==='en'?'(requires email)':'(erfordert E-Mail)'}</span></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-        <input type="checkbox" id="mpNotifBlog" ${(m.notif&&m.notif.blog!==false)?'checked':''}> ${state.lang==='en'?'Blog report approved':'Wochenbericht freigegeben'}</label>
+        <input type="checkbox" id="mpNotifBlog" ${(m.notif&&m.notif.blog!==false)?'checked':''} ${m.email?'':'disabled'}> ${state.lang==='en'?'Blog report approved':'Wochenbericht freigegeben'}</label>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-        <input type="checkbox" id="mpNotifWeek" ${(m.notif&&m.notif.week!==false)?'checked':''}> ${state.lang==='en'?'New week starts':'Neue Woche startet'}</label>
+        <input type="checkbox" id="mpNotifWeek" ${(m.notif&&m.notif.week!==false)?'checked':''} ${m.email?'':'disabled'}> ${state.lang==='en'?'New week starts':'Neue Woche startet'}</label>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-        <input type="checkbox" id="mpNotifReflect" ${(m.notif&&m.notif.reflect!==false)?'checked':''}> ${state.lang==='en'?'Reflection reminder (Saturday)':'Reflexions-Erinnerung (Samstag)'}</label>
+        <input type="checkbox" id="mpNotifReflect" ${(m.notif&&m.notif.reflect!==false)?'checked':''} ${m.email?'':'disabled'}> ${state.lang==='en'?'Reflection reminder (Saturday)':'Reflexions-Erinnerung (Samstag)'}</label>
     </div>
     <div class="form-section-title" style="margin-top:18px;">${state.lang==='en'?'Security':'Sicherheit'}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
@@ -2476,7 +2560,6 @@ function renderFeedback(){
       </div></div>
     </div>
     <div class="section-header" style="margin-top:28px;"><div class="section-title">❓ Häufige Fragen</div></div>
-    <div id="faqDocSection"></div>
     <div id="faqList">
       ${[
         ['Wie reiche ich meinen Wochenbericht ein?','Im Bereich "Mein Team" → "Berichte" auf "+ Bericht einreichen" klicken. Nach Admin-Freigabe startet automatisch die nächste Woche.'],
@@ -2491,25 +2574,61 @@ function renderFeedback(){
         ['Wann wird die Team-Stimmung sichtbar?','Die Team-Stimmung wird automatisch als Durchschnitt der Stimmungsangaben aus den individuellen Reflexionen berechnet. Sie erscheint erst nach der Freigabe des Wochenberichts durch den Admin im öffentlichen Blog, damit individuelle Angaben geschützt bleiben.'],
       ].map(([q,a])=>`<div class="faq-item"><div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">❓ ${q} <span style="font-size:14px;">▾</span></div><div class="faq-answer">${a}</div></div>`).join('')}
     </div>
+    <div id="faqCustomSection"></div>
+    <div id="faqDocSection"></div>
   `;
   setTimeout(function(){
     const _u=state.currentUser;
     const _g=_u&&_u.gameId?GAMES.find(function(x){return x.id===_u.gameId;}):null;
+    if(!_g) return;
+    // Custom admin FAQs
+    const _cstm=document.getElementById('faqCustomSection');
+    if(_cstm&&_g.faqs&&_g.faqs.length>0){
+      _cstm.innerHTML='<div class="section-header" style="margin-top:16px;"><div class="section-title">&#10067; Fragen vom Dozenten</div></div>'
+        +_g.faqs.map(function(f){return '<div class="faq-item"><div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'block\'?\'none\':\'block\'">❓ '+f.question+' <span style="font-size:14px;">▾</span></div><div class="faq-answer">'+f.answer+'</div></div>';}).join('');
+    }
+    // PDFs at the very bottom
     const _sec=document.getElementById('faqDocSection');
-    if(!_sec||!_g) return;
+    if(!_sec) return;
     const _pdfs=(_g.faqPdfs||[]).concat(_g.faqPdf?[{id:'legacy',name:_g.faqPdfName||'Dokument',data:_g.faqPdf}]:[]);
     if(_pdfs.length===0) return;
-    _sec.innerHTML='<div class="section-header" style="margin-top:0;margin-bottom:8px;"><div class="section-title">&#128196; Dokumente vom Dozenten</div></div>'
+    _sec.innerHTML='<div class="section-header" style="margin-top:16px;margin-bottom:8px;"><div class="section-title">&#128196; Dokumente vom Dozenten</div></div>'
       +_pdfs.map(function(p){
         return '<div class="card" style="margin-bottom:10px;"><div class="card-body" style="display:flex;align-items:center;gap:14px;padding:12px 16px;">'
           +'<span style="font-size:26px;">&#128196;</span>'
           +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+p.name+'</div>'
           +(p.uploadedAt?'<div style="font-size:11px;color:var(--gray-mid);">'+new Date(p.uploadedAt).toLocaleDateString('de-DE')+'</div>':'')
           +'</div>'
-          +'<button class="btn btn-primary btn-sm" onclick="openGamePdf(\'+p.id+\')">&#128065; &#214;ffnen</button>'
+          +'<button class="btn btn-primary btn-sm" onclick="openGamePdf(\''+p.id+'\')">&#128065; &#214;ffnen</button>'
           +'</div></div>';
       }).join('');
   },50);
+}
+function openDraftForEdit(blogId){
+  const b=BLOGS.find(x=>x.id===blogId);
+  if(!b) return;
+  // pre-fill modal fields from draft
+  openModal('modalBlog');
+  setTimeout(function(){
+    if(document.getElementById('blogTitle')) document.getElementById('blogTitle').value=b.title||'';
+    if(document.getElementById('blogWeek')) document.getElementById('blogWeek').value='Woche '+b.week;
+    // body is stored as pipe-joined string - pre-fill activities field
+    if(document.getElementById('blogActivities')) document.getElementById('blogActivities').value=b.body||'';
+    if(document.getElementById('blogTags')) document.getElementById('blogTags').value=(b.tags||[]).join(', ');
+    updateBlogReflectionStatus();
+  },100);
+}
+function updateLiveIndicator(){
+  const u=state.currentUser;
+  const el=document.getElementById('liveIndicator');
+  if(!el) return;
+  let isLive=false;
+  if(u){
+    if(u.role==='superadmin') isLive=GAMES.some(g=>g.isLive);
+    else if(u.gameId) {const g=GAMES.find(x=>x.id===u.gameId);isLive=!!(g&&g.isLive);}
+  }
+  if(isLive){el.innerHTML='&#128994; LIVE';el.style.background='var(--green)';el.style.color='white';}
+  else{el.innerHTML='&#128308; LIVE';el.style.background='';el.style.color='';}
 }
 function selectFeedbackType(type,el){
   document.querySelectorAll('.feedback-type-card').forEach(c=>c.classList.remove('selected'));
@@ -3005,6 +3124,19 @@ function rejectBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){b.status='pending
 function deleteBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){b.status='rejected';renderApprovalQueue();showToast('❌ Abgelehnt','error');}}
 function approveAll(){BLOGS.filter(b=>b.status==='pending').forEach(b=>approveBlog(b.id));showToast('✅ Alle freigegeben!');}
 
+let _receiptData=null;
+function handleReceiptUpload(e){
+  const file=e.target.files[0];if(!file) return;
+  if(file.size>5*1024*1024){showToast('Datei zu groß (max 5 MB)','error');return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    _receiptData={data:ev.target.result,name:file.name,type:file.type};
+    const lbl=document.getElementById('bFileLabel');
+    if(lbl) lbl.textContent='✅ '+file.name;
+    showToast('Beleg geladen: '+file.name,'success');
+  };
+  reader.readAsDataURL(file);
+}
 function submitBooking(){
   const desc=document.getElementById('bDesc').value.trim();
   const amt=parseFloat(document.getElementById('bAmount').value);
@@ -3020,9 +3152,16 @@ function submitBooking(){
     }
   }
   const tx={id:'tx'+Date.now(),teamId:team.id,date:document.getElementById('bDate').value||new Date().toISOString().split('T')[0],
-    desc,cat:document.getElementById('bCat').value,type:document.getElementById('bType').value,amount:amt,receipt:false};
+    desc,cat:document.getElementById('bCat').value,type:document.getElementById('bType').value,amount:amt,receipt:_receiptData||false};
+  _receiptData=null;const lbl2=document.getElementById('bFileLabel');if(lbl2)lbl2.textContent='';if(document.getElementById('bFile'))document.getElementById('bFile').value='';
   TRANSACTIONS.push(tx);
-  if(tx.type==='income') team.revenue+=amt; else team.expenses+=amt;
+  // Kapital = starting capital, does NOT affect revenue or expenses (separate KPI)
+  if(tx.cat!=='Kapital'){
+    if(tx.type==='income') team.revenue+=amt; else team.expenses+=amt;
+  } else {
+    if(!team.capital) team.capital=0;
+    team.capital+=amt;
+  }
   team.transactions++;
   saveData();closeModal('modalBooking');showToast('💰 Buchung gespeichert!');buildTicker();
   if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
@@ -3065,7 +3204,27 @@ function submitBlog(){
   closeModal('modalBlog');showToast('📤 Bericht eingereicht – wartet auf Freigabe!');
   if(state.currentPage==='myteam'){renderWeekSteps(team);renderMyTeamPanel(state.currentMyTeamTab);}
 }
-function saveBlogDraft(){closeModal('modalBlog');showToast('📄 Entwurf gespeichert');}
+function saveBlogDraft(){
+  const team=getMyTeam();if(!team) return;
+  const title=document.getElementById('blogTitle').value.trim()||'(Entwurf)';
+  const w=parseInt((document.getElementById('blogWeek').value||'Woche 1').replace('Woche ',''))||team.currentWeek||1;
+  // remove existing draft for same week
+  const idx=BLOGS.findIndex(b=>b.teamId===team.id&&b.week===w&&b.status==='draft');
+  if(idx>=0) BLOGS.splice(idx,1);
+  const body=[
+    document.getElementById('blogActivities')?.value||'',
+    document.getElementById('blogHighlight')?.value||'',
+    document.getElementById('blogChallenges')?.value||'',
+    document.getElementById('blogNextSteps')?.value||''
+  ].filter(Boolean).join(' | ');
+  BLOGS.push({id:'blog-draft-'+Date.now(),teamId:team.id,week:w,title,body,
+    tags:(document.getElementById('blogTags')?.value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    status:'draft',createdAt:new Date().toISOString(),mood:null});
+  saveData();
+  closeModal('modalBlog');
+  showToast('📄 Entwurf gespeichert');
+  if(state.currentPage==='myteam') renderMyTeamPanel(state.currentMyTeamTab||'blogs');
+}
 
 function submitReflection(){
   const m=getMyMember();if(!m){showToast('Nur für Mitglieder','error');return;}
@@ -3119,9 +3278,14 @@ function saveMemberProfile(){
   const langEl=document.getElementById('mpLang');
   if(langEl){m.lang=langEl.value;state.lang=m.lang;if(m.lang==='en')setTimeout(applyLang,100);}
   if(!m.notif) m.notif={};
-  m.notif.blog=document.getElementById('mpNotifBlog')?.checked!==false;
-  m.notif.week=document.getElementById('mpNotifWeek')?.checked!==false;
-  m.notif.reflect=document.getElementById('mpNotifReflect')?.checked!==false;
+  const _newEmail=document.getElementById('mpEmail')?.value.trim()||'';
+  // If email was just added and notif never explicitly set, auto-enable all
+  if(_newEmail&&!m.email){m.notif={blog:true,week:true,reflect:true};}
+  else{
+    m.notif.blog=document.getElementById('mpNotifBlog')?.checked||false;
+    m.notif.week=document.getElementById('mpNotifWeek')?.checked||false;
+    m.notif.reflect=document.getElementById('mpNotifReflect')?.checked||false;
+  }
   saveData();
   showToast(state.lang==='en'?'Profile saved!':'Profil gespeichert!');
   renderProfile();updateTopbar();
@@ -3175,8 +3339,24 @@ window.openModal=function(id){
   if(id==='modalNewGame') prepareNewGameModal();
   if(id==='modalNewAdmin') prepareNewAdminModal();
   if(id==='modalBooking'){
+    // Block non-CFO members from accessing booking modal
+    const _bu=state.currentUser;
+    if(_bu.role==='member'){
+      const _bme=getMyMember();
+      if(!_bme||_bme.role!=='CFO'){
+        showToast('Nur der CFO kann Buchungen erfassen!','error');
+        return;  // prevent modal from opening
+      }
+    }
     const bri=document.getElementById('bookingRoleInfo');
     if(bri){const me=getMyMember();bri.textContent=me?`(${me.name} · ${me.role})`:'';} 
+    // Clear booking form fields for a fresh entry
+    ['bDesc','bAmount'].forEach(fid=>{const el=document.getElementById(fid);if(el)el.value='';});
+    const bDate=document.getElementById('bDate');
+    if(bDate) bDate.value=new Date().toISOString().split('T')[0];
+    _receiptData=null;
+    const lbl=document.getElementById('bFileLabel');if(lbl) lbl.textContent='';
+    const bFile=document.getElementById('bFile');if(bFile) bFile.value='';
   }
   if(id==='modalEditSuperProfile') openSuperProfileEdit();
   if(id==='modalNewSuperAdmin'){document.getElementById('nsaCode').value=makeSuperCode();}
@@ -3193,25 +3373,38 @@ window.openModal=function(id){
   if(id==='modalReflection'){
     const me=getMyMember();const team=getMyTeam();const w=team?.currentWeek||1;
     if(document.getElementById('refWeek')) document.getElementById('refWeek').value='Woche '+w;
-    // reset mood buttons
+    // ALWAYS clear text fields first (prevents showing another member's data)
+    ['refExperience','refWell','refImproved','refRole'].forEach(fid=>{
+      const el=document.getElementById(fid);if(el) el.value='';
+    });
+    // reset mood buttons to neutral
     document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',parseInt(b.dataset.val)===3));
     state.selectedMood=3;
-    // Populate MVP vote dropdown (all team members except self)
-    const mvpSel=document.getElementById('refMvpVote');
-    if(mvpSel&&team){
-      mvpSel.innerHTML='<option value="">-- niemanden nominieren --</option>';
-      MEMBERS.filter(m=>m.teamId===team.id&&m.id!==me?.id).forEach(m=>{
-        const o=new Option(m.name+' ('+m.role+')',m.id);mvpSel.appendChild(o);
-      });
-    }
-    // Check if already submitted this week
+    // If current member already submitted this week, pre-fill for read-only review
     if(me){
       const existing=REFLECTIONS.find(r=>r.memberId===me.id&&r.week===w);
+      if(existing){
+        if(document.getElementById('refExperience')) document.getElementById('refExperience').value=existing.experience||'';
+        if(document.getElementById('refWell')) document.getElementById('refWell').value=existing.well||'';
+        if(document.getElementById('refImproved')) document.getElementById('refImproved').value=existing.improved||'';
+        if(document.getElementById('refRole')) document.getElementById('refRole').value=existing.role||'';
+        // set mood from existing
+        document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',parseInt(b.dataset.val)===existing.mood));
+        state.selectedMood=existing.mood||3;
+      }
       const submitBtn=document.querySelector('#modalReflection .btn-success');
       if(submitBtn){
         submitBtn.disabled=!!existing;
         submitBtn.textContent=existing?'✅ Bereits eingereicht':'💾 Reflexion speichern';
       }
+    }
+    // Populate MVP vote dropdown (all team members)
+    const mvpSel=document.getElementById('refMvpVote');
+    if(mvpSel&&team){
+      mvpSel.innerHTML='<option value="">-- niemanden nominieren --</option>';
+      MEMBERS.filter(m=>m.teamId===team.id).forEach(m=>{
+        const o=new Option(m.name+' ('+m.role+')',m.id);mvpSel.appendChild(o);
+      });
     }
   }
 };
@@ -4046,6 +4239,62 @@ const TRANS_MAP = {
   'Keine Buchungen':'No transactions',
   // Konzept
   'Konzept':'Concept',
+  // Additional body text translations
+  'Buchung erfassen':'Record Transaction', 'Buchung':'Transaction',
+  'Einnahme erfassen':'Record Income', 'Ausgabe erfassen':'Record Expense',
+  'Beleg (optional)':'Receipt (optional)',
+  'Klicken zum Hochladen':'Click to upload',
+  'Beleg geladen':'Receipt loaded',
+  'Kapital':'Capital',
+  'Nur der CFO kann Buchungen erfassen':'Only the CFO can record transactions',
+  'Häufige Fragen':'Frequently Asked Questions',
+  'Fragen vom Dozenten':'Questions from the Instructor',
+  'Dokumente vom Dozenten':'Documents from the Instructor',
+  'Spiel ist LIVE / aktiv':'Game is LIVE / active',
+  'Ticker zeigt grünes LIVE-Symbol':'Ticker shows green LIVE indicator',
+  'Ankuendigungen':'Announcements',
+  'Von':'From',
+  'Alle Teams':'All Teams',
+  'Entwurf':'Draft',
+  'Weiterschreiben':'Continue writing',
+  'Bericht einreichen':'Submit report',
+  'Entwurf speichern':'Save draft',
+  'Mitglied der Woche':'Member of the Week',
+  'Wen nominierst du als Mitglied der Woche?':'Who do you nominate as Member of the Week?',
+  'Mein MVP-Vote':'My MVP Vote',
+  'niemanden nominieren':'nominate nobody',
+  'Begründung (optional)':'Reason (optional)',
+  'Wochenbericht':'Weekly Report',
+  'Übersicht':'Overview',
+  'Teamleiter':'Team Leader',
+  'Mitglied':'Member',
+  'Neuer Eintrag':'New Entry',
+  'Frage hinzufügen':'Add question',
+  'Neue Frage':'New question',
+  'Antwort':'Answer',
+  'Spiel-Einstellungen':'Game Settings',
+  'Dozenten-E-Mail':'Instructor Email',
+  'Nachrichten':'Messages',
+  'Nachricht versenden':'Send message',
+  'Empfaenger':'Recipient',
+  'Betreff':'Subject',
+  'Pinnwand':'Bulletin Board',
+  'Ankuendigung senden':'Post announcement',
+  'Anpinnen':'Pin to top',
+  'Keine Ankuendigungen':'No announcements',
+  'Noch offen':'Still open',
+  // Reflection page
+  'Persönliche wöchentliche Reflexion':'Personal weekly reflection',
+  'Woche läuft, Bericht nicht eingereicht':'Week running, report not submitted',
+  'Alle Pflichtfelder ausfüllen':'Fill in all required fields',
+  'Einreichen':'Submit',
+  'Bereits eingereicht':'Already submitted',
+  // My Team tabs
+  'Transaktionen':'Transactions',
+  // Login
+  'Noch kein Code?':'No code yet?',
+  'Jetzt registrieren':'Register now',
+  'Einloggen / Sign In':'Sign In',
   // Week banners
   ' läuft':' running',
   'wartet auf Freigabe durch den Admin.':'awaiting approval by the admin.',
