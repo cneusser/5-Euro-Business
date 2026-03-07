@@ -68,9 +68,9 @@ a{color:var(--blue-mid);text-decoration:none;}
 .role-badge.admin-badge{background:rgba(255,215,0,.2);color:#FFD700;}
 .role-badge.super-badge{background:rgba(255,159,243,.2);color:#FF9FF3;}
 .role-badge.member-badge{background:rgba(55,86,35,.3);color:#A5D6A7;}
-.topbar-logout{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;}
+.topbar-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.9);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;}
 .topbar-logout:hover{background:rgba(255,255,255,.22);color:white;}
-.btn-lang{background:rgba(255,255,255,.12);border:none;color:white;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;}
+.btn-lang{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.5px;min-width:34px;text-align:center;}
 .btn-lang:hover{background:rgba(255,255,255,.22);}
 .announce-card{background:white;border-left:4px solid var(--blue-mid);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm);}
 .announce-card.pinned{border-left-color:#FFD700;background:#FFFDF0;}
@@ -427,8 +427,9 @@ textarea.form-control{resize:vertical;min-height:70px;}
    <div id="loginStep1">
     <div class="login-input-wrap">
      <input type="text" id="loginCode" placeholder="ZUGANGSCODE / ACCESS CODE" maxlength="20"
-      oninput="this.value=this.value.toUpperCase()" onkeypress="if(event.key==='Enter')doLoginStep1()">
+      oninput="this.value=this.value.toUpperCase();showLoginRolePreview(this.value)" onkeypress="if(event.key==='Enter')doLoginStep1()">
     </div>
+    <div id="loginRolePreview" style="display:none;text-align:center;margin:-4px 0 8px;padding:6px 12px;background:rgba(255,255,255,.12);border-radius:6px;font-size:12px;color:rgba(255,255,255,.9);"></div>
     <div class="login-error" id="loginError">&#10060; <span id="lt_errCode">Ung&#252;ltiger Code</span></div>
     <button class="login-btn" onclick="doLoginStep1()">&#128273; Einloggen / Sign In</button>
     <div style="text-align:center;margin-top:14px;">
@@ -567,8 +568,8 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <nav class="topbar-nav" id="topNav"></nav>
   <div class="topbar-right">
    <div class="role-badge" id="roleBadge"></div>
-   <button class="btn-lang" id="langToggleBtn" onclick="toggleLang()" title="Sprache / Language">&#127465;&#127466;</button>
-   <button class="topbar-logout" onclick="doLogout()">&#9167; Logout</button>
+   <button class="btn-lang" id="langToggleBtn" onclick="toggleLang()" title="Sprache / Language">DE</button>
+   <button class="topbar-logout" id="logoutBtn" onclick="doLogout()" title="Abmelden und Rolle wechseln">&#8617; Abmelden</button>
   </div>
  </div>
  <div class="ticker" id="tickerBar">
@@ -1108,7 +1109,9 @@ let ANNOUNCEMENTS = [];
 let CODES = {};
 function rebuildCodes(){
   CODES = {};
-  CODES['SUPER-NEUSS'] = {role:'superadmin', name:'Prof. Neusser', label:'Superadmin'};
+  // Read persisted Superadmin profile from localStorage (set by saveSuperProfile)
+  const _sp=(()=>{try{return JSON.parse(localStorage.getItem('5euro_superprofile')||'null');}catch(e){return null;}})();
+  CODES['SUPER-NEUSS'] = {role:'superadmin', name:(_sp&&_sp.name)||'Prof. Neusser', email:(_sp&&_sp.email)||'christian.neusser@me.com', label:'Superadmin'};
   SUPERADMINS.forEach(sa => {
     if(sa.code) CODES[sa.code] = {role:'superadmin', superAdminId:sa.id, name:sa.name, email:sa.email||'', label:'Superadmin'};
   });
@@ -1419,6 +1422,18 @@ function setLoginLang(lang){
   }
 }
 function doLogin(){doLoginStep1();}
+
+function showLoginRolePreview(code){
+  const preview=document.getElementById('loginRolePreview');
+  if(!preview) return;
+  if(!code||code.length<3){preview.style.display='none';return;}
+  const user=CODES[code.toUpperCase()];
+  if(!user){preview.style.display='none';return;}
+  const icons={superadmin:'👑',admin:'⚙️',team:'👥',member:'👤'};
+  const labels={superadmin:'Superadmin',admin:'Admin',team:'Teamleiter',member:'Mitglied'};
+  preview.style.display='block';
+  preview.innerHTML=(icons[user.role]||'?')+' <strong>'+user.name+'</strong> &middot; '+(labels[user.role]||user.role);
+}
 function doLoginStep1(){
   const code=document.getElementById('loginCode').value.trim().toUpperCase();
   const user=CODES[code];
@@ -1515,7 +1530,7 @@ function initApp(){
 function buildNavigation(){
   const u=state.currentUser;const nav=document.getElementById('topNav');nav.innerHTML='';
   const langBtn=document.getElementById('langToggleBtn');
-  if(langBtn) langBtn.textContent=state.lang==='en'?'\U0001F1EC\U0001F1E7':'\U0001F1E9\U0001F1EA';
+  if(langBtn) langBtn.textContent=state.lang==='en'?'EN':'DE';
   const pages=[];
   if(u.role==='team'){
     pages.push({id:'dashboard',label:'🏆 Ranking'});
@@ -1556,6 +1571,8 @@ function buildNavigation(){
 
 function updateTopbar(){
   const u=state.currentUser;
+  const langBtn=document.getElementById('langToggleBtn');
+  if(langBtn) langBtn.textContent=state.lang==='en'?'EN':'DE';
   const badge=document.getElementById('roleBadge');
   const team=getMyTeam();
   const game=u.gameId?GAMES.find(g=>g.id===u.gameId):null;
@@ -3426,6 +3443,10 @@ function saveSuperProfile(){
   state.currentUser.name = name;
   state.currentUser.email = email;
   state.currentUser.code = newCode;
+  // Persist SUPER-NEUSS overrides separately so rebuildCodes picks them up
+  if(oldCode==='SUPER-NEUSS'||newCode==='SUPER-NEUSS'){
+    localStorage.setItem('5euro_superprofile', JSON.stringify({name, email}));
+  }
   saveData();
   closeModal('modalEditSuperProfile');
   showToast('✅ Profil gespeichert. Neuer Code: '+newCode);
