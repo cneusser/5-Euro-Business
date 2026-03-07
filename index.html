@@ -1156,6 +1156,14 @@ function loadData(){
     replace(SUPERADMINS,d.SUPERADMINS||[]);
     replace(FAQ_DOCS,d.FAQ_DOCS||[]);
     replace(ANNOUNCEMENTS,d.ANNOUNCEMENTS||[]);
+    // ── Recalculate team financials from TRANSACTIONS (ensures Kapital excluded) ──
+    TEAMS.forEach(function(team){
+      const txs=TRANSACTIONS.filter(function(t){return t.teamId===team.id;});
+      team.revenue=txs.filter(function(t){return t.type==='income'&&t.cat!=='Kapital';}).reduce(function(s,t){return s+t.amount;},0);
+      team.expenses=txs.filter(function(t){return t.type==='expense'&&t.cat!=='Kapital';}).reduce(function(s,t){return s+t.amount;},0);
+      team.capital=txs.filter(function(t){return t.cat==='Kapital';}).reduce(function(s,t){return s+t.amount;},0);
+      team.transactions=txs.length;
+    });
     // Migrate single-PDF fields to faqPdfs array
     GAMES.forEach(g=>{
       if(!g.faqPdfs) g.faqPdfs=[];
@@ -1578,9 +1586,8 @@ function buildNavigation(){
     pages.push({id:'myteam',     label:'👥 Mein Team'});
     pages.push({id:'profile',    label:'👤 Mein Profil'});
     pages.push({id:'reflection', label:'🔒 Reflexion'});
-    // Only CFO gets direct Buchung nav item
-    const _me=getMyMember();
-    if(_me&&_me.role==='CFO') pages.push({id:'__booking',label:'💰 Buchung'});
+    // All members get Buchung nav item
+    pages.push({id:'__booking',label:'💰 Buchung'});
     pages.push({id:'blog',       label:'📖 Blog'});
     pages.push({id:'feedback',   label:'💬 Feedback'});
     pages.push({id:'konzept',    label:'📐 Konzept'});
@@ -2252,15 +2259,66 @@ function renderMembersSection(team){
 
 function renderMyTransactions(team){
   const myTx=TRANSACTIONS.filter(tx=>tx.teamId===team.id).sort((a,b)=>b.date.localeCompare(a.date));
+  const u=state.currentUser;
+  const me=getMyMember();
+  const isCFO=me&&me.role==='CFO';
+  const isAdmin=u.role==='admin'||u.role==='superadmin'||u.role==='team';
+  const canEdit=isCFO||isAdmin;
   document.getElementById('myTxTable').innerHTML=`
-    <div class="tx-row header"><div>Datum</div><div>Typ</div><div>Beschreibung</div><div>Kategorie</div><div>Betrag</div><div>Beleg</div></div>`+
-    myTx.map(tx=>`<div class="tx-row">
-      <div style="color:var(--gray-mid)">${fmtDate(tx.date)}</div>
-      <div><span class="tag ${tx.type==='income'?'tag-green':''}" style="${tx.type==='expense'?'background:var(--red-lt);color:var(--red);':''}">${tx.type==='income'?'📈':'📉'}</span></div>
-      <div>${tx.desc}</div><div style="color:var(--gray-mid)">${tx.cat}</div>
-      <div class="tx-amt ${tx.type==='income'?'pos':'neg'}">${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)}</div>
-      <div>${tx.receipt?'<span style="color:var(--green)">✅</span>':'—'}</div>
-    </div>`).join('');
+    <div class="tx-row header"><div>Datum</div><div>Typ</div><div>Beschreibung</div><div>Kategorie</div><div>Betrag</div><div>Beleg</div>${canEdit?'<div>CFO</div>':''}</div>`+
+    myTx.map(tx=>{
+      const isKapital=tx.cat==='Kapital';
+      const rowStyle=isKapital?'background:var(--blue-xlt);':'';
+      const typeTag=isKapital
+        ?'<span class="tag" style="background:var(--blue-light);color:var(--blue-dark);">🏦 Kapital</span>'
+        :`<span class="tag ${tx.type==='income'?'tag-green':''}" style="${tx.type==='expense'?'background:var(--red-lt);color:var(--red);':''}">${tx.type==='income'?'📈':'📉'}</span>`;
+      const amt=isKapital
+        ?`<span class="tx-amt" style="color:var(--blue-mid);">${fmtEur(tx.amount)}</span>`
+        :`<span class="tx-amt ${tx.type==='income'?'pos':'neg'}">${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)}</span>`;
+      const editBtns=canEdit
+        ?`<div style="display:flex;gap:4px;"><button class="btn btn-outline btn-xs" title="Bearbeiten" onclick="editTransaction('${tx.id}')">✏️</button><button class="btn btn-danger btn-xs" title="Löschen" onclick="deleteTransaction('${tx.id}')">✕</button></div>`
+        :'';
+      return `<div class="tx-row" style="${rowStyle}">
+        <div style="color:var(--gray-mid)">${fmtDate(tx.date)}</div>
+        <div>${typeTag}</div>
+        <div>${tx.desc}</div><div style="color:var(--gray-mid)">${tx.cat}</div>
+        ${amt}
+        <div>${tx.receipt?'<span style="color:var(--green)" title="'+((tx.receipt&&tx.receipt.name)||'Beleg')+'">✅</span>':'—'}</div>
+        ${canEdit?editBtns:''}
+      </div>`;
+    }).join('');
+}
+function editTransaction(txId){
+  const tx=TRANSACTIONS.find(t=>t.id===txId);if(!tx) return;
+  // pre-fill modal
+  openModal('modalBooking');
+  setTimeout(function(){
+    const bDesc=document.getElementById('bDesc');if(bDesc) bDesc.value=tx.desc;
+    const bAmt=document.getElementById('bAmount');if(bAmt) bAmt.value=tx.amount;
+    const bDate=document.getElementById('bDate');if(bDate) bDate.value=tx.date;
+    const bCat=document.getElementById('bCat');if(bCat) bCat.value=tx.cat;
+    const bType=document.getElementById('bType');if(bType) bType.value=tx.type;
+    // Store txId being edited so submitBooking knows to update
+    document.getElementById('modalBooking').dataset.editTxId=txId;
+    const hdr=document.querySelector('#modalBooking .modal-header h3');
+    if(hdr) hdr.innerHTML='💰 Buchung bearbeiten <span style="font-size:11px;font-weight:400;opacity:.7;">(CFO-Korrektur)</span>';
+  },80);
+}
+function deleteTransaction(txId){
+  if(!confirm('Buchung wirklich löschen?')) return;
+  const tx=TRANSACTIONS.find(t=>t.id===txId);if(!tx) return;
+  const team=TEAMS.find(t=>t.id===tx.teamId);
+  TRANSACTIONS.splice(TRANSACTIONS.indexOf(tx),1);
+  // Recalculate team totals
+  if(team){
+    const txs=TRANSACTIONS.filter(t=>t.teamId===team.id);
+    team.revenue=txs.filter(t=>t.type==='income'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+    team.expenses=txs.filter(t=>t.type==='expense'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+    team.capital=txs.filter(t=>t.cat==='Kapital').reduce((s,t)=>s+t.amount,0);
+    team.transactions=txs.length;
+  }
+  saveData();buildTicker();showToast('Buchung gelöscht','info');
+  if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
 }
 
 function renderMyBlogs(team){
@@ -3147,28 +3205,27 @@ function submitBooking(){
   const amt=parseFloat(document.getElementById('bAmount').value);
   if(!desc||!amt){showToast('Pflichtfelder fehlen','error');return;}
   const team=getMyTeam();if(!team)return;
-  // CFO check: only CFO (or admin/team-login) may submit bookings
+  // All members may record bookings; CFO can additionally edit/delete
   const u=state.currentUser;
-  if(u.role==='member'){
-    const myM=getMyMember();
-    if(!myM||myM.role!=='CFO'){
-      showToast(state.lang==='en'?'Only the CFO can record transactions!':'Nur der CFO kann Buchungen erfassen!','error');
-      return;
-    }
-  }
   const tx={id:'tx'+Date.now(),teamId:team.id,date:document.getElementById('bDate').value||new Date().toISOString().split('T')[0],
     desc,cat:document.getElementById('bCat').value,type:document.getElementById('bType').value,amount:amt,receipt:_receiptData||false};
   _receiptData=null;const lbl2=document.getElementById('bFileLabel');if(lbl2)lbl2.textContent='';if(document.getElementById('bFile'))document.getElementById('bFile').value='';
-  TRANSACTIONS.push(tx);
-  // Kapital = starting capital, does NOT affect revenue or expenses (separate KPI)
-  if(tx.cat!=='Kapital'){
-    if(tx.type==='income') team.revenue+=amt; else team.expenses+=amt;
+  // Check if editing an existing transaction (CFO correction mode)
+  const editTxId=document.getElementById('modalBooking').dataset.editTxId||'';
+  if(editTxId){
+    const existingIdx=TRANSACTIONS.findIndex(t=>t.id===editTxId);
+    if(existingIdx>=0) TRANSACTIONS[existingIdx]=Object.assign(TRANSACTIONS[existingIdx],
+      {desc:tx.desc,date:tx.date,cat:tx.cat,type:tx.type,amount:tx.amount});
   } else {
-    if(!team.capital) team.capital=0;
-    team.capital+=amt;
+    TRANSACTIONS.push(tx);
   }
-  team.transactions++;
-  saveData();closeModal('modalBooking');showToast('💰 Buchung gespeichert!');buildTicker();
+  // Recalculate team totals from scratch (correct for both new entries and edits)
+  const allTx=TRANSACTIONS.filter(t=>t.teamId===team.id);
+  team.revenue=allTx.filter(t=>t.type==='income'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+  team.expenses=allTx.filter(t=>t.type==='expense'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+  team.capital=allTx.filter(t=>t.cat==='Kapital').reduce((s,t)=>s+t.amount,0);
+  team.transactions=allTx.length;
+  saveData();closeModal('modalBooking');showToast(editTxId?'\u270f\ufe0f Buchung aktualisiert!':'\U0001f4b0 Buchung gespeichert!');buildTicker();
   if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
 }
 
@@ -3344,19 +3401,15 @@ window.openModal=function(id){
   if(id==='modalNewGame') prepareNewGameModal();
   if(id==='modalNewAdmin') prepareNewAdminModal();
   if(id==='modalBooking'){
-    // Block non-CFO members from accessing booking modal
-    const _bu=state.currentUser;
-    if(_bu.role==='member'){
-      const _bme=getMyMember();
-      if(!_bme||_bme.role!=='CFO'){
-        showToast('Nur der CFO kann Buchungen erfassen!','error');
-        return;  // prevent modal from opening
-      }
-    }
+    // Reset edit mode state
+    const mbEl=document.getElementById('modalBooking');
+    if(mbEl) delete mbEl.dataset.editTxId;
+    const hdr=document.querySelector('#modalBooking .modal-header h3');
+    if(hdr) hdr.innerHTML='&#128176; Buchung erfassen <span id="bookingRoleInfo" style="font-size:11px;font-weight:400;opacity:.7;"></span>';
     const bri=document.getElementById('bookingRoleInfo');
     if(bri){const me=getMyMember();bri.textContent=me?`(${me.name} · ${me.role})`:'';} 
     // Clear booking form fields for a fresh entry
-    ['bDesc','bAmount'].forEach(fid=>{const el=document.getElementById(fid);if(el)el.value='';});
+    ['bDesc','bAmount','bCat'].forEach(fid=>{const el=document.getElementById(fid);if(el&&fid!=='bCat')el.value='';});
     const bDate=document.getElementById('bDate');
     if(bDate) bDate.value=new Date().toISOString().split('T')[0];
     _receiptData=null;
