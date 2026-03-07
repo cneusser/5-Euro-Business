@@ -2283,10 +2283,28 @@ function renderMyTransactions(team){
         <div>${typeTag}</div>
         <div>${tx.desc}</div><div style="color:var(--gray-mid)">${tx.cat}</div>
         ${amt}
-        <div>${tx.receipt?'<span style="color:var(--green)" title="'+((tx.receipt&&tx.receipt.name)||'Beleg')+'">✅</span>':'—'}</div>
+        <div>${tx.receipt?`<span style="color:var(--green);cursor:pointer;text-decoration:underline dotted;" title="${(tx.receipt.name||'Beleg')} – klicken zum Anzeigen" onclick="viewReceipt('${tx.id}')">✅ Beleg</span>`:'—'}</div>
         ${canEdit?editBtns:''}
       </div>`;
     }).join('');
+}
+function viewReceipt(txId){
+  const tx=TRANSACTIONS.find(t=>t.id===txId);
+  if(!tx||!tx.receipt||!tx.receipt.data){showToast('Kein Beleg vorhanden','error');return;}
+  const r=tx.receipt;
+  try{
+    const byteStr=atob(r.data.split(',')[1]);
+    const bytes=new Uint8Array(byteStr.length);
+    for(let i=0;i<byteStr.length;i++) bytes[i]=byteStr.charCodeAt(i);
+    const blob=new Blob([bytes],{type:r.type||'image/jpeg'});
+    const url=URL.createObjectURL(blob);
+    const w=window.open(url,'_blank');
+    if(w) w.document.title=r.name||'Beleg';
+  }catch(e){
+    // Fallback: direct data URL
+    const w=window.open(r.data,'_blank');
+    if(w) w.document.title=r.name||'Beleg';
+  }
 }
 function editTransaction(txId){
   const tx=TRANSACTIONS.find(t=>t.id===txId);if(!tx) return;
@@ -2589,7 +2607,7 @@ function renderTxPage(){
       <div style="display:flex;align-items:center;"><div class="tx-team-dot" style="background:${team?.color}">${team?.logo}</div>${team?.name}</div>
       <div>${tx.desc}</div><div style="color:var(--gray-mid)">${tx.cat}</div>
       <div class="tx-amt ${tx.type==='income'?'pos':'neg'}">${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)}</div>
-      <div>${tx.receipt?'<span style="color:var(--green)">✅</span>':'—'}</div>
+      <div>${tx.receipt?`<span style="color:var(--green);cursor:pointer;text-decoration:underline dotted;" title="${(tx.receipt.name||'Beleg')} – klicken zum Anzeigen" onclick="viewReceipt('${tx.id}')">✅ Beleg</span>`:'—'}</div>
     </div>`;}).join('');
 }
 function clearTxFilters(){['txTeamFilter','txTypeFilter'].forEach(id=>document.getElementById(id).value='all');renderTxPage();}
