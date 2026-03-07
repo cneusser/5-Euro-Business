@@ -1537,9 +1537,12 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
   document.getElementById('appShell').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
-  // Reset to step 1 (code entry), hide password step
-  const step2=document.getElementById('loginStep2');if(step2) step2.style.display='none';
+  // Reset to step 1 (code entry), hide password/setup steps
+  ['loginStep2','loginStep3'].forEach(function(id){const el=document.getElementById(id);if(el)el.style.display='none';});
+  const step1=document.getElementById('loginStep1');if(step1) step1.style.display='block';
   const loginPwd=document.getElementById('loginPwd');if(loginPwd) loginPwd.value='';
+  const loginNewPwd=document.getElementById('loginNewPwd');if(loginNewPwd) loginNewPwd.value='';
+  const loginNewPwd2=document.getElementById('loginNewPwd2');if(loginNewPwd2) loginNewPwd2.value='';
   const loginPwdErr=document.getElementById('loginPwdError');if(loginPwdErr) loginPwdErr.style.display='none';
   const loginPreview=document.getElementById('loginRolePreview');if(loginPreview) loginPreview.style.display='none';
   ['revenueChart','superChart'].forEach(k=>{if(state[k]){state[k].destroy();state[k]=null;}});
@@ -1551,9 +1554,10 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
 function initApp(){
   const u=state.currentUser;
   buildNavigation();updateTopbar();updateLiveIndicator();
-  logEvent('page_view', {page: p});buildTicker();
+  buildTicker();
   const def=u.role==='superadmin'?'superadmin':u.role==='admin'?'admin':'dashboard';
   navigateTo(def);
+  logEvent('page_load',{page:def});
   if(state.lang==='en') setTimeout(applyLang,200);
 }
 
@@ -1719,7 +1723,7 @@ function renderDokumente(){
     +'<span><strong>&#128994; Spiel ist LIVE / aktiv</strong> &mdash; Ticker zeigt gr&uuml;nes LIVE-Symbol</span></label></div>'
     +'<button class="btn btn-primary btn-sm" onclick="saveGameSettings(\''+game.id+'\')">Speichern</button></div></div>'
     +'<div id="adminFaqSection"></div>';
-  setTimeout(function(){renderAdminFaq(effectiveGameId);},30);
+  setTimeout(function(){renderAdminFaq(effectiveGameId);},100);
 }
 
 function renderAdminFaq(gameId){
@@ -1783,6 +1787,7 @@ function uploadGamePdf(gameId,input){
       done++;
       if(done===files.length){saveData();showToast(done+' PDF(s) gespeichert','success');logEvent('pdf_upload',{gameId,count:done});renderDokumente();}
     };
+    reader.onerror=function(){done++;showToast('Fehler beim Lesen: '+file.name,'error');if(done===files.length&&game.faqPdfs.length){saveData();renderDokumente();}};
     reader.readAsDataURL(file);
   });
 }
