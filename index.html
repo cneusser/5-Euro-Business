@@ -2269,8 +2269,7 @@ function deleteGame(gameId){
   if(!confirm('Wirklich? Dies löscht alle Daten des Spiels unwiderruflich.')) return;
   const tids=TEAMS.filter(t=>t.gameId===gameId).map(t=>t.id);
   const mids=MEMBERS.filter(m=>tids.includes(m.teamId)).map(m=>m.id);
-  function filterOut(arr,key,ids){const idx=arr.findIndex(x=>ids.includes(x[key]));while(idx>=0){arr.splice(arr.findIndex(x=>ids.includes(x[key])),1);}
-    let i=arr.length;while(i--){if(ids.includes(arr[i][key]))arr.splice(i,1);}}
+  function filterOut(arr,key,ids){let i=arr.length;while(i--){if(ids.includes(arr[i][key]))arr.splice(i,1);}}
   filterOut(TRANSACTIONS,'teamId',tids);
   filterOut(BLOGS,'teamId',tids);
   filterOut(REFLECTIONS,'teamId',tids);
