@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>5-Euro-Business Tracker</title>
+<title>VentureLab Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -32,6 +32,7 @@ a{color:var(--blue-mid);text-decoration:none;}
 /* LOGIN */
 #loginScreen{min-height:100vh;background:linear-gradient(135deg,var(--blue-dark) 0%,#2a5298 50%,var(--blue-mid) 100%);display:flex;align-items:center;justify-content:center;padding:24px;}
 .login-card{background:white;border-radius:20px;padding:40px 36px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.test-mode-banner{position:fixed;top:0;left:0;right:0;background:#B35A00;color:white;text-align:center;padding:6px;font-size:13px;font-weight:700;z-index:9999;letter-spacing:1px;}
 .login-logo{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:white;margin:0 auto 16px;}
 .login-title{text-align:center;font-size:24px;font-weight:800;color:var(--blue-dark);margin-bottom:4px;}
 .login-sub{text-align:center;font-size:13px;color:var(--gray-mid);margin-bottom:28px;}
@@ -420,21 +421,39 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
   <div id="loginMode">
-   <div class="login-logo">5&#8364;</div>
-   <h2 class="login-title">5-Euro-Business</h2>
+   <div class="login-logo">🚀</div>
+   <h2 class="login-title">VentureLab</h2>
    <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion</p>
-   <!-- Step 1: Code -->
-   <div id="loginStep1">
+
+   <!-- ── MODE SELECT ──────────────────────────────────── -->
+   <div id="loginModeSelect" style="margin-top:8px;">
+    <div style="display:grid;gap:10px;">
+     <button onclick="showLoginStep1()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:24px;">🔑</span>
+      <span><strong id="lt_modeExisting">Vorhandenes Spiel</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeExistingSub">Ich habe bereits einen Zugangscode oder E-Mail</small></span>
+     </button>
+     <button onclick="showRegisterMode()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1a5c2a,#2d8a44);">
+      <span style="font-size:24px;">🆕</span>
+      <span><strong id="lt_modeNew">Neues Spiel</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeNewSub">Ich habe einen Team-Einladungscode (erster Login)</small></span>
+     </button>
+     <button onclick="showTestMode()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#7B3F00,#B35A00);">
+      <span style="font-size:24px;">🧪</span>
+      <span><strong id="lt_modeTest">Testumgebung</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeTestSub">Demo-Modus &#8211; alle Rollen ausprobieren</small></span>
+     </button>
+    </div>
+   </div>
+
+   <!-- Step 1: Code (hidden initially, shown after clicking "Vorhandenes Spiel") -->
+   <div id="loginStep1" style="display:none;">
     <div class="login-input-wrap">
-     <input type="text" id="loginCode" placeholder="ZUGANGSCODE / ACCESS CODE" maxlength="20"
-      oninput="this.value=this.value.toUpperCase();showLoginRolePreview(this.value)" onkeypress="if(event.key==='Enter')doLoginStep1()">
+     <input type="text" id="loginCode" placeholder="ZUGANGSCODE ODER E-MAIL" maxlength="80"
+      oninput="this.value=this.value.toUpperCase().replace(/@/g,s=>s.toLowerCase());showLoginRolePreview(this.value)" onkeypress="if(event.key==='Enter')doLoginStep1()">
     </div>
     <div id="loginRolePreview" style="display:none;text-align:center;margin:-4px 0 8px;padding:6px 12px;background:rgba(255,255,255,.12);border-radius:6px;font-size:12px;color:rgba(255,255,255,.9);"></div>
-    <div class="login-error" id="loginError">&#10060; <span id="lt_errCode">Ung&#252;ltiger Code</span></div>
+    <div class="login-error" id="loginError">&#10060; <span id="lt_errCode">Ung&#252;ltiger Code / E-Mail</span></div>
     <button class="login-btn" onclick="doLoginStep1()">&#128273; Einloggen / Sign In</button>
-    <div style="text-align:center;margin-top:14px;">
-     <span style="font-size:13px;color:#aaa;" id="lt_noCode">Noch kein Code?</span>
-     <button onclick="showRegister()" style="background:none;border:none;color:var(--blue-mid);font-size:13px;font-weight:700;cursor:pointer;margin-left:6px;" id="lt_regBtn">&#128100; Jetzt registrieren &rarr;</button>
+    <div style="text-align:center;margin-top:8px;">
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zur&#252;ck</button>
     </div>
    </div>
    <!-- Step 2: Password entry -->
@@ -469,89 +488,134 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button onclick="skipPassword()" style="background:none;border:none;color:#aaa;font-size:11px;cursor:pointer;" id="lt_skipPwd">&#9888; &#220;berspringen (unsicher) / Skip (insecure)</button>
     </div>
    </div>
+   <!-- Step 4: Profile completion (for members without profile data) -->
+   <div id="loginStep4" style="display:none;">
+    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
+     <span class="info-box-icon">&#128100;</span><span>Bitte vervollst&#228;ndige dein Profil.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+     <div><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">VORNAME</label>
+      <input type="text" id="profileFirstName" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="Max"></div>
+     <div><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">NACHNAME</label>
+      <input type="text" id="profileLastName" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="Mustermann"></div>
+    </div>
+    <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">E-MAIL</label>
+     <input type="email" id="profileEmail" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="max@dhbw.de"
+      oninput="this.value=this.value.toLowerCase()"></div>
+    <div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">MOBIL (optional)</label>
+     <input type="tel" id="profileMobile" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="+49 160 ..."></div>
+    <button class="login-btn" onclick="saveProfileAndLogin()">&#10003; Profil speichern &amp; einloggen</button>
+    <div style="text-align:center;margin-top:8px;">
+     <button onclick="saveProfileAndLogin()" style="background:none;border:none;color:#aaa;font-size:11px;cursor:pointer;">&#220;berspringen</button>
+    </div>
+   </div>
   </div>
 
   <!-- ── REGISTRATION MODE ────────────────────────────── -->
   <div id="registerMode" style="display:none;">
-   <div class="login-logo" style="font-size:20px;">&#128100;</div>
+   <div class="login-logo" style="font-size:20px;">🆕</div>
    <h2 class="login-title">Registrierung</h2>
-   <p class="login-sub" id="regSubtitle">Tritt einem aktiven Spiel bei</p>
+   <p class="login-sub">Mit Einladungscode dem Team beitreten</p>
 
-   <!-- Step 1: Name + Spiel -->
-   <div id="regStep1">
-    <div style="margin-bottom:10px;">
-     <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">DEIN NAME *</label>
-     <input type="text" class="login-input-wrap" id="regName" placeholder="Vorname Nachname"
-      style="width:100%;padding:11px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:14px;outline:none;">
+   <!-- Step 1: Invite Code -->
+   <div id="regInviteStep">
+    <div style="margin-bottom:12px;">
+     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:6px;letter-spacing:1px;">TEAM-EINLADUNGSCODE *</label>
+     <input type="text" id="regInviteCode" placeholder="z.B. TEAM-IDEA1"
+      style="width:100%;padding:11px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:14px;outline:none;font-family:monospace;font-weight:700;letter-spacing:2px;box-sizing:border-box;"
+      oninput="this.value=this.value.toUpperCase()" onkeypress="if(event.key==='Enter')checkInviteCode()">
     </div>
-    <div style="margin-bottom:14px;">
-     <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">SEMESTER / SPIEL *</label>
-     <select id="regGame" style="width:100%;padding:11px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;background:white;" onchange="updateRegTeamList()">
-      <option value="">-- bitte wählen --</option>
-     </select>
-     <div id="regNoGames" style="display:none;font-size:12px;color:#C00000;margin-top:5px;">&#9888; Kein aktives Spiel gefunden – wende dich an deinen Dozenten.</div>
-    </div>
-    <!-- Team-Auswahl -->
-    <div id="regTeamSection" style="display:none;">
-     <label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:8px;">ICH MÖCHTE …</label>
-     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div id="btnNewTeam" onclick="setRegType('new')"
-       style="border:2px solid #E0E7F0;border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:.15s;">
-       <div style="font-size:22px;">&#127775;</div>
-       <div style="font-size:12px;font-weight:700;margin-top:4px;">Neues Team<br>gründen</div>
-      </div>
-      <div id="btnJoinTeam" onclick="setRegType('join')"
-       style="border:2px solid #E0E7F0;border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:.15s;">
-       <div style="font-size:22px;">&#129309;</div>
-       <div style="font-size:12px;font-weight:700;margin-top:4px;">Bestehendem<br>Team beitreten</div>
-      </div>
-     </div>
-
-     <!-- Neues Team gründen -->
-     <div id="regNewTeamFields" style="display:none;">
-      <input type="text" id="regTeamName" placeholder="Team-Name *"
-       style="width:100%;padding:10px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;margin-bottom:8px;outline:none;">
-      <input type="text" id="regBiz" placeholder="Unternehmensidee (z.B. Fahrrad-Reparatur)"
-       style="width:100%;padding:10px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;margin-bottom:8px;outline:none;">
-      <select id="regRoleNew" style="width:100%;padding:10px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;background:white;margin-bottom:8px;">
-       <option value="CEO">CEO – Geschäftsführer/in (du leitest das Team)</option>
-       <option value="CFO">CFO – Finanzen</option><option value="CMO">CMO – Marketing</option>
-       <option value="COO">COO – Betrieb</option><option value="CTO">CTO – Technik</option>
-      </select>
-     </div>
-
-     <!-- Bestehendem Team beitreten -->
-     <div id="regJoinTeamFields" style="display:none;">
-      <div id="regTeamList" style="max-height:160px;overflow-y:auto;border:1px solid #E0E7F0;border-radius:10px;margin-bottom:8px;"></div>
-      <select id="regRoleJoin" style="width:100%;padding:10px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;background:white;">
-       <option value="Mitglied">Mitglied</option><option value="CEO">CEO</option>
-       <option value="CFO">CFO</option><option value="CMO">CMO</option>
-       <option value="COO">COO</option><option value="CTO">CTO</option>
-      </select>
-     </div>
-    </div>
-    <div id="regError" style="color:#C00000;font-size:12px;margin-bottom:8px;display:none;"></div>
-    <button onclick="registerUser()" class="login-btn" style="margin-bottom:10px;">&#10003; Registrieren</button>
+    <div id="regInvitePreview" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;"></div>
+    <div id="regInviteError" style="display:none;color:#C00000;font-size:12px;margin-bottom:8px;"></div>
+    <button onclick="checkInviteCode()" class="login-btn" style="margin-bottom:10px;">Weiter →</button>
     <div style="text-align:center;">
-     <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">&larr; Zurück zum Login</button>
+     <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück zum Login</button>
     </div>
    </div>
 
-   <!-- Step 2: Success -->
-   <div id="regStep2" style="display:none;text-align:center;">
-    <div style="font-size:48px;margin-bottom:8px;">&#127881;</div>
-    <h3 style="color:#375623;font-size:17px;font-weight:800;margin-bottom:6px;">Registrierung erfolgreich!</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:16px;">Dein persönlicher Zugangscode:</p>
-    <div id="regResultCode"
-     style="font-family:'Courier New',monospace;font-size:22px;font-weight:900;letter-spacing:3px;
+   <!-- Step 2: Role + Profile -->
+   <div id="regProfileStep" style="display:none;">
+    <div id="regTeamBadge" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;font-weight:700;color:#1e3a5f;text-align:center;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;" id="regRoleGrid"></div>
+    <div id="regRoleError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+     <div>
+      <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">VORNAME *</label>
+      <input type="text" id="regFirstName" placeholder="Max"
+       style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+     </div>
+     <div>
+      <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">NACHNAME *</label>
+      <input type="text" id="regLastName" placeholder="Mustermann"
+       style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+     </div>
+    </div>
+    <div style="margin-bottom:8px;">
+     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">E-MAIL-ADRESSE *</label>
+     <input type="email" id="regEmail" placeholder="max.mustermann@dhbw.de"
+      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;"
+      oninput="this.value=this.value.toLowerCase()">
+    </div>
+    <div style="margin-bottom:10px;">
+     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">MOBIL</label>
+     <input type="tel" id="regMobile" placeholder="+49 160 1234567"
+      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+    </div>
+    <div id="regProfileError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
+    <button onclick="submitRegProfile()" class="login-btn" style="margin-bottom:10px;">Weiter → Passwort festlegen</button>
+    <div style="text-align:center;">
+     <button onclick="showRegisterMode()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
+    </div>
+   </div>
+
+   <!-- Step 3: Password -->
+   <div id="regPasswordStep" style="display:none;">
+    <div id="regPwdBadge" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;text-align:center;color:#1e3a5f;"></div>
+    <div style="margin-bottom:8px;">
+     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">PASSWORT *</label>
+     <input type="password" id="regPwd1" placeholder="Mindestens 6 Zeichen"
+      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:10px;">
+     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">PASSWORT BESTÄTIGEN *</label>
+     <input type="password" id="regPwd2" placeholder="Wiederholen"
+      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;"
+      onkeypress="if(event.key==='Enter')submitRegPassword()">
+    </div>
+    <div id="regPwdError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
+    <button onclick="submitRegPassword()" class="login-btn" style="margin-bottom:10px;">✅ Registrierung abschließen</button>
+    <div style="text-align:center;">
+     <button onclick="document.getElementById('regProfileStep').style.display='block';document.getElementById('regPasswordStep').style.display='none';" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
+    </div>
+   </div>
+
+   <!-- Step 4: Success -->
+   <div id="regSuccessStep" style="display:none;text-align:center;">
+    <div style="font-size:48px;margin-bottom:8px;">🎉</div>
+    <h3 style="color:#1a5c2a;font-size:17px;font-weight:800;margin-bottom:6px;">Willkommen im Team!</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">Dein persönlicher Zugangscode:</p>
+    <div id="regSuccessCode"
+     style="font-family:'Courier New',monospace;font-size:20px;font-weight:900;letter-spacing:3px;
             background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;
             border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;"
      onclick="copyRegCode()">—</div>
-    <p style="font-size:11px;color:#C55A11;font-weight:700;margin-bottom:6px;">
-     &#9888; Bitte speichere diesen Code! Er ist dein einziger Zugang.</p>
-    <p style="font-size:11px;color:#666;margin-bottom:16px;">Klicke auf den Code um ihn zu kopieren.</p>
-    <div id="regResultInfo" style="font-size:12px;color:#444;background:#F2F6FC;border-radius:8px;padding:10px;margin-bottom:14px;text-align:left;"></div>
-    <button class="login-btn" onclick="loginWithNewCode()">&#128273; Jetzt einloggen</button>
+    <p style="font-size:11px;color:#C55A11;font-weight:700;margin-bottom:4px;">⚠️ Speichere diesen Code! Er ist dein persönlicher Zugang.</p>
+    <p style="font-size:11px;color:#888;margin-bottom:14px;">Klicke zum Kopieren. Du kannst dich auch mit deiner E-Mail anmelden.</p>
+    <div id="regSuccessInfo" style="font-size:12px;color:#444;background:#F2F6FC;border-radius:8px;padding:10px;margin-bottom:14px;text-align:left;"></div>
+    <button class="login-btn" onclick="loginWithNewCode()">🔑 Jetzt einloggen</button>
+   </div>
+  </div>
+
+  <!-- ── TEST MODE ─────────────────────────────────────── -->
+  <div id="testModePanel" style="display:none;">
+   <div class="login-logo" style="font-size:20px;">🧪</div>
+   <h2 class="login-title" style="color:#B35A00;">Testumgebung</h2>
+   <p class="login-sub" style="color:#c47020;">Demo-Modus – keine echten Daten</p>
+   <div id="testAccountList" style="margin:12px 0;display:grid;gap:8px;"></div>
+   <div style="text-align:center;margin-top:10px;">
+    <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
    </div>
   </div>
 
@@ -563,7 +627,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
  <div class="topbar">
   <div class="topbar-brand">
    <div class="logo">5&#8364;</div>
-   <div><h1>5-Euro-Business</h1><span id="topbarGameName">SoSe 2026</span></div>
+   <div><h1>VentureLab</h1><span id="topbarGameName">SoSe 2026</span></div>
   </div>
   <nav class="topbar-nav" id="topNav"></nav>
   <div class="topbar-right">
@@ -971,7 +1035,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
  <div class="modal modal-lg">
   <div class="modal-header"><h3>&#127918; Neues Spiel anlegen</h3><button class="modal-close" onclick="closeModal('modalNewGame')">&#215;</button></div>
   <div class="modal-body">
-   <div class="form-group"><label class="form-label">Spielname <span class="req">*</span></label><input type="text" class="form-control" id="ngName" placeholder="z.B. 5-Euro-Business SoSe 2026"></div>
+   <div class="form-group"><label class="form-label">Spielname <span class="req">*</span></label><input type="text" class="form-control" id="ngName" placeholder="z.B. VentureLab SoSe 2026"></div>
    <div class="form-row">
     <div class="form-group"><label class="form-label">Hochschule</label>
      <select class="form-control" id="ngUni"><option>DHBW Stuttgart</option><option>DHBW Karlsruhe</option><option>HS Pforzheim</option></select></div>
@@ -1034,8 +1098,15 @@ textarea.form-control{resize:vertical;min-height:70px;}
    </div>
    <div class="form-group"><label class="form-label">Unternehmensidee</label><input type="text" class="form-control" id="ntBiz" placeholder="z.B. Fahrrad-Reparatur am Campus"></div>
    <div class="form-group" id="ntGameInfoBox" style="display:none;"><label class="form-label">Spiel</label><div class="info-box blue" style="margin:0;"><span class="info-box-icon">🎮</span><span id="ntGameInfo"></span></div></div>
-   <div class="form-group"><label class="form-label">Mitglieder (Namen, kommagetrennt)</label><input type="text" class="form-control" id="ntMembers" placeholder="Max Muster, Anna Bauer, Tim Klein, Sara Wolf"></div>
-   <div class="form-group"><label class="form-label">Generierter Team-Code</label>
+   <div class="form-group"><label class="form-label">Herangehensweise</label><textarea class="form-control" id="ntApproach" rows="2" placeholder="Wie wollt ihr euer Ziel erreichen? (z.B. Direktvertrieb, Social Media, ...)"></textarea></div>
+   <div class="form-group"><label class="form-label">Strategie</label><textarea class="form-control" id="ntStrategy" rows="2" placeholder="Welche langfristige Strategie verfolgt ihr? (z.B. Kostensenkung, Qualitätsführerschaft, ...)"></textarea></div>
+   <div class="form-group"><label class="form-label">Team-Einladungscode <span style="font-size:11px;color:#888;">(zum Teilen mit Teammitgliedern)</span></label>
+    <div style="display:flex;gap:7px;">
+     <input type="text" class="form-control" id="ntCode" value="TEAM-?????" readonly style="font-family:monospace;font-weight:700;letter-spacing:2px;">
+     <button class="btn btn-outline btn-sm" onclick="genTeamCode()" style="white-space:nowrap;">&#128260;</button>
+    </div>
+   </div>
+   <div class="form-group" style="display:none;"><label class="form-label">Generierter Team-Code</label>
     <div style="display:flex;gap:7px;">
      <input type="text" class="form-control" id="ntCode" value="TEAM-?????" readonly style="font-family:monospace;font-weight:700;letter-spacing:2px;">
      <button class="btn btn-outline btn-sm" onclick="genTeamCode()" style="white-space:nowrap;">&#128260;</button>
@@ -1215,9 +1286,176 @@ let state = {
 // ════════════════════════════════════════════════════════════════════
 let regState = { type: null, selectedTeamId: null, newCode: null };
 
+function showRegisterMode(){
+  document.getElementById('loginMode').style.display='none';
+  document.getElementById('registerMode').style.display='block';
+  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='none';
+  ['regProfileStep','regPasswordStep','regSuccessStep'].forEach(id=>{
+    const el=document.getElementById(id);if(el) el.style.display='none';
+  });
+  const inv=document.getElementById('regInviteStep');if(inv) inv.style.display='block';
+  const invInput=document.getElementById('regInviteCode');if(invInput) invInput.value='';
+  const prev=document.getElementById('regInvitePreview');if(prev) prev.style.display='none';
+  const err=document.getElementById('regInviteError');if(err) err.style.display='none';
+}
+function showRegister(){showRegisterMode();}
+let _regInviteTeam=null;
+let _regInviteGame=null;
+let _regSelectedRole=null;
+let _regNewCode=null;
+let _profileLoginCode=null;
+function checkInviteCode(){
+  const code=document.getElementById('regInviteCode').value.trim().toUpperCase();
+  const errEl=document.getElementById('regInviteError');
+  errEl.style.display='none';
+  if(!code){errEl.textContent='Bitte Einladungscode eingeben.';errEl.style.display='block';return;}
+  const team=TEAMS.find(t=>t.code&&t.code.toUpperCase()===code);
+  if(!team){errEl.textContent='Ungültiger Einladungscode. Bitte frag deinen Dozenten oder Team-Gründer.';errEl.style.display='block';return;}
+  const game=GAMES.find(g=>g.id===team.gameId);
+  if(!game||game.status==='closed'){errEl.textContent='Dieses Spiel ist nicht mehr aktiv.';errEl.style.display='block';return;}
+  _regInviteTeam=team; _regInviteGame=game; _regSelectedRole=null;
+  const prev=document.getElementById('regInvitePreview');
+  prev.innerHTML='<strong>'+team.logo+' '+team.name+'</strong> &middot; '+game.name;
+  prev.style.display='block';
+  document.getElementById('regInviteStep').style.display='none';
+  buildRegRoleGrid(team,game);
+  document.getElementById('regProfileStep').style.display='block';
+  document.getElementById('regTeamBadge').innerHTML=team.logo+' <strong>'+team.name+'</strong> &mdash; '+game.name;
+  document.getElementById('regFirstName').value='';
+  document.getElementById('regLastName').value='';
+  document.getElementById('regEmail').value='';
+  document.getElementById('regMobile').value='';
+}
+function buildRegRoleGrid(team,game){
+  const ROLES=['CEO','CFO','CMO','COO','CTO'];
+  const takenRoles=MEMBERS.filter(m=>m.teamId===team.id).map(m=>m.role);
+  const grid=document.getElementById('regRoleGrid');
+  grid.innerHTML=ROLES.map(r=>{
+    const taken=takenRoles.filter(x=>x===r).length;
+    const maxSlots=r==='CEO'?1:2;
+    const available=taken<maxSlots;
+    return '<div onclick="selectRegRole(this,\''+r+'\')" data-role="'+r+'" style="border:2px solid '+(available?'#E0E7F0':'#F0F0F0')+';border-radius:10px;padding:10px;text-align:center;cursor:'+(available?'pointer':'not-allowed')+';opacity:'+(available?'1':'.4')+';">'
+      +'<div style="font-size:20px;">'+(r==='CEO'?'👑':r==='CFO'?'💰':r==='CMO'?'📣':r==='COO'?'⚙️':'💻')+'</div>'
+      +'<div style="font-size:12px;font-weight:700;margin-top:4px;">'+r+'</div>'
+      +(available?'<div style="font-size:10px;color:#888;">verfügbar</div>':'<div style="font-size:10px;color:#c00;">besetzt</div>')
+    +'</div>';
+  }).join('');
+}
+function selectRegRole(el,role){
+  if(el.style.cursor==='not-allowed') return;
+  document.querySelectorAll('#regRoleGrid [data-role]').forEach(e=>e.style.border='2px solid #E0E7F0');
+  el.style.border='2px solid #2563EB';
+  _regSelectedRole=role;
+}
+function submitRegProfile(){
+  const errEl=document.getElementById('regProfileError');
+  errEl.style.display='none';
+  if(!_regSelectedRole){errEl.textContent='Bitte eine Rolle auswählen.';errEl.style.display='block';return;}
+  const fn=document.getElementById('regFirstName').value.trim();
+  const ln=document.getElementById('regLastName').value.trim();
+  const email=document.getElementById('regEmail').value.trim().toLowerCase();
+  if(!fn||!ln){errEl.textContent='Bitte Vor- und Nachname eingeben.';errEl.style.display='block';return;}
+  if(!email||!email.includes('@')){errEl.textContent='Bitte eine gültige E-Mail-Adresse eingeben.';errEl.style.display='block';return;}
+  if(MEMBERS.find(m=>m.email&&m.email.toLowerCase()===email)){errEl.textContent='Diese E-Mail-Adresse ist bereits registriert.';errEl.style.display='block';return;}
+  document.getElementById('regProfileStep').style.display='none';
+  document.getElementById('regPasswordStep').style.display='block';
+  document.getElementById('regPwdBadge').innerHTML=fn+' '+ln+' &middot; <strong>'+_regSelectedRole+'</strong> &mdash; '+_regInviteTeam.logo+' '+_regInviteTeam.name;
+  document.getElementById('regPwd1').value='';
+  document.getElementById('regPwd2').value='';
+}
+function submitRegPassword(){
+  const errEl=document.getElementById('regPwdError');
+  errEl.style.display='none';
+  const pwd1=document.getElementById('regPwd1').value;
+  const pwd2=document.getElementById('regPwd2').value;
+  if(!pwd1||pwd1.length<6){errEl.textContent='Passwort muss mindestens 6 Zeichen haben.';errEl.style.display='block';return;}
+  if(pwd1!==pwd2){errEl.textContent='Passwörter stimmen nicht überein.';errEl.style.display='block';return;}
+  const fn=document.getElementById('regFirstName').value.trim();
+  const ln=document.getElementById('regLastName').value.trim();
+  const email=document.getElementById('regEmail').value.trim().toLowerCase();
+  const mobile=document.getElementById('regMobile').value.trim();
+  const team=_regInviteTeam;
+  const mCount=MEMBERS.filter(m=>m.teamId===team.id).length;
+  const code=makeMemberCode(team,mCount);
+  const memberId=nextId(MEMBERS,'mb');
+  MEMBERS.push({id:memberId,teamId:team.id,name:fn+' '+ln,firstName:fn,lastName:ln,
+    email:email,mobile:mobile,role:_regSelectedRole,title:_regSelectedRole,bio:'',code:code,avatarDataUrl:null});
+  const pwdData=JSON.parse(localStorage.getItem('5euro_passwords')||'{}');
+  pwdData[code]=pwd1;
+  localStorage.setItem('5euro_passwords',JSON.stringify(pwdData));
+  const game=_regInviteGame;
+  rebuildCodes();saveData();
+  _regNewCode=code;
+  document.getElementById('regPasswordStep').style.display='none';
+  document.getElementById('regSuccessStep').style.display='block';
+  document.getElementById('regSuccessCode').textContent=code;
+  document.getElementById('regSuccessInfo').innerHTML='<b>Name:</b> '+fn+' '+ln+'<br><b>E-Mail:</b> '+email+'<br><b>Rolle:</b> '+_regSelectedRole+'<br><b>Team:</b> '+team.logo+' '+team.name+'<br><b>Spiel:</b> '+game.name;
+}
+function copyRegCode(){
+  const code=_regNewCode||document.getElementById('regSuccessCode')?.textContent;
+  if(code) navigator.clipboard?.writeText(code);
+  const el=document.getElementById('regSuccessCode');if(el){el.style.background='linear-gradient(135deg,#375623,#52873a)';setTimeout(()=>{el.style.background='linear-gradient(135deg,#1F3864,#2E75B6)';},800);}
+}
+function loginWithNewCode(){
+  const code=_regNewCode;
+  if(!code) return;
+  showLogin();
+  showLoginStep1();
+  document.getElementById('loginCode').value=code;
+  doLoginStep1();
+}
+// ── TEST MODE ────────────────────────────────────────────────────────────
+const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:2,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Prof. Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
+const TEST_PWDS={'TEST-CEO':'test','TEST-CFO':'test','TEST-CMO':'test','TEST-CEO2':'test','TEST-ADMIN':'test'};
+function loadTestData(){
+  window._testModeActive=true;
+  const orig=localStorage.getItem('5euro_tracker_v5');
+  window._testModeOrigData=orig;
+  localStorage.setItem('5euro_tracker_v5',JSON.stringify(TEST_DATA));
+  const origPwd=localStorage.getItem('5euro_passwords');
+  window._testModeOrigPwd=origPwd;
+  localStorage.setItem('5euro_passwords',JSON.stringify(TEST_PWDS));
+  loadData();
+  rebuildCodes();
+  const accounts=[{code:'TEST-CEO',label:'💡 Die Ideenschmiede',role:'CEO (Anna Müller)'},{code:'TEST-CFO',label:'💡 Die Ideenschmiede',role:'CFO (Ben Schneider)'},{code:'TEST-CMO',label:'💡 Die Ideenschmiede',role:'CMO (Lisa Weber)'},{code:'TEST-CEO2',label:'🌿 GreenWheels',role:'CEO (Tim Braun)'},{code:'TEST-ADMIN',label:'🏫 DHBW Stuttgart',role:'Admin (Prof. Dr. Neusser)'}];
+  document.getElementById('testAccountList').innerHTML=accounts.map(a=>'<button onclick="testLogin(\''+a.code+'\')" style="width:100%;text-align:left;background:white;border:2px solid #E0E7F0;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div><div style="font-size:13px;font-weight:700;color:#1e3a5f;">'+a.role+'</div><div style="font-size:11px;color:#888;">'+a.label+'</div></div><div style="margin-left:auto;font-size:11px;color:#2563EB;font-weight:700;">Einloggen →</div></button>').join('');
+  const existing=document.getElementById('testModeBanner');if(existing) existing.remove();
+  const banner=document.createElement('div');
+  banner.id='testModeBanner';
+  banner.className='test-mode-banner';
+  banner.innerHTML='🧪 TESTUMGEBUNG – Keine echten Daten werden gespeichert';
+  document.body.prepend(banner);
+}
+function testLogin(code){
+  finishLogin(code);
+  const banner=document.getElementById('testModeBanner');
+  if(banner) document.body.appendChild(banner);
+}
+function showTestMode(){
+  document.getElementById('loginMode').style.display='none';
+  document.getElementById('registerMode').style.display='none';
+  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='block';
+  loadTestData();
+}
+
 function showLogin(){
   document.getElementById('loginMode').style.display='block';
   document.getElementById('registerMode').style.display='none';
+  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='none';
+  showLoginModeSelect();
+}
+function showLoginModeSelect(){
+  ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){
+    const el=document.getElementById(id);if(el) el.style.display='none';
+  });
+  const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='block';
+  const banner=document.getElementById('testModeBanner');if(banner) banner.remove();
+  if(window._testModeActive){window._testModeActive=false;}
+}
+function showLoginStep1(){
+  const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='none';
+  document.getElementById('loginStep1').style.display='block';
+  setTimeout(()=>document.getElementById('loginCode')?.focus(),50);
 }
 function showRegister(){
   document.getElementById('loginMode').style.display='none';
@@ -1468,7 +1706,18 @@ function showLoginRolePreview(code){
   preview.innerHTML=displayText;
 }
 function doLoginStep1(){
-  const code=document.getElementById('loginCode').value.trim().toUpperCase();
+  let code=document.getElementById('loginCode').value.trim();
+  if(code.includes('@')){
+    const emailLower=code.toLowerCase();
+    const memberByEmail=MEMBERS.find(m=>m.email&&m.email.toLowerCase()===emailLower);
+    if(memberByEmail) code=memberByEmail.code;
+    else {
+      const err=document.getElementById('loginError');err.style.display='block';
+      setTimeout(()=>err.style.display='none',3000);return;
+    }
+  } else {
+    code=code.toUpperCase();
+  }
   const user=CODES[code];
   if(!user){
     const err=document.getElementById('loginError');err.style.display='block';
@@ -1519,10 +1768,31 @@ async function doSetFirstPassword(){
   finishLogin(_loginTempCode);
 }
 function skipPassword(){finishLogin(_loginTempCode);}
+function saveProfileAndLogin(){
+  const code=_profileLoginCode||_loginTempCode;
+  if(!code) return;
+  const mem=MEMBERS.find(m=>m.code===code);
+  if(mem){
+    const fn=document.getElementById('profileFirstName')?.value.trim();
+    const ln=document.getElementById('profileLastName')?.value.trim();
+    const email=document.getElementById('profileEmail')?.value.trim().toLowerCase();
+    const mobile=document.getElementById('profileMobile')?.value.trim();
+    if(fn) mem.firstName=fn;
+    if(ln) mem.lastName=ln;
+    if(fn&&ln) mem.name=fn+' '+ln;
+    if(email) mem.email=email;
+    if(mobile) mem.mobile=mobile;
+    saveData();
+  }
+  document.getElementById('loginStep4').style.display='none';
+  _profileLoginCode=null;
+  initApp();
+}
 function loginBack(){
   _loginTempCode='';
   document.getElementById('loginStep2').style.display='none';
   document.getElementById('loginStep3').style.display='none';
+  if(document.getElementById('loginStep4')) document.getElementById('loginStep4').style.display='none';
   document.getElementById('loginStep1').style.display='block';
 }
 function finishLogin(code){
@@ -1531,10 +1801,24 @@ function finishLogin(code){
   const lang=(member&&member.lang)?member.lang:_loginLang||'de';
   state.lang=lang;
   state.currentUser={...user,code};
+  logEvent('login',{role:user.role});
+  if(user.role==='member'||user.memberId){
+    const mem=MEMBERS.find(m=>m.id===user.memberId||m.code===code);
+    if(mem&&(!mem.email||!mem.firstName)){
+      _profileLoginCode=code;
+      document.getElementById('loginStep2').style.display='none';
+      document.getElementById('loginStep3').style.display='none';
+      document.getElementById('loginStep4').style.display='block';
+      if(mem.firstName) document.getElementById('profileFirstName').value=mem.firstName;
+      if(mem.lastName) document.getElementById('profileLastName').value=mem.lastName;
+      if(mem.email) document.getElementById('profileEmail').value=mem.email;
+      if(mem.mobile) document.getElementById('profileMobile').value=mem.mobile;
+      return;
+    }
+  }
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appShell').style.display='block';
   initApp();
-  logEvent('login', {lang: state.lang});
   if(state.lang==='en') setTimeout(applyLang,150);
 }
 
@@ -1546,8 +1830,9 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginCode').value='';
   // Reset to step 1 (code entry), hide password/setup steps
-  ['loginStep2','loginStep3'].forEach(function(id){const el=document.getElementById(id);if(el)el.style.display='none';});
-  const step1=document.getElementById('loginStep1');if(step1) step1.style.display='block';
+  ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){const el=document.getElementById(id);if(el)el.style.display='none';});
+  const step1=document.getElementById('loginStep1');if(step1) step1.style.display='none';
+  const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='block';
   const loginPwd=document.getElementById('loginPwd');if(loginPwd) loginPwd.value='';
   const loginNewPwd=document.getElementById('loginNewPwd');if(loginNewPwd) loginNewPwd.value='';
   const loginNewPwd2=document.getElementById('loginNewPwd2');if(loginNewPwd2) loginNewPwd2.value='';
@@ -1713,8 +1998,8 @@ function renderDokumente(){
           +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.name+'</div>'
           +(p.uploadedAt?'<div style="font-size:11px;color:var(--gray-mid);">'+new Date(p.uploadedAt).toLocaleDateString('de-DE')+'</div>':'')
           +'</div>'
-          +'<button class="btn btn-outline btn-xs" onclick="openPdfById(\''+game.id+'\',\''+p.id+'\')">&#128065;</button>'
-          +'<button class="btn btn-danger btn-xs" onclick="removeGamePdfById(\''+game.id+'\',\''+p.id+'\')">&#10005;</button>'
+          +'<button class="btn btn-outline btn-xs" onclick=\"openPdfById(\''+game.id+'\',\''+p.id+'\')">&#128065;</button>'
+          +'<button class="btn btn-danger btn-xs" onclick=\"removeGamePdfById(\''+game.id+'\',\''+p.id+'\')">&#10005;</button>'
           +'</div>';}).join('')+'</div>')
     +'<div class="form-group"><label class="form-label">PDF hinzufuegen (Mehrfachauswahl moeglich)</label>'
     +'<input type="file" class="form-control" id="gamePdfFile" accept=".pdf" multiple onchange="uploadGamePdf(\''+game.id+'\',this)"></div>'
@@ -1728,7 +2013,10 @@ function renderDokumente(){
     +'<div style="margin:12px 0;"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;">'
     +'<input type="checkbox" id="gameIsLive" '+(game.isLive?'checked':'')+' style="width:18px;height:18px;">'
     +'<span><strong>&#128994; Spiel ist LIVE / aktiv</strong> &mdash; Ticker zeigt gr&uuml;nes LIVE-Symbol</span></label></div>'
-    +'<button class="btn btn-primary btn-sm" onclick="saveGameSettings(\''+game.id+'\')">Speichern</button></div></div>'
+    +'<button class="btn btn-primary btn-sm" onclick=\"saveGameSettings(\''+game.id+'\')">Speichern</button>'
+    +'&nbsp;&nbsp;<button class="btn btn-secondary btn-sm" onclick=\"closeGame(\''+game.id+'\') " style="background:var(--orange)!important;color:white!important;" title="Spiel abschließen – keine neuen Buchungen mehr möglich">🔒 Spiel abschließen</button>'
+    +(game.status==='closed'?'<span class="tag" style="background:#fee2e2;color:#c00;margin-left:8px;">🔒 ABGESCHLOSSEN</span>':'')
+    +'</div></div>'
     +'<div id="adminFaqSection"></div>';
   setTimeout(function(){renderAdminFaq(effectiveGameId);},100);
 }
@@ -1748,7 +2036,7 @@ function renderAdminFaq(gameId){
     +game.faqs.map(function(f){return '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;background:var(--bg-light);padding:10px;border-radius:var(--radius);">'
       +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;margin-bottom:3px;">'+f.question+'</div>'
       +'<div style="font-size:12px;color:var(--gray-mid);">'+f.answer+'</div></div>'
-      +'<button class="btn btn-danger btn-xs" onclick="removeGameFaq(\''+gameId+'\',\''+f.id+'\')">&#10005;</button>'
+      +'<button class="btn btn-danger btn-xs" onclick=\"removeGameFaq(\''+gameId+'\',\''+f.id+'\')">&#10005;</button>'
       +'</div>';}).join('')
     +'</div>'
     +'<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">'
@@ -1756,7 +2044,7 @@ function renderAdminFaq(gameId){
     +'<input class="form-control" id="faqNewQ" placeholder="z.B. Wie funktioniert die Abrechnung?"></div>'
     +'<div class="form-group"><label class="form-label">Antwort</label>'
     +'<textarea class="form-control" id="faqNewA" rows="2" placeholder="Antwort..."></textarea></div>'
-    +'<button class="btn btn-primary btn-sm" onclick="addGameFaq(\''+gameId+'\')">&#10133; Frage hinzufügen</button>'
+    +'<button class="btn btn-primary btn-sm" onclick=\"addGameFaq(\''+gameId+'\')">&#10133; Frage hinzufügen</button>'
     +'</div></div></div>';
 }
 function addGameFaq(gameId){
@@ -1851,6 +2139,38 @@ function openGamePdf(pdfId){
   logEvent('pdf_view',{name});
 }
 
+function closeGame(gameId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game) return;
+  if(game.status==='closed'){showToast('Spiel ist bereits abgeschlossen.','info');return;}
+  if(!confirm('Spiel "'+game.name+'" wirklich abschließen? Danach können keine neuen Buchungen oder Berichte mehr eingereicht werden.')) return;
+  game.status='closed';
+  saveData();
+  showToast('🔒 Spiel abgeschlossen.','success');
+  if(state.currentUser?.role==='admin') navigateTo('admin');
+  else renderSuperPanel();
+}
+function deleteGame(gameId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game) return;
+  if(!confirm('Spiel "'+game.name+'" und ALLE zugehörigen Daten (Teams, Mitglieder, Buchungen, Berichte) endgültig löschen? Diese Aktion kann NICHT rückgängig gemacht werden!')) return;
+  if(!confirm('Wirklich? Dies löscht alle Daten des Spiels unwiderruflich.')) return;
+  const tids=TEAMS.filter(t=>t.gameId===gameId).map(t=>t.id);
+  const mids=MEMBERS.filter(m=>tids.includes(m.teamId)).map(m=>m.id);
+  function filterOut(arr,key,ids){const idx=arr.findIndex(x=>ids.includes(x[key]));while(idx>=0){arr.splice(arr.findIndex(x=>ids.includes(x[key])),1);}
+    let i=arr.length;while(i--){if(ids.includes(arr[i][key]))arr.splice(i,1);}}
+  filterOut(TRANSACTIONS,'teamId',tids);
+  filterOut(BLOGS,'teamId',tids);
+  filterOut(REFLECTIONS,'teamId',tids);
+  filterOut(REFLECTIONS,'memberId',mids);
+  filterOut(MEMBERS,'teamId',tids);
+  filterOut(TEAMS,'gameId',[gameId]);
+  filterOut(ADMINS,'gameId',[gameId]);
+  const gi=GAMES.findIndex(g=>g.id===gameId);if(gi>=0) GAMES.splice(gi,1);
+  rebuildCodes();saveData();
+  showToast('🗑️ Spiel gelöscht.','success');
+  renderSuperPanel();
+}
 function saveGameSettings(gameId){
   const game=GAMES.find(g=>g.id===gameId);
   if(!game) return;
@@ -1904,7 +2224,7 @@ async function sendAdminMessage(){
   const statusEl=document.getElementById('msgStatus');
   statusEl.innerHTML='<div class="info-box blue">...gesendet</div>';
   try{
-    const resp=await fetch(CONFIG.FEEDBACK_ENDPOINT,{method:'POST',body:JSON.stringify({type:'admin_message',from:u.name||u.code,noreplyDomain:game&&game.noreplyDomain?game.noreplyDomain:'5euro-business.de',gameName:game?game.name:'5-Euro-Business',subject,body,recipients})});
+    const resp=await fetch(CONFIG.FEEDBACK_ENDPOINT,{method:'POST',body:JSON.stringify({type:'admin_message',from:u.name||u.code,noreplyDomain:game&&game.noreplyDomain?game.noreplyDomain:'venturelab.dhbw.de',gameName:game?game.name:'VentureLab',subject,body,recipients})});
     const result=await resp.json();
     if(result.success){statusEl.innerHTML='<div class="info-box green">OK: '+recipients.length+' gesendet</div>';logEvent('admin_message_sent',{gameId:effectiveGameId,count:recipients.length});document.getElementById('msgSubject').value='';document.getElementById('msgBody').value='';}
     else {statusEl.innerHTML='<div class="info-box red">Fehler: '+(result.error||'Unbekannt')+'</div>';}
@@ -1914,7 +2234,7 @@ async function sendAdminMessage(){
 function buildTicker(){
   if(TEAMS.length===0){
     const tt=document.getElementById('tickerTrack');
-    if(tt) tt.innerHTML='<span>Willkommen beim 5-Euro-Business Tracker 🎓</span><span>Registriere dein Team um loszulegen 🚀</span>';
+    if(tt) tt.innerHTML='<span>Willkommen beim VentureLab Tracker 🎓</span><span>Registriere dein Team um loszulegen 🚀</span>';
     return;
   }
   const track=document.getElementById('tickerTrack');
@@ -2354,7 +2674,7 @@ function renderMyBlogs(team){
         <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
       </div>
       <p style="font-size:12px;color:var(--gray-mid);">${(b.body||'').substring(0,90)}${(b.body||'').length>90?'...':''}</p>
-      ${b.status==='draft'?'<button class="btn btn-outline btn-xs" onclick="openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
+      ${b.status==='draft'?'<button class="btn btn-outline btn-xs" onclick=\"openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
     </div>
   </div>`).join('');
 }
@@ -2680,7 +3000,7 @@ function renderFeedback(){
           +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+p.name+'</div>'
           +(p.uploadedAt?'<div style="font-size:11px;color:var(--gray-mid);">'+new Date(p.uploadedAt).toLocaleDateString('de-DE')+'</div>':'')
           +'</div>'
-          +'<button class="btn btn-primary btn-sm" onclick="openGamePdf(\''+p.id+'\')">&#128065; &#214;ffnen</button>'
+          +'<button class="btn btn-primary btn-sm" onclick=\"openGamePdf(\''+p.id+'\')">&#128065; &#214;ffnen</button>'
           +'</div></div>';
       }).join('');
   },50);
@@ -2921,13 +3241,19 @@ function renderSuperPage(){
   document.getElementById('superGamesGrid').innerHTML=GAMES.map(game=>`<div class="game-card">
     <div class="game-card-header"><h3>${game.name}</h3><div class="game-meta">${game.uni} · ${fmtDate(game.start)} – ${fmtDate(game.end)}</div></div>
     <div class="game-card-body">
-      <div class="game-badges"><span class="game-badge ${game.status}">${game.status==='active'?'🟢 Aktiv':'🟡 Setup'}</span><span class="game-badge ${game.mode==='multi'?'multi':'active'}">${game.mode==='multi'?'🌐 Multi':'🏫 Intern'}</span></div>
+      <div class="game-badges"><span class="game-badge ${game.status}">${game.status==='active'?'🟢 Aktiv':game.status==='closed'?'🔒 Abgeschlossen':'🟡 Setup'}</span><span class="game-badge ${game.mode==='multi'?'multi':'active'}">${game.mode==='multi'?'🌐 Multi':'🏫 Intern'}</span></div>
       <div class="game-stat-row">
         <div class="game-stat"><div class="game-stat-val">${game.teamCount}</div><div class="game-stat-lbl">Teams</div></div>
         <div class="game-stat"><div class="game-stat-val">${fmtEur(game.capital)}</div><div class="game-stat-lbl">Start</div></div>
       </div>
     </div>
-    <div class="game-card-footer"><button class="btn btn-primary btn-sm" onclick="manageGameAsSuperAdmin('${game.id}')">⚙️ Verwalten</button></div>
+    <div class="game-card-footer" style="gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="manageGameAsSuperAdmin('${game.id}')">⚙️ Verwalten</button>
+      ${game.status==='closed'
+        ? '<span class="tag" style="background:#fee2e2;color:#c00;padding:4px 8px;">🔒 Abgeschlossen</span>'
+        : `<button class="btn btn-secondary btn-sm" onclick="closeGame('${game.id}')" style="background:var(--orange)!important;color:white!important;">🔒 Abschließen</button>`}
+      <button class="btn btn-danger btn-sm" onclick="deleteGame('${game.id}')" style="margin-left:auto;">🗑️ Löschen</button>
+    </div>
   </div>`).join('');
   // Admins
   renderSuperAdminList();
@@ -2973,7 +3299,7 @@ function renderKonzept(){
 
     <div class="concept-section">
       <h2>📦 Version 1.0 — Feature-Set</h2>
-      <p>Version 1.0 ist der erste vollständige, produktionsreife Release der 5-Euro-Business Plattform für den Einsatz in Lehrveranstaltungen.</p>
+      <p>Version 1.0 ist der erste vollständige, produktionsreife Release der VentureLab Plattform für den Einsatz in Lehrveranstaltungen.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
         ${[
           ['🔐 Auth & Rollen','4-stufiges Code-System (Superadmin / Admin / Team / Member), SHA-256 Passwörter, First-Login Setup, Passwort ändern'],
@@ -3625,7 +3951,7 @@ function openCodeExport(){
 function copyAllCodes(){
   const u = state.currentUser;
   const gameTeams = TEAMS.filter(t=>t.gameId===(u.gameId||t.gameId));
-  let text = '=== ZUGANGSCODES 5-Euro-Business Tracker ===\n\n';
+  let text = '=== ZUGANGSCODES VentureLab Tracker ===\n\n';
   text += 'TEAM-CODES (für ganzes Team):\n';
   gameTeams.forEach(t=>{ text += `  ${t.name.padEnd(20)} ${t.code}\n`; });
   text += '\nMITGLIEDS-CODES (individuell):\n';
@@ -3657,7 +3983,8 @@ function prepareNewTeamModal(){
   document.getElementById('ntName').value='';
   document.getElementById('ntBiz').value='';
   document.getElementById('ntSlogan').value='';
-  document.getElementById('ntMembers').value='';
+  if(document.getElementById('ntApproach')) document.getElementById('ntApproach').value='';
+  if(document.getElementById('ntStrategy')) document.getElementById('ntStrategy').value='';
   const u = state.currentUser;
   const game = GAMES.find(g=>g.id===u.gameId)||GAMES[0];
   if(game && document.getElementById('ntGameInfo')){
@@ -3721,6 +4048,8 @@ function createTeam(){
     id:teamId, name,
     biz: document.getElementById('ntBiz').value.trim()||'Unternehmensidee folgt',
     slogan: document.getElementById('ntSlogan').value.trim(),
+    approach: document.getElementById('ntApproach')?.value.trim()||'',
+    strategy: document.getElementById('ntStrategy')?.value.trim()||'',
     color: COLORS[idx], logo: EMOJIS[idx], logoDataUrl:null,
     gameId, code, revenue:0, expenses:0, transactions:0, weekGoal:50,
     currentWeek:1, weekStatus:'open', mvps:[], mvpOverride:{}, desc:''
