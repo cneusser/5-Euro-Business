@@ -558,9 +558,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     </div>
     <div style="margin-bottom:14px;">
      <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:6px;">TEAM-EMOJI</label>
-     <div id="setupEmojiPicker" style="display:flex;flex-wrap:wrap;gap:6px;">
-      ${['🚀','💡','🔧','🌱','⚡','🎯','💎','🔥','🌊','🦁','🐉','🦅','🌟','🎪','🏆'].map(e=>`<span onclick="selectSetupEmoji(this,'${e}')" data-emoji="${e}" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent;line-height:1;">${e}</span>`).join('')}
-     </div>
+     <div id="setupEmojiPicker" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
     <div id="regSetupError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
     <button onclick="submitTeamSetup()" class="login-btn" style="margin-bottom:10px;">Weiter → Mein Account</button>
@@ -1304,6 +1302,62 @@ function clearAllData(){
 // Beim Start: gespeicherte Daten laden
 const dataLoaded = loadData();
 
+// Initialize default setup codes if app is empty (for professor to use)
+if(!dataLoaded){
+  // Create a default game with setup codes when app starts for first time
+  const defaultGameId='g-default';
+  const defaultUni={id:'uni-default',name:'Deine Universität',short:'UNIV',slug:'univ',city:'',adminCount:1,gameCount:1};
+  UNIVERSITIES.push(defaultUni);
+
+  const defaultGame={
+    id:defaultGameId,name:'VentureLab Tracker Spielsession',universityId:'uni-default',uni:'UNIV',
+    status:'active',isLive:true,currentWeek:1,teamCount:12,start:new Date().toISOString().split('T')[0],
+    end:new Date(Date.now()+180*24*60*60*1000).toISOString().split('T')[0],
+    mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,
+    adminEmail:'',faqs:[],faqPdfs:[]
+  };
+  GAMES.push(defaultGame);
+
+  // Create 12 pending team slots with setup codes (SETUP-DFLT-001 through SETUP-DFLT-012)
+  for(let i=0;i<12;i++){
+    const setupCode='SETUP-DFLT-'+String(i+1).padStart(3,'0');
+    const EMOJIS=['🚀','💡','🔧','🌱','⚡','🎯','💎','🔥','🌊','🐯','🐉','🦅'];
+    const COLORS=['#2E75B6','#375623','#C55A11','#5B2C8D','#C00000','#1F6B75','#7B3F00','#2D6A4F','#8B4513','#006064','#2c5f7c','#5a3a7c'];
+    const pendingTeam={
+      id:'t-pending-'+(i+1),
+      gameId:defaultGameId,
+      name:'',
+      slogan:'',
+      biz:'',
+      approach:'',
+      strategy:'',
+      setupCode:setupCode,
+      code:'',
+      status:'pending',
+      logo:EMOJIS[i%EMOJIS.length],
+      color:COLORS[i%COLORS.length],
+      logoDataUrl:null,
+      revenue:0,
+      expenses:0,
+      capital:0,
+      transactions:0,
+      currentWeek:1,
+      weekStatus:'open',
+      mvps:[],
+      mvpOverride:{},
+      desc:'',
+      email:'',
+      notif:{blog:true,week:true,reflect:true},
+      lang:'de',
+      weekGoal:50
+    };
+    TEAMS.push(pendingTeam);
+  }
+
+  saveData();
+  rebuildCodes();
+}
+
 // ════════════════════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════════════════════
@@ -1346,6 +1400,32 @@ let _regInviteGame=null;
 let _regSelectedRole=null;
 let _regNewCode=null;
 let _profileLoginCode=null;
+
+function initEmojiPicker(){
+  const emojis=['🚀','💡','🔧','🌱','⚡','🎯','💎','🔥','🌊','🦁','🐉','🦅','🌟','🎪','🏆'];
+  const container=document.getElementById('setupEmojiPicker');
+  if(!container) return;
+  container.innerHTML='';
+  emojis.forEach(emoji=>{
+    const span=document.createElement('span');
+    span.onclick=function(){selectSetupEmoji(this,emoji);};
+    span.dataset.emoji=emoji;
+    span.style.fontSize='24px';
+    span.style.cursor='pointer';
+    span.style.padding='4px';
+    span.style.borderRadius='8px';
+    span.style.border='2px solid transparent';
+    span.style.lineHeight='1';
+    span.textContent=emoji;
+    container.appendChild(span);
+  });
+  // Set default selection
+  const selected=window._setupSelectedEmoji||'🚀';
+  document.querySelectorAll('#setupEmojiPicker [data-emoji]').forEach(e=>{
+    e.style.border=e.dataset.emoji===selected?'2px solid #2563EB':'2px solid transparent';
+  });
+}
+
 function selectSetupEmoji(el,emoji){
   window._setupSelectedEmoji=emoji;
   document.querySelectorAll('#setupEmojiPicker [data-emoji]').forEach(e=>{
@@ -1407,9 +1487,7 @@ function checkInviteCode(){
     document.getElementById('setupTeamApproach').value='';
     document.getElementById('setupTeamStrategy').value='';
     window._setupSelectedEmoji=pendingTeam.logo||'🚀';
-    document.querySelectorAll('#setupEmojiPicker [data-emoji]').forEach(el=>{
-      el.style.border=el.dataset.emoji===window._setupSelectedEmoji?'2px solid #2563EB':'2px solid transparent';
-    });
+    initEmojiPicker();
     return;
   }
 
