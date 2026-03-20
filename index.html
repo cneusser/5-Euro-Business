@@ -456,7 +456,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.6.2)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.7.1)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -687,7 +687,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.6.2</div>
+ <div class="version-footer" id="versionFooter">v0.7.1</div>
 </div>
 
 <!-- APP -->
@@ -842,6 +842,16 @@ textarea.form-control{resize:vertical;min-height:70px;}
    </div>
   </div>
 
+  <!-- PAGE: Kontakt -->
+  <div class="page" id="page-kontakt">
+   <div class="container">
+    <div class="section-header">
+     <div class="section-title">📬 Kontakt & Verzeichnis</div>
+    </div>
+    <div id="kontaktContent"></div>
+   </div>
+  </div>
+
   <!-- PAGE: Transaktionen -->
   <div class="page" id="page-tx">
    <div class="container">
@@ -920,7 +930,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
    <div class="container">
     <div class="superadmin-hero">
      <div><h2>&#128081; Superadmin-Panel</h2><p>Plattform-Verwaltung &#183; Alle Spiele &#183; Alle Hochschulen</p></div>
-     <div style="display:flex;align-items:center;gap:10px;"><button class="btn btn-outline btn-sm" style="color:white;border-color:rgba(255,255,255,.5);" onclick="openModal('modalEditSuperProfile')">&#9998; Mein Profil</button><div style="font-size:40px;opacity:.4;">&#127760;</div></div>
+     <div style="display:flex;align-items:center;gap:10px;"><button class="btn btn-outline btn-sm" style="color:white;border-color:rgba(255,255,255,.5);" onclick="openEditSuperProfile()">&#9998; Mein Profil</button><div style="font-size:40px;opacity:.4;">&#127760;</div></div>
     </div>
     <div class="admin-tab-bar">
      <button class="admin-tab active" onclick="switchSuperTab('overview')">&#128202; &#220;bersicht</button>
@@ -1264,6 +1274,9 @@ let BLOGS = [];
 
 let REFLECTIONS = [];
 
+// MESSAGES: direct messaging system
+let MESSAGES = [];
+
 // FEEDBACK submissions
 let FEEDBACKS = [];
 let SUPERADMINS = []; // zusätzliche Superadmins
@@ -1278,9 +1291,11 @@ let PASSWORDS  = {}; // {code: sha256hash} – shared via Firebase
 let CODES = {};
 function rebuildCodes(){
   CODES = {};
-  // Read persisted Superadmin profile from localStorage (set by saveSuperProfile)
-  const _sp=(()=>{try{return JSON.parse(localStorage.getItem('5euro_superprofile')||'null');}catch(e){return null;}})();
-  CODES['SUPER-NEUSS'] = {role:'superadmin', name:(_sp&&_sp.name)||'Dr. Christian Neusser', email:(_sp&&_sp.email)||'christian.neusser@me.com', label:'Superadmin'};
+  // Read Superadmin profile: Firebase (PASSWORDS) → localStorage → default
+  const _spLs=(()=>{try{return JSON.parse(localStorage.getItem('5euro_superprofile')||'null');}catch(e){return null;}})();
+  const _spName  = PASSWORDS['__sp_name']  || (_spLs&&_spLs.name)  || 'Dr. Christian Neusser';
+  const _spEmail = PASSWORDS['__sp_email'] || (_spLs&&_spLs.email) || 'christian.neusser@me.com';
+  CODES['SUPER-NEUSS'] = {role:'superadmin', name:_spName, email:_spEmail, label:'Superadmin'};
   SUPERADMINS.forEach(sa => {
     if(sa.code) CODES[sa.code] = {role:'superadmin', superAdminId:sa.id, name:sa.name, email:sa.email||'', label:'Superadmin'};
   });
@@ -1330,7 +1345,8 @@ function _replaceArrays(d){
   replace(TEAMS,d.TEAMS);              replace(MEMBERS,d.MEMBERS);
   replace(BLOGS,d.BLOGS);              replace(TRANSACTIONS,d.TRANSACTIONS);
   replace(REFLECTIONS,d.REFLECTIONS);  replace(ADMINS,d.ADMINS);
-  replace(FEEDBACKS,d.FEEDBACKS||[]);  replace(SUPERADMINS,d.SUPERADMINS||[]);
+  replace(MESSAGES,d.MESSAGES||[]);    replace(FEEDBACKS,d.FEEDBACKS||[]);
+  replace(SUPERADMINS,d.SUPERADMINS||[]);
   replace(FAQ_DOCS,d.FAQ_DOCS||[]);    replace(ANNOUNCEMENTS,d.ANNOUNCEMENTS||[]);
   // Merge PASSWORDS dict
   if(d.PASSWORDS && typeof d.PASSWORDS==='object') Object.assign(PASSWORDS, d.PASSWORDS);
@@ -1359,7 +1375,7 @@ function _postLoadCalc(){
 }
 
 function _buildPayload(){
-  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
+  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
 }
 
 // ── saveData (localStorage + Firebase async) ─────────────────────────
@@ -1529,7 +1545,7 @@ function resetToDemo(){
 function clearAllData(){
   if(!confirm('ALLE Daten löschen und Tracker leeren? Nicht rückgängig zu machen!')) return;
   // Leere Semester-Konfiguration behalten, nur operative Daten löschen
-  BLOGS.length=0; TRANSACTIONS.length=0; REFLECTIONS.length=0; FEEDBACKS.length=0;
+  BLOGS.length=0; TRANSACTIONS.length=0; REFLECTIONS.length=0; MESSAGES.length=0; FEEDBACKS.length=0;
   TEAMS.forEach(t=>{t.revenue=0;t.expenses=0;t.transactions=0;t.currentWeek=1;t.weekStatus='open';t.mvps=[];t.mvpOverride={};});
   saveData(); location.reload();
 }
@@ -2088,7 +2104,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.6.2)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.7.1)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2098,7 +2114,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.6.2)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.7.1)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -2295,11 +2311,14 @@ function buildNavigation(){
   const langBtn=document.getElementById('langToggleBtn');
   if(langBtn) langBtn.textContent=state.lang==='en'?'EN':'DE';
   const pages=[];
+  const unread = MESSAGES.filter(m => m.toId === (u.memberId||u.code) && !m.read).length;
+  const kontaktLabel = unread > 0 ? `📬 Kontakt (${unread})` : '📬 Kontakt';
   if(u.role==='team'){
     pages.push({id:'dashboard',label:'🏆 Ranking'});
     pages.push({id:'myteam',  label:'👤 Mein Team'});
     pages.push({id:'blog',    label:'📖 Blog'});
     pages.push({id:'teams',   label:'👥 Teams'});
+    pages.push({id:'kontakt',  label:kontaktLabel});
     pages.push({id:'feedback',label:'💬 Feedback'});
     pages.push({id:'konzept',  label:'📐 Konzept'});
   } else if(u.role==='member'){
@@ -2310,6 +2329,7 @@ function buildNavigation(){
     // All members get Buchung nav item
     pages.push({id:'__booking',label:'💰 Buchung'});
     pages.push({id:'blog',       label:'📖 Blog'});
+    pages.push({id:'kontakt',    label:kontaktLabel});
     pages.push({id:'feedback',   label:'💬 Feedback'});
     pages.push({id:'konzept',    label:'📐 Konzept'});
   } else if(u.role==='admin'){
@@ -2317,6 +2337,7 @@ function buildNavigation(){
     pages.push({id:'teams',    label:'👥 Teams'});
     pages.push({id:'tx',       label:'💳 Buchungen'});
     pages.push({id:'blog',     label:'📖 Blog'});
+    pages.push({id:'kontakt',  label:kontaktLabel});
     pages.push({id:'admin',    label:'⚙️ Admin',cls:'admin-nav'});
     pages.push({id:'feedback', label:'💬 Feedback'});
     pages.push({id:'konzept',  label:'📐 Konzept'});
@@ -2325,6 +2346,7 @@ function buildNavigation(){
     pages.push({id:'teams',      label:'👥 Teams'});
     pages.push({id:'tx',         label:'💳 Buchungen'});
     pages.push({id:'blog',       label:'📖 Blog'});
+    pages.push({id:'kontakt',    label:kontaktLabel});
     pages.push({id:'admin',      label:'⚙️ Admin',cls:'admin-nav'});
     pages.push({id:'superadmin', label:'👑 Super',cls:'superadmin-nav'});
     pages.push({id:'feedback',   label:'💬 Feedback'});
@@ -2651,19 +2673,48 @@ async function sendAdminMessage(){
   const recipientVal=document.getElementById('msgRecipient').value;
   if(!subject||!body){showToast('Betreff und Nachricht fehlen','error');return;}
   const teams=TEAMS.filter(t=>t.gameId===effectiveGameId);
-  let recipients=[];
-  if(recipientVal==='all'){recipients=MEMBERS.filter(m=>teams.some(t=>t.id===m.teamId)&&m.email).map(m=>m.email);}
-  else if(recipientVal.startsWith('team:')){const tid=recipientVal.split(':')[1];recipients=MEMBERS.filter(m=>m.teamId===tid&&m.email).map(m=>m.email);}
-  else if(recipientVal.startsWith('member:')){const mid=recipientVal.split(':')[1];const mem=MEMBERS.find(x=>x.id===mid);if(mem&&mem.email) recipients=[mem.email];}
-  if(recipients.length===0){showToast('Keine E-Mail-Adressen','error');return;}
+  // Resolve recipient member IDs
+  let targetMembers=[];
+  if(recipientVal==='all'){targetMembers=MEMBERS.filter(m=>teams.some(t=>t.id===m.teamId));}
+  else if(recipientVal.startsWith('team:')){const tid=recipientVal.split(':')[1];targetMembers=MEMBERS.filter(m=>m.teamId===tid);}
+  else if(recipientVal.startsWith('member:')){const mid=recipientVal.split(':')[1];const mem=MEMBERS.find(x=>x.id===mid);if(mem) targetMembers=[mem];}
+  if(targetMembers.length===0){showToast('Keine Empfänger gefunden','error');return;}
   const statusEl=document.getElementById('msgStatus');
-  statusEl.innerHTML='<div class="info-box blue">...gesendet</div>';
-  try{
-    const resp=await fetch(CONFIG.FEEDBACK_ENDPOINT,{method:'POST',body:JSON.stringify({type:'admin_message',from:u.name||u.code,noreplyDomain:game&&game.noreplyDomain?game.noreplyDomain:'venturelab.dhbw.de',gameName:game?game.name:'VentureLab',subject,body,recipients})});
-    const result=await resp.json();
-    if(result.success){statusEl.innerHTML='<div class="info-box green">OK: '+recipients.length+' gesendet</div>';logEvent('admin_message_sent',{gameId:effectiveGameId,count:recipients.length});document.getElementById('msgSubject').value='';document.getElementById('msgBody').value='';}
-    else {statusEl.innerHTML='<div class="info-box red">Fehler: '+(result.error||'Unbekannt')+'</div>';}
-  }catch(err){statusEl.innerHTML='<div class="info-box red">'+err.message+'</div>';}
+  statusEl.innerHTML='<div class="info-box blue">⏳ Wird gesendet...</div>';
+  const now=new Date().toISOString().split('T')[0];
+  const fromId=u.memberId||u.code;
+  const fromName=u.name||u.code;
+  // 1) Always save in-app messages (guaranteed to work)
+  targetMembers.forEach(mem=>{
+    MESSAGES.push({
+      id:'m'+Date.now()+Math.random().toString(36).substr(2,4),
+      fromId, fromName,
+      toId:mem.id||mem.code,
+      toName:mem.name||mem.email||'Unbekannt',
+      subject, body,
+      date:now,
+      read:false,
+      adminBroadcast:true
+    });
+  });
+  saveData();
+  logEvent('admin_message_sent',{gameId:effectiveGameId,count:targetMembers.length});
+  statusEl.innerHTML='<div class="info-box green">✅ Nachricht an '+targetMembers.length+' Empfänger gesendet</div>';
+  document.getElementById('msgSubject').value='';
+  document.getElementById('msgBody').value='';
+  buildNavigation();
+  // 2) Optionally try email as fire-and-forget (failure is silent)
+  const emailRecipients=targetMembers.filter(m=>m.email).map(m=>m.email);
+  if(emailRecipients.length>0 && CONFIG.FEEDBACK_ENDPOINT && !CONFIG.FEEDBACK_ENDPOINT.includes('DEINE')){
+    fetch(CONFIG.FEEDBACK_ENDPOINT,{method:'POST',body:JSON.stringify({
+      type:'admin_message',from:fromName,
+      noreplyDomain:game&&game.noreplyDomain?game.noreplyDomain:'venturelab.dhbw.de',
+      gameName:game?game.name:'VentureLab',subject,body,recipients:emailRecipients
+    })}).then(r=>r.json()).then(res=>{
+      if(res&&res.success) console.info('📧 E-Mail gesendet an',emailRecipients.length,'Empfänger');
+      else console.warn('📧 E-Mail-Versand Fehler:',res&&res.error);
+    }).catch(e=>console.warn('📧 E-Mail-Versand nicht möglich (kein Server):',e.message));
+  }
 }
 
 function buildTicker(){
@@ -2673,11 +2724,13 @@ function buildTicker(){
     return;
   }
   const track=document.getElementById('tickerTrack');
-  const items=[...TRANSACTIONS].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10).map(tx=>{
-    const team=TEAMS.find(t=>t.id===tx.teamId);
-    return `<span>${team?team.logo+' '+team.name:'?'}: ${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)} – ${tx.desc}</span>`;
-  }).join('');
-  track.innerHTML=items+items;
+  const items=[...TRANSACTIONS]
+    .filter(tx=>TEAMS.find(t=>t.id===tx.teamId)) // skip orphaned/undefined transactions
+    .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10).map(tx=>{
+      const team=TEAMS.find(t=>t.id===tx.teamId);
+      return `<span>${team.logo+' '+team.name}: ${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)} – ${tx.desc}</span>`;
+    }).join('');
+  track.innerHTML=(items||'<span>Noch keine Buchungen 🚀</span>')+items;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2693,7 +2746,7 @@ function navigateTo(pageId){
 function renderPage(p){
   ({dashboard:renderDashboard,myteam:renderMyTeam,profile:renderProfile,
     reflection:renderReflectionPage,teams:renderTeamsPage,blog:renderBlogPage,
-    tx:renderTxPage,feedback:renderFeedback,admin:renderAdminPage,
+    kontakt:renderKontaktPage,tx:renderTxPage,feedback:renderFeedback,admin:renderAdminPage,
     superadmin:renderSuperPage,konzept:renderKonzept})[p]?.();
   if(state.lang==='en') setTimeout(applyLang,80);
 }
@@ -2717,7 +2770,7 @@ function renderEmptyDashboard(){
   if(u.role==='superadmin'){
     html = `<div style="text-align:center;padding:60px 20px;">
       <div style="font-size:64px;margin-bottom:16px;">🎓</div>
-      <h2 style="font-size:22px;font-weight:800;color:var(--blue-dark);margin-bottom:8px;">Willkommen, Prof. Neusser!</h2>
+      <h2 style="font-size:22px;font-weight:800;color:var(--blue-dark);margin-bottom:8px;">Willkommen, ${state.currentUser?.name||'Superadmin'}!</h2>
       <p style="color:var(--gray-mid);max-width:400px;margin:0 auto 24px;">Der Tracker ist bereit. So startest du ein neues Semester:</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:700px;margin:0 auto 28px;text-align:left;">
         <div style="background:white;border-radius:12px;padding:16px;box-shadow:var(--shadow);">
@@ -3101,6 +3154,8 @@ function deleteTransaction(txId){
   }
   saveData();buildTicker();showToast('Buchung gelöscht','info');
   if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
+  else if(state.currentPage==='tx') renderTxPage();
+  else if(state.currentPage==='admin') renderAdminPage();
 }
 
 function renderMyBlogs(team){
@@ -3260,10 +3315,18 @@ function renderReflectionPage(){
   setTimeout(()=>document.querySelectorAll('.mood-btn').forEach(b=>{b.classList.toggle('selected',parseInt(b.dataset.val)===state.selectedMood);}),50);
   const el=document.getElementById('reflectionList');
   if(myRefs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><h3>Noch keine Reflexionen</h3><p>Klicke oben auf "Neue Reflexion".</p></div>';return;}
+  const myTeam=getMyTeam();
   el.innerHTML=myRefs.map(r=>{
     const moodEmoji=['','😩','😟','😐','😊','🚀'][r.mood];
+    const weekOpen = myTeam && myTeam.currentWeek===r.week && myTeam.weekStatus==='open';
     return `<div class="reflection-card">
-      <div class="reflection-header"><div><strong>Woche ${r.week}</strong> · ${fmtDate(r.date)}</div><div>${moodEmoji} ${r.mood}/5</div></div>
+      <div class="reflection-header">
+        <div><strong>Woche ${r.week}</strong> · ${fmtDate(r.date)}${r.updatedAt?` <span style="font-size:10px;color:var(--gray-mid);">(bearbeitet ${fmtDate(r.updatedAt)})</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span>${moodEmoji} ${r.mood}/5</span>
+          ${weekOpen?`<button class="btn btn-outline btn-xs" onclick="editReflection('${r.id}')" title="Bearbeiten solange Woche offen">✏️ Bearbeiten</button>`:'<span style="font-size:10px;color:var(--gray-mid);">🔒 Abgeschlossen</span>'}
+        </div>
+      </div>
       <div class="reflection-body">
         ${r.experience?`<div class="reflection-section"><div class="reflection-section-label">Erfahrungen</div><div class="reflection-text">${r.experience}</div></div>`:''}
         ${r.liked?`<div class="reflection-section"><div class="reflection-section-label">👍 Was war gut</div><div class="reflection-text">${r.liked}</div></div>`:''}
@@ -3521,6 +3584,127 @@ async function submitFeedback(){
 }
 
 // ════════════════════════════════════════════════════════════════════
+//  KONTAKT PAGE (Contact Directory & Messaging)
+// ════════════════════════════════════════════════════════════════════
+function renderKontaktPage(){
+  const u=state.currentUser;
+  const myId=u.memberId||u.code;
+  const myMember=MEMBERS.find(m=>m.id===myId);
+  const myGameId=u.gameId;
+
+  // Get all members from the same game
+  const gameMembers=MEMBERS.filter(m=>{
+    const mTeam=TEAMS.find(t=>t.id===m.teamId);
+    return mTeam&&mTeam.gameId===myGameId;
+  });
+
+  // Build member cards
+  const memberCards=gameMembers.map(member=>{
+    const team=TEAMS.find(t=>t.id===member.teamId);
+    const initials=member.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const teamColor=team?.color||'#999';
+    const email=member.email||'—';
+    return `<div class="card" style="padding:14px;text-align:center;">
+      <div style="width:50px;height:50px;border-radius:50%;background:${teamColor};color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;margin:0 auto 10px;">${initials}</div>
+      <div style="font-weight:700;font-size:14px;">${member.name}</div>
+      <div style="font-size:11px;color:var(--gray-mid);margin:4px 0;">${member.role||'Mitglied'}</div>
+      <div style="font-size:11px;color:var(--blue);margin:4px 0;">${team?.name||'—'}</div>
+      <div style="font-size:11px;color:var(--gray-mid);margin:8px 0;">${email}</div>
+      <button class="btn btn-primary btn-sm" onclick="openMessageModal('${member.id}','${member.name.replace(/'/g,"\\'")}')">💬 Nachricht</button>
+    </div>`;
+  }).join('');
+
+  // Get messages for current user
+  const myId_safe=myId.replace(/'/g,"\\'");
+  const inbox=MESSAGES.filter(m=>m.toId===myId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sent=MESSAGES.filter(m=>m.fromId===myId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const inboxHtml=inbox.length===0?'<div style="text-align:center;padding:20px;color:var(--gray-mid);">📭 Keine Nachrichten</div>':
+    inbox.map(msg=>`<div class="card" style="margin-bottom:10px;padding:12px;${msg.read?'':'background:var(--blue-lt);'} opacity:${msg.read?0.7:1}">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:${msg.read?'var(--gray-mid)':'var(--blue-dark)'}">${msg.fromName}</div>
+          ${msg.subject?'<div style="color:var(--gray-dark);margin:4px 0;font-size:12px;">'+msg.subject+'</div>':''}
+          <div style="color:var(--gray-mid);font-size:11px;margin:4px 0;">${msg.date}</div>
+          <div style="margin-top:8px;color:var(--gray-dark);font-size:13px;">${msg.body}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${!msg.read?'<button class="btn btn-xs" onclick="markMessageRead(\''+msg.id+'\')">✅</button>':''}
+          <button class="btn btn-danger btn-xs" onclick="deleteMessage(\''+msg.id+'\')">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const sentHtml=sent.length===0?'<div style="text-align:center;padding:20px;color:var(--gray-mid);">📤 Noch keine Nachrichten gesendet</div>':
+    sent.map(msg=>`<div class="card" style="margin-bottom:10px;padding:12px;opacity:0.7;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:var(--gray-mid);">An: ${msg.toName}</div>
+          ${msg.subject?'<div style="color:var(--gray-dark);margin:4px 0;font-size:12px;">'+msg.subject+'</div>':''}
+          <div style="color:var(--gray-mid);font-size:11px;margin:4px 0;">${msg.date}</div>
+          <div style="margin-top:8px;color:var(--gray-dark);font-size:13px;">${msg.body}</div>
+        </div>
+        <button class="btn btn-danger btn-xs" onclick="deleteMessage(\''+msg.id+'\')">🗑️</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('kontaktContent').innerHTML=`
+    <div style="margin-bottom:32px;">
+      <div class="section-header"><div class="section-title">👥 Team-Verzeichnis</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">${memberCards}</div>
+    </div>
+    <div style="margin-bottom:32px;">
+      <div class="section-header"><div class="section-title">📬 Posteingang</div></div>
+      ${inboxHtml}
+    </div>
+    <div>
+      <div class="section-header"><div class="section-title">📤 Gesendet</div></div>
+      ${sentHtml}
+    </div>
+  `;
+}
+
+function openMessageModal(toId,toName){
+  document.getElementById('dmMsgTo').value=toName;
+  document.getElementById('dmMsgToId').value=toId;
+  document.getElementById('dmMsgSubject').value='';
+  document.getElementById('dmMsgBody').value='';
+  openModal('modalSendMessage');
+}
+
+function sendMessage(){
+  const toId=document.getElementById('dmMsgToId').value;
+  const toName=document.getElementById('dmMsgTo').value;
+  const subject=document.getElementById('dmMsgSubject').value.trim();
+  const body=document.getElementById('dmMsgBody').value.trim();
+  if(!body){showToast('Bitte Nachricht eingeben','error');return;}
+  const u=state.currentUser;
+  MESSAGES.push({
+    id:'m'+Date.now(),
+    fromId:u.memberId||u.code,
+    fromName:u.name,
+    toId,toName,subject,body,
+    date:new Date().toISOString().split('T')[0],
+    read:false
+  });
+  saveData();
+  closeModal('modalSendMessage');
+  showToast('📬 Nachricht gesendet!','success');
+  renderKontaktPage();
+  buildNavigation();
+}
+
+function markMessageRead(id){
+  const msg=MESSAGES.find(m=>m.id===id);
+  if(msg){msg.read=true;saveData();renderKontaktPage();buildNavigation();}
+}
+
+function deleteMessage(id){
+  const idx=MESSAGES.findIndex(m=>m.id===id);
+  if(idx>=0){MESSAGES.splice(idx,1);saveData();renderKontaktPage();buildNavigation();}
+}
+
+// ════════════════════════════════════════════════════════════════════
 //  ADMIN PAGE
 // ════════════════════════════════════════════════════════════════════
 function renderAdminPage(){
@@ -3609,7 +3793,10 @@ function renderReflectionsAdmin(){
           <span style="margin-left:auto;font-size:12px;">${moodEmoji} ${r.mood}/5 · Woche ${r.week}</span></div>
           ${r.experience?`<div style="font-size:12px;color:var(--gray-dark);margin-bottom:4px;"><strong>Erfahrungen:</strong> ${r.experience}</div>`:''}
           ${r.liked?`<div style="font-size:12px;color:var(--green);margin-bottom:4px;">👍 ${r.liked}</div>`:''}
-          ${r.improved?`<div style="font-size:12px;color:var(--orange);">💡 ${r.improved}</div>`:''}
+          ${r.improved?`<div style="font-size:12px;color:var(--orange);margin-bottom:6px;">💡 ${r.improved}</div>`:''}
+          <div style="text-align:right;">
+            <button class="btn btn-danger btn-xs" onclick="deleteReflection('${r.id}')" title="Reflexion löschen">🗑️ Löschen</button>
+          </div>
         </div>`;}).join('')}</div>
     </div>`;}).join('');
 }
@@ -3632,7 +3819,10 @@ function renderAdminTeamsTable(){
         +'<td style="font-weight:700;color:var(--blue-dark);">Team-Slot '+(i+1)+'</td>'
         +'<td><code style="font-size:14px;background:var(--blue-xlt);padding:3px 10px;border-radius:6px;font-weight:900;letter-spacing:2px;color:var(--blue-dark);">'+t.setupCode+'</code></td>'
         +'<td><span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Ausstehend</span></td>'
-        +'<td><button class="btn btn-outline btn-xs" onclick="copyCode(this.dataset.code)" data-code="'+t.setupCode+'">📋 Kopieren</button></td>'
+        +'<td style="display:flex;gap:4px;">'
+        +'<button class="btn btn-outline btn-xs" onclick="copyCode(this.dataset.code)" data-code="'+t.setupCode+'">📋 Kopieren</button>'
+        +'<button class="btn btn-danger btn-xs" onclick="deletePendingSlot(this.dataset.id)" data-id="'+t.id+'" title="Slot löschen">🗑️</button>'
+        +'</td>'
         +'</tr>').join('')
       +'</tbody></table></div>';
   }
@@ -3669,7 +3859,7 @@ function renderAdminTxTable(){
       <div style="display:flex;align-items:center;"><div class="tx-team-dot" style="background:${team?.color}">${team?.logo}</div>${team?.name}</div>
       <div>${tx.desc}</div><div style="color:var(--gray-mid)">${tx.cat}</div>
       <div class="tx-amt ${tx.type==='income'?'pos':'neg'}">${tx.type==='income'?'+':'-'}${fmtEur(tx.amount)}</div>
-      <div style="display:flex;gap:3px;"><button class="btn btn-outline btn-xs" onclick="showToast('Bearbeiten – Demo','info')">✏️</button><button class="btn btn-danger btn-xs" onclick="showToast('Gelöscht – Demo','error')">🗑️</button></div>
+      <div style="display:flex;gap:3px;"><button class="btn btn-outline btn-xs" onclick="editTransaction('${tx.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="deleteTransaction('${tx.id}');renderAdminPage();">🗑️</button></div>
     </div>`;}).join('');
 }
 function renderCodesPanel(){
@@ -3853,6 +4043,8 @@ function renderKonzept(){
           ['v0.11','Eingebetteter PDF-Viewer, Session-Tracking → Google Sheet, Backup-System, Konzept-Seite'],
           ['v0.12','Sprach-Toggle in Topbar, Admin PDF-Upload, Dozenten-E-Mail pro Spiel, Pinnwand, Messaging'],
           ['v0.13','Bug-Fixes: SUPER-NEUSS Persistenz, Sprach-Button sichtbar, Rollen-Anzeige beim Login'],
+          ['v0.7.0','Firebase Echtzeit-Sync, Kontakt-Seite, In-App-Nachrichten, Reflexion bearbeiten/löschen'],
+          ['v0.7.1','Fix: Admin-Nachrichten immer erfolgreich (In-App-Zustellung), E-Mail optional'],
           ['v1.0 🎯','Vollständiger Release: alle Features aus v0.x integriert und stabilisiert'],
         ].map(([v,d])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);">
           <div><span style="background:var(--blue-mid);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span></div>
@@ -4133,20 +4325,65 @@ function submitReflection(){
   if(!exp||!liked||!imp){showToast('Bitte alle Pflichtfelder ausfüllen','error');return;}
   const team=getMyTeam();
   const week=parseInt(document.getElementById('refWeek').value.replace('Woche ','')||1);
+  const mvpVote=document.getElementById('refMvpVote')?.value||null;
   // Check if already submitted for this week
   const existing=REFLECTIONS.find(r=>r.memberId===m.id&&r.week===week);
-  if(existing){showToast('Du hast für Woche '+week+' bereits eine Reflexion eingereicht.','info');closeModal('modalReflection');return;}
-  const mvpVote=document.getElementById('refMvpVote')?.value||null;
-  REFLECTIONS.push({id:'r'+Date.now(),memberId:m.id,teamId:m.teamId,
-    week,mood:state.selectedMood,experience:exp,liked,improved:imp,
-    role:document.getElementById('refRole').value,
-    mvpVote:mvpVote||null,
-    date:new Date().toISOString().split('T')[0]});
-  saveData();closeModal('modalReflection');showToast('💾 Reflexion gespeichert!');
+  const weekOpen = !team || team.weekStatus==='open'; // editable while week not yet submitted
+  if(existing){
+    if(!weekOpen){
+      showToast('Woche '+week+' ist abgeschlossen – die Reflexion kann nicht mehr geändert werden.','info');
+      closeModal('modalReflection');return;
+    }
+    // Update existing reflection
+    existing.mood=state.selectedMood;
+    existing.experience=exp;existing.liked=liked;existing.improved=imp;
+    existing.role=document.getElementById('refRole').value;
+    existing.mvpVote=mvpVote||null;
+    existing.updatedAt=new Date().toISOString().split('T')[0];
+    saveData();closeModal('modalReflection');showToast('✏️ Reflexion aktualisiert!');
+  } else {
+    REFLECTIONS.push({id:'r'+Date.now(),memberId:m.id,teamId:m.teamId,
+      week,mood:state.selectedMood,experience:exp,liked,improved:imp,
+      role:document.getElementById('refRole').value,
+      mvpVote:mvpVote||null,
+      date:new Date().toISOString().split('T')[0]});
+    saveData();closeModal('modalReflection');showToast('💾 Reflexion gespeichert!');
+  }
   renderReflectionPage();
   // Update blog modal status if open
   const blogModal=document.getElementById('modalBlog');
   if(blogModal&&blogModal.style.display!=='none') updateBlogReflectionStatus();
+}
+
+function editReflection(id){
+  const r=REFLECTIONS.find(x=>x.id===id);
+  if(!r) return;
+  // Pre-fill modal fields
+  const g=n=>document.getElementById(n);
+  if(g('refExperience')) g('refExperience').value=r.experience||'';
+  if(g('refLiked'))      g('refLiked').value=r.liked||'';
+  if(g('refImproved'))   g('refImproved').value=r.improved||'';
+  if(g('refRole'))       g('refRole').value=r.role||'';
+  if(g('refWeek'))       g('refWeek').value='Woche '+r.week;
+  // Set mood
+  state.selectedMood=r.mood||3;
+  setTimeout(()=>document.querySelectorAll('.mood-btn').forEach(b=>{
+    b.classList.toggle('selected',parseInt(b.dataset.val)===state.selectedMood);
+  }),50);
+  openModal('modalReflection');
+}
+
+function deleteReflection(id){
+  if(!confirm('Reflexion wirklich löschen? Sie kann nicht wiederhergestellt werden.')) return;
+  const idx=REFLECTIONS.findIndex(r=>r.id===id);
+  if(idx<0) return;
+  REFLECTIONS.splice(idx,1);
+  saveData();
+  showToast('🗑️ Reflexion gelöscht','info');
+  // Re-render whichever panel is showing
+  if(state.currentPage==='admin') renderAdminPage();
+  else if(state.currentPage==='superadmin') renderSuperPage();
+  else if(state.currentPage==='reflection') renderReflectionPage();
 }
 
 function saveTeamProfile(){
@@ -4403,6 +4640,16 @@ function deleteTeam(teamId){
   if(game) game.teamCount = TEAMS.filter(t=>t.gameId===game.id).length;
   rebuildCodes(); saveData();
   showToast('🗑️ Team "'+team.name+'" gelöscht');
+  renderAdminPage();
+}
+
+function deletePendingSlot(teamId){
+  const slot = TEAMS.find(t=>t.id===teamId&&t.status==='pending');
+  if(!slot) return;
+  if(!confirm('Team-Slot "'+slot.setupCode+'" löschen? Er kann danach nicht mehr für den Erstzugang genutzt werden.')) return;
+  const idx = TEAMS.indexOf(slot); if(idx>=0) TEAMS.splice(idx,1);
+  rebuildCodes(); saveData();
+  showToast('🗑️ Slot '+slot.setupCode+' gelöscht','info');
   renderAdminPage();
 }
 
@@ -4695,34 +4942,38 @@ function openSuperProfileEdit(){
   document.getElementById('espCode').value = u.code||'SUPER-NEUSS';
   openModal('modalEditSuperProfile');
 }
+function openEditSuperProfile(){
+  const u = state.currentUser;
+  const el = n => document.getElementById(n);
+  if(el('espName'))  el('espName').value  = u.name  || '';
+  if(el('espEmail')) el('espEmail').value = u.email || '';
+  if(el('espCode'))  el('espCode').value  = u.code  || 'SUPER-NEUSS';
+  openModal('modalEditSuperProfile');
+}
+
 function saveSuperProfile(){
-  const name = document.getElementById('espName').value.trim();
-  const email = document.getElementById('espEmail').value.trim();
+  const name    = document.getElementById('espName').value.trim();
+  const email   = document.getElementById('espEmail').value.trim();
   const newCode = document.getElementById('espCode').value.trim().toUpperCase()||'SUPER-NEUSS';
   if(!name){showToast('Bitte Name eingeben','error');return;}
   const oldCode = state.currentUser.code;
-  // Remove old code from CODES, add new
+  // Update CODES
   delete CODES[oldCode];
   CODES[newCode] = {role:'superadmin', name, email, label:'Superadmin'};
-  // Update main SUPER-NEUSS if that was the old code
-  if(oldCode==='SUPER-NEUSS'){
-    // Patch the hardcoded entry too if code didn't change
-    if(newCode==='SUPER-NEUSS'){
-      CODES['SUPER-NEUSS'] = {role:'superadmin', name, email, label:'Superadmin'};
-    }
+  if(newCode==='SUPER-NEUSS'){
+    CODES['SUPER-NEUSS'] = {role:'superadmin', name, email, label:'Superadmin'};
   }
-  state.currentUser.name = name;
+  state.currentUser.name  = name;
   state.currentUser.email = email;
-  state.currentUser.code = newCode;
-  // Persist SUPER-NEUSS overrides separately so rebuildCodes picks them up
-  if(oldCode==='SUPER-NEUSS'||newCode==='SUPER-NEUSS'){
-    localStorage.setItem('5euro_superprofile', JSON.stringify({name, email}));
-  }
+  state.currentUser.code  = newCode;
+  // Persist: localStorage (fallback) + PASSWORDS dict (→ Firebase sync)
+  localStorage.setItem('5euro_superprofile', JSON.stringify({name, email}));
+  PASSWORDS['__sp_name']  = name;
+  PASSWORDS['__sp_email'] = email;
   saveData();
   closeModal('modalEditSuperProfile');
-  showToast('✅ Profil gespeichert. Neuer Code: '+newCode);
+  showToast('✅ Profil gespeichert: '+name);
   renderSuperPage();
-  // Update badge
   const badge = document.getElementById('roleBadge');
   if(badge) badge.innerHTML='👑 '+name+' · Superadmin';
 }
@@ -4742,7 +4993,8 @@ function createSuperAdmin(){
 function renderSuperAdminList(){
   const el = document.getElementById('superAdminListRows');
   if(!el) return;
-  const rows = [{name:'Prof. Neusser', email:'christian.neusser@me.com', code:'SUPER-NEUSS', builtin:true}, ...SUPERADMINS];
+  const _mainSa = CODES['SUPER-NEUSS']||{};
+  const rows = [{name:_mainSa.name||'Dr. Christian Neusser', email:_mainSa.email||'christian.neusser@me.com', code:'SUPER-NEUSS', builtin:true}, ...SUPERADMINS];
   el.innerHTML = rows.map(sa => `<div class="admin-list-row">
     <div><strong>👑 ${sa.name}</strong><div style="font-size:10px;color:var(--gray-mid);">${sa.email||''}</div></div>
     <div><span style="font-size:11px;color:var(--gray-mid);">${sa.builtin?'Haupt-Superadmin':'Ernannt'}</span></div>
@@ -5372,7 +5624,7 @@ const BACKUP_KEY = '5euro_lastbackup';
 const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function exportDataJson(){
-  const d = {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
+  const d = {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
   return JSON.stringify(d, null, 2);
 }
 
@@ -5403,7 +5655,8 @@ function importBackup(){
         replace(UNIVERSITIES,d.UNIVERSITIES); replace(GAMES,d.GAMES);
         replace(TEAMS,d.TEAMS); replace(MEMBERS,d.MEMBERS);
         replace(BLOGS,d.BLOGS); replace(TRANSACTIONS,d.TRANSACTIONS);
-        replace(REFLECTIONS,d.REFLECTIONS); replace(ADMINS,d.ADMINS);
+        replace(REFLECTIONS,d.REFLECTIONS); replace(MESSAGES,d.MESSAGES||[]);
+        replace(ADMINS,d.ADMINS);
         replace(FEEDBACKS,d.FEEDBACKS||[]); replace(SUPERADMINS,d.SUPERADMINS||[]);
         replace(FAQ_DOCS,d.FAQ_DOCS||[]);
         rebuildCodes(); saveData();
@@ -5588,6 +5841,35 @@ window.addEventListener('DOMContentLoaded', function(){
   </div>
   <div style="flex:1;overflow:hidden;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
    <iframe id="pdfViewerFrame" style="width:100%;height:100%;border:none;" src="about:blank"></iframe>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL: Send Message -->
+<div class="modal-overlay" id="modalSendMessage">
+ <div class="modal">
+  <div class="modal-header">
+   <h3>💬 Nachricht senden</h3>
+   <button class="modal-close" onclick="closeModal('modalSendMessage')">✕</button>
+  </div>
+  <div class="modal-body">
+   <div class="form-group">
+    <label class="form-label">An</label>
+    <input class="form-control" id="dmMsgTo" readonly style="background:var(--gray-lt);">
+    <input type="hidden" id="dmMsgToId">
+   </div>
+   <div class="form-group">
+    <label class="form-label">Betreff</label>
+    <input class="form-control" id="dmMsgSubject" placeholder="Betreff (optional)">
+   </div>
+   <div class="form-group">
+    <label class="form-label">Nachricht <span class="req">*</span></label>
+    <textarea class="form-control" id="dmMsgBody" rows="5" placeholder="Deine Nachricht..."></textarea>
+   </div>
+  </div>
+  <div class="modal-footer">
+   <button class="btn btn-secondary" onclick="closeModal('modalSendMessage')">Abbrechen</button>
+   <button class="btn btn-primary" onclick="sendMessage()">📤 Senden</button>
   </div>
  </div>
 </div>
