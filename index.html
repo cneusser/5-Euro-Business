@@ -409,6 +409,9 @@ textarea.form-control{resize:vertical;min-height:70px;}
   .lb-row{grid-template-columns:36px 1fr 65px 65px;}
   .lb-row>*:nth-child(5),.lb-row>*:nth-child(6){display:none;}
 }
+
+/* VERSION FOOTER */
+.version-footer{position:fixed;bottom:8px;right:12px;font-size:10px;color:var(--gray-mid);background:rgba(255,255,255,.85);padding:4px 8px;border-radius:4px;z-index:50;font-weight:600;letter-spacing:.3px;}
 </style>
 </head>
 <body>
@@ -426,7 +429,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v5.1)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.5.1)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -657,6 +660,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
+ <div class="version-footer" id="versionFooter">v0.5.1</div>
 </div>
 
 <!-- APP -->
@@ -1522,6 +1526,7 @@ function submitTeamSetup(){
   team.logo=window._setupSelectedEmoji||team.logo||'🚀';
   team.code=makeUniqueTeamCode(tname);
   team.status='active';
+  saveData();rebuildCodes();
   // Move to profile step (CEO role fixed)
   _regSelectedRole='CEO';
   document.getElementById('regSetupStep').style.display='none';
@@ -1658,10 +1663,15 @@ function copyRegCode(){
 function loginWithNewCode(){
   const code=_regNewCode;
   if(!code) return;
-  showLogin();
-  showLoginStep1();
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginMode').style.display='block';
+  document.getElementById('registerMode').style.display='none';
+  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='none';
+  ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('loginStep1').style.display='block';
   document.getElementById('loginCode').value=code;
-  doLoginStep1();
+  setTimeout(()=>doLoginStep1(),100);
 }
 // ── TEST MODE ────────────────────────────────────────────────────────────
 const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:2,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Prof. Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
@@ -1850,12 +1860,6 @@ function copyRegCode(){
   document.getElementById('regResultCode').style.background='linear-gradient(135deg,#375623,#52873a)';
   setTimeout(()=>{document.getElementById('regResultCode').style.background='linear-gradient(135deg,#1F3864,#2E75B6)';},800);
 }
-function loginWithNewCode(){
-  if(!regState.newCode) return;
-  showLogin();
-  document.getElementById('loginCode').value = regState.newCode;
-  doLogin();
-}
 
 // ════════════════════════════════════════════════════════════════════
 //  HELPERS
@@ -1914,7 +1918,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v5.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.5.1)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -1924,7 +1928,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v5.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.5.1)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -1984,9 +1988,9 @@ function doLoginStep1(){
     setTimeout(()=>{err.style.display='none';document.getElementById('loginCode').style.borderColor='';},3000);
     return;
   }
-  _loginTempCode=code;
+  _loginTempCode=code.toUpperCase();
   const pwds=getPwds();
-  if(pwds[code]){
+  if(pwds[_loginTempCode]){
     document.getElementById('loginStep1').style.display='none';
     document.getElementById('loginStep2').style.display='block';
     document.getElementById('lt_pwdUser').textContent=user.name;
@@ -2087,6 +2091,7 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
   state.currentUser=null;state.prevUser=null;
   document.getElementById('appShell').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
+  const vf=document.getElementById('versionFooter');if(vf)vf.style.display='block';
   document.getElementById('loginCode').value='';
   // Reset to step 1 (code entry), hide password/setup steps
   ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){const el=document.getElementById(id);if(el)el.style.display='none';});
@@ -2104,12 +2109,14 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
 //  INIT
 // ════════════════════════════════════════════════════════════════════
 function initApp(){
+  if(!_sessionStart) _sessionStart=new Date().toISOString();
   const u=state.currentUser;
   buildNavigation();updateTopbar();updateLiveIndicator();
   buildTicker();
   const def=u.role==='superadmin'?'superadmin':u.role==='admin'?'admin':'dashboard';
   navigateTo(def);
   logEvent('page_load',{page:def});
+  sendAutoBackup();
   if(state.lang==='en') setTimeout(applyLang,200);
 }
 
@@ -3819,8 +3826,9 @@ function approveBlog(id){
   if(team) sendNotification('week',team.id,team.currentWeek);
 }
 function approveBlogAndAdvance(blogId,teamId){approveBlog(blogId);}
-function manualAdvanceWeek(teamId){  logEvent('admin_week_advance', {teamId, week: team.currentWeek});
+function manualAdvanceWeek(teamId){
   const team=TEAMS.find(t=>t.id===teamId);if(!team)return;
+  logEvent('admin_week_advance', {teamId, week: team.currentWeek});
   team.currentWeek++;team.weekStatus='open';
   saveData();renderWeeksAdmin();showToast('⏭️ '+team.name+' – Woche '+team.currentWeek+' gestartet');
   sendNotification('week',team.id,team.currentWeek);
@@ -5239,6 +5247,17 @@ function importBackup(){
     reader.readAsText(file);
   };
   input.click();
+}
+
+function updateStorageStatus(){
+  const u=state.currentUser;
+  if(u.role!=='superadmin') return;
+  const last=parseInt(localStorage.getItem(BACKUP_KEY)||'0');
+  const lastBackupDate=last?new Date(last).toLocaleDateString('de-DE')+' '+new Date(last).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'Noch nie';
+  const totalSize=(JSON.stringify({UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS}).length/1024).toFixed(0);
+  const msg=`Zuletzt gesichert: ${lastBackupDate} | Speicher: ${totalSize} KB (${TEAMS.length} Teams, ${TRANSACTIONS.length} Buchungen, ${BLOGS.length} Berichte)`;
+  const el=document.getElementById('storageStatusText');
+  if(el) el.textContent=msg;
 }
 
 async function sendAutoBackup(){
