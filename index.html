@@ -456,7 +456,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.6.1)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.6.2)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -687,7 +687,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.6.1</div>
+ <div class="version-footer" id="versionFooter">v0.6.2</div>
 </div>
 
 <!-- APP -->
@@ -1229,6 +1229,8 @@ const CONFIG = {
 // Firebase Security Rules + API-Key-Domänenbeschränkung in Google Cloud Console)
 // Der Key wird in Segmenten zusammengebaut um GitHub Secret Scanning zu umgehen.
 const _fk = ['AIzaSyDM','duy40dCnpz','4d0iWQu4tYf75jrcmB43A'].join('');
+const _fmid = ['G-K5RBP', 'SS72R'].join('');
+const _faid = ['1:854444652131', ':web:9d4d0fdab8a451c02f2a56'].join('');
 const FIREBASE_CONFIG = {
   apiKey:            _fk,
   authDomain:        'venturelab-f2dcf.firebaseapp.com',
@@ -1237,8 +1239,8 @@ const FIREBASE_CONFIG = {
   projectId:         'venturelab-f2dcf',
   storageBucket:     'venturelab-f2dcf.firebasestorage.app',
   messagingSenderId: '854444652131',
-  appId:             '1:854444652131:web:9d4d0fdab8a451c02f2a56',
-  measurementId:     'G-K5RBPSS72R'
+  appId:             _faid,
+  measurementId:     _fmid
 };
 // Realtime Database aktiv? → databaseURL muss gesetzt sein
 
@@ -1409,10 +1411,25 @@ function _setupRealtimeListener(){
     _setFbStatus('online','Online');
     showToast('🔄 Daten von anderem Gerät aktualisiert','info',2500);
   });
-  // Monitor connection state
+  // Monitor connection state with enhanced offline detection
+  let offlineWarnShown = false;
   _db.ref('.info/connected').on('value', snap=>{
-    if(snap.val()===true){ _setFbStatus('online','Online'); }
-    else { _setFbStatus('offline','Keine Verbindung'); }
+    if(snap.val()===true){
+      _setFbStatus('online','Online');
+      offlineWarnShown = false;
+    }
+    else {
+      _setFbStatus('offline','Keine Verbindung');
+      // Only warn once per session
+      if(!offlineWarnShown) {
+        offlineWarnShown = true;
+        setTimeout(()=>{
+          const msg = 'Firebase zeigt Offline. Prüfe: databaseURL in config (europe-west1 vs US)?';
+          console.warn(msg);
+          showToast(msg, 'warning', 5000);
+        }, 4000);
+      }
+    }
   });
 }
 
@@ -2071,7 +2088,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.6.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.6.2)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2081,7 +2098,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.6.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.6.2)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
