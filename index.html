@@ -473,6 +473,11 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <span style="font-size:24px;">🧪</span>
       <span><strong id="lt_modeTest">Testumgebung</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeTestSub">Demo-Modus &#8211; alle Rollen ausprobieren</small></span>
      </button>
+     <a href="https://www.buymeacoffee.com/cneusser" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;text-decoration:none;background:linear-gradient(135deg,#4A60CC,#5F7FFF);border:none;cursor:pointer;color:white;font-family:inherit;transition:opacity .2s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+      <span style="font-size:24px;">☕</span>
+      <span><strong style="font-size:14px;font-weight:700;">Support VentureLab</strong><br><small style="opacity:.8;font-size:11px;">Dieses Projekt unterstützen – Buy Me a Coffee</small></span>
+      <span style="margin-left:auto;font-size:11px;opacity:.75;">↗</span>
+     </a>
     </div>
    </div>
 
@@ -688,11 +693,6 @@ textarea.form-control{resize:vertical;min-height:70px;}
 
  </div>
  <div class="version-footer" id="versionFooter">v0.7.4</div>
-</div>
-
-<!-- Buy Me a Coffee – shown only on login screen -->
-<div id="bmcWidget" style="position:fixed;bottom:12px;left:12px;z-index:100;display:block;">
-  <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="cneusser" data-color="#5F7FFF" data-emoji="" data-font="Cookie" data-text="Support VentureLab" data-outline-color="#000000" data-font-color="#ffffff" data-coffee-color="#FFDD00"></script>
 </div>
 
 <!-- APP -->
@@ -1892,8 +1892,8 @@ function loginWithNewCode(){
   setTimeout(()=>doLoginStep1(),100);
 }
 // ── TEST MODE ────────────────────────────────────────────────────────────
-const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:2,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Prof. Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
-const TEST_PWDS={'TEST-CEO':'test','TEST-CFO':'test','TEST-CMO':'test','TEST-CEO2':'test','TEST-ADMIN':'test'};
+const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:3,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t3',gameId:'test-g1',name:'Prepify',logo:'📋',color:'#7C3AED',code:'TEAM-PREP1',approach:'B2B-Direktvertrieb',strategy:'Spezialisierung',biz:'Prüfungsvorbereitung für Studenten',revenue:6.00,expenses:1.50,capital:5.00,transactions:2,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Vorbereitet studieren',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null},{id:'test-mb5',teamId:'test-t3',name:'Tina Heckel',firstName:'Tina',lastName:'Heckel',email:'tina@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-PREP-CEO',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false},{id:'test-tx8',teamId:'test-t3',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx9',teamId:'test-t3',date:'2026-03-10',desc:'Erste Nachhilfesession',cat:'Umsatz',type:'income',amount:6.00,receipt:false},{id:'test-tx10',teamId:'test-t3',date:'2026-03-12',desc:'Druckkosten Lernmaterial',cat:'Kosten',type:'expense',amount:1.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Prof. Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
+const TEST_PWDS={'TEST-CEO':'test','TEST-CFO':'test','TEST-CMO':'test','TEST-CEO2':'test','TEST-PREP-CEO':'test','TEST-ADMIN':'test'};
 function loadTestData(){
   window._testModeActive=true;
   window._testMode=true;
@@ -1905,7 +1905,7 @@ function loadTestData(){
   localStorage.setItem('5euro_passwords',JSON.stringify(TEST_PWDS));
   loadData();
   rebuildCodes();
-  const accounts=[{code:'TEST-CEO',label:'💡 Die Ideenschmiede',role:'CEO (Anna Müller)'},{code:'TEST-CFO',label:'💡 Die Ideenschmiede',role:'CFO (Ben Schneider)'},{code:'TEST-CMO',label:'💡 Die Ideenschmiede',role:'CMO (Lisa Weber)'},{code:'TEST-CEO2',label:'🌿 GreenWheels',role:'CEO (Tim Braun)'},{code:'TEST-ADMIN',label:'🏫 DHBW Stuttgart',role:'Admin (Prof. Dr. Neusser)'}];
+  const accounts=[{code:'TEST-CEO',label:'💡 Die Ideenschmiede',role:'CEO (Anna Müller)'},{code:'TEST-CFO',label:'💡 Die Ideenschmiede',role:'CFO (Ben Schneider)'},{code:'TEST-CMO',label:'💡 Die Ideenschmiede',role:'CMO (Lisa Weber)'},{code:'TEST-CEO2',label:'🌿 GreenWheels',role:'CEO (Tim Braun)'},{code:'TEST-PREP-CEO',label:'📋 Prepify',role:'CEO (Tina Heckel)'},{code:'TEST-ADMIN',label:'🏫 DHBW Stuttgart',role:'Admin (Prof. Dr. Neusser)'}];
   document.getElementById('testAccountList').innerHTML=accounts.map(a=>'<button onclick="testLogin(\''+a.code+'\')" style="width:100%;text-align:left;background:white;border:2px solid #E0E7F0;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div><div style="font-size:13px;font-weight:700;color:#1e3a5f;">'+a.role+'</div><div style="font-size:11px;color:#888;">'+a.label+'</div></div><div style="margin-left:auto;font-size:11px;color:#2563EB;font-weight:700;">Einloggen →</div></button>').join('');
   const existing=document.getElementById('testModeBanner');if(existing) existing.remove();
   const banner=document.createElement('div');
@@ -2329,7 +2329,6 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
   state.currentUser=null;state.prevUser=null;
   document.getElementById('appShell').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  const bmc=document.getElementById('bmcWidget'); if(bmc) bmc.style.display='block';
   const vf=document.getElementById('versionFooter');if(vf)vf.style.display='block';
   document.getElementById('loginCode').value='';
   // Reset to step 1 (code entry), hide password/setup steps
@@ -2350,8 +2349,6 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
 function initApp(){
   if(!_sessionStart) _sessionStart=new Date().toISOString();
   const u=state.currentUser;
-  // Hide support button while inside the app
-  const bmc=document.getElementById('bmcWidget'); if(bmc) bmc.style.display='none';
   buildNavigation();updateTopbar();updateLiveIndicator();
   buildTicker();
   const def=u.role==='superadmin'?'superadmin':u.role==='admin'?'admin':'dashboard';
@@ -2397,11 +2394,14 @@ function buildNavigation(){
     pages.push({id:'feedback', label:'💬 Feedback'});
     pages.push({id:'konzept',  label:'📐 Konzept'});
   } else {
-    pages.push({id:'dashboard',  label:'🏆 Ranking'});
-    pages.push({id:'teams',      label:'👥 Teams'});
-    pages.push({id:'tx',         label:'💳 Buchungen'});
-    pages.push({id:'blog',       label:'📖 Blog'});
-    pages.push({id:'kontakt',    label:kontaktLabel});
+    // Superadmin: only show Teams/Ranking/Buchungen when managing a specific game
+    if(state.managingGameId){
+      pages.push({id:'dashboard',  label:'🏆 Ranking'});
+      pages.push({id:'teams',      label:'👥 Teams'});
+      pages.push({id:'tx',         label:'💳 Buchungen'});
+      pages.push({id:'blog',       label:'📖 Blog'});
+      pages.push({id:'kontakt',    label:kontaktLabel});
+    }
     pages.push({id:'admin',      label:'⚙️ Admin',cls:'admin-nav'});
     pages.push({id:'superadmin', label:'👑 Super',cls:'superadmin-nav'});
     pages.push({id:'feedback',   label:'💬 Feedback'});
