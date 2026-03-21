@@ -456,7 +456,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.7.4)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.7.6)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -692,7 +692,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.7.4</div>
+ <div class="version-footer" id="versionFooter">v0.7.6</div>
 </div>
 
 <!-- APP -->
@@ -903,6 +903,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchAdminTab('pinnwand')">&#128226; Pinnwand</button>
      <button class="admin-tab" onclick="switchAdminTab('dokumente')">&#128196; Dokumente</button>
      <button class="admin-tab" onclick="switchAdminTab('messaging')">&#9993;&#65039; Nachrichten</button>
+     <button class="admin-tab" onclick="switchAdminTab('papierkorb')" id="adminTabPapierkorb">&#128465;&#65039; Papierkorb <span class="notif-dot" id="pkorCount" style="background:#888;display:none;">0</span></button>
     </div>
     <div class="admin-panel active" id="adminPanel-approval">
      <div class="section-header"><div class="section-title admin-title">Blog-Berichte zur Freigabe</div><button class="btn btn-success btn-sm" onclick="approveAll()">&#9989; Alle freigeben</button></div>
@@ -941,6 +942,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="admin-panel" id="adminPanel-pinnwand"><div id="pinnwandContent"></div></div>
     <div class="admin-panel" id="adminPanel-dokumente"><div id="dokumenteContent"></div></div>
     <div class="admin-panel" id="adminPanel-messaging"><div id="messagingContent"></div></div>
+    <div class="admin-panel" id="adminPanel-papierkorb"><div id="pkorContent"></div></div>
    </div>
   </div>
 
@@ -1300,6 +1302,8 @@ let MESSAGES = [];
 let FEEDBACKS = [];
 // Activity logs
 let LOGS = [];
+// Soft-delete recycle bin (max 100 items, persisted to Firebase)
+let DELETED_ITEMS = [];
 let SUPERADMINS = []; // zusätzliche Superadmins
 let FAQ_DOCS   = []; // PDFs/Docs in FAQ
 let ANNOUNCEMENTS = [];
@@ -1343,6 +1347,8 @@ let _fbOK = false;          // Firebase reachable + initialised
 let _fbWriting = false;     // suppress own-write listener bounce
 let _fbListenerOn = false;
 let _fbSaveTimer = null;    // debounce Firebase writes
+let _fbDataConfirmedEmpty = false; // true ONLY when Firebase replied with null (safe to push defaults)
+let _fbDataLoaded = false;  // true once any Firebase data has arrived (or confirmed empty)
 
 function _fbConfigured(){
   return !Object.values(FIREBASE_CONFIG).some(v => String(v).includes('FILL_IN'))
@@ -1368,6 +1374,7 @@ function _replaceArrays(d){
   replace(REFLECTIONS,d.REFLECTIONS);  replace(ADMINS,d.ADMINS);
   replace(MESSAGES,d.MESSAGES||[]);    replace(FEEDBACKS,d.FEEDBACKS||[]);
   replace(LOGS,d.LOGS||[]);
+  replace(DELETED_ITEMS,d.DELETED_ITEMS||[]);
   replace(SUPERADMINS,d.SUPERADMINS||[]);
   replace(FAQ_DOCS,d.FAQ_DOCS||[]);    replace(ANNOUNCEMENTS,d.ANNOUNCEMENTS||[]);
   // Merge PASSWORDS dict
@@ -1397,7 +1404,7 @@ function _postLoadCalc(){
 }
 
 function _buildPayload(){
-  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,LOGS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
+  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,LOGS,DELETED_ITEMS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
 }
 
 // ── saveData (localStorage + Firebase async) ─────────────────────────
@@ -1439,6 +1446,7 @@ function _setupRealtimeListener(){
     if(_fbWriting) return; // own write, skip
     const d = snapshot.val();
     if(!d) return;
+    _fbDataLoaded = true; // Mark that we have received Firebase data
     _replaceArrays(d);
     _postLoadCalc();
     // Refresh cache ONLY - do NOT call saveData()
@@ -1509,19 +1517,32 @@ function initDataAndStart(){
 
   _setLoadingMsg('Lade Daten aus Firebase…');
 
-  // Set timeout fallback (5 seconds)
+  // Set timeout fallback (10 seconds – longer for mobile networks)
   const fbTimeout = setTimeout(()=>{
     console.warn('Firebase load timeout – falling back to localStorage');
-    _setLoadingMsg('Timeout – lade lokal…');
-    loadData();
+    _setLoadingMsg('Timeout – lade lokale Daten…');
+    loadData(); // localStorage fallback (may be empty on first visit)
     _hideLoadingOverlay();
     _setFbStatus('offline','Offline – lokale Daten');
+    // Still try to set up realtime listener – Firebase may connect after timeout
+    _setupRealtimeListener();
     _finishStartup();
-  }, 5000);
+    // Try once more after 5 more seconds in case Firebase connects late
+    setTimeout(()=>{
+      if(!_fbDataLoaded && _fbOK && _db){
+        _setLoadingMsg('');
+        _db.ref('5euro_tracker_v5').once('value').then(snap=>{
+          const d=snap.val();
+          if(d){ _fbDataLoaded=true; _replaceArrays(d); _postLoadCalc(); rebuildCodes(); if(state.currentUser) renderCurrentView(); showToast('🔄 Daten nachgeladen','info'); }
+        }).catch(()=>{});
+      }
+    }, 5000);
+  }, 10000);
 
   _db.ref('5euro_tracker_v5').once('value')
     .then(snapshot => {
       clearTimeout(fbTimeout);
+      _fbDataLoaded = true;
       const d = snapshot.val();
       if(d){
         _replaceArrays(d);
@@ -1530,7 +1551,8 @@ function initDataAndStart(){
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
         console.log('✅ Loaded from Firebase');
       } else {
-        // Firebase empty → push localStorage data up
+        // Firebase confirmed empty → safe to push local/default data
+        _fbDataConfirmedEmpty = true;
         _setLoadingMsg('Synchronisiere lokale Daten…');
         loadData();
         if(GAMES.length || TEAMS.length){
@@ -1547,9 +1569,10 @@ function initDataAndStart(){
     .catch(err => {
       clearTimeout(fbTimeout);
       console.warn('Firebase load error:', err);
-      loadData();
+      loadData(); // localStorage fallback
       _hideLoadingOverlay();
       _setFbStatus('offline','Offline – lokale Daten');
+      _setupRealtimeListener(); // still try to listen for data
       _finishStartup();
     });
 }
@@ -1558,7 +1581,18 @@ function _finishStartup(){
   const before = JSON.stringify({t:TEAMS.length, g:GAMES.length});
   ensureDefaultSetupCodes();
   const after = JSON.stringify({t:TEAMS.length, g:GAMES.length});
-  if(before !== after) saveData(); // only save if something was added
+  if(before !== after){
+    // CRITICAL: Only push to Firebase if we are SURE Firebase is empty (not just timed out).
+    // If Firebase timed out or errored, writing now could overwrite real data on the server.
+    if(_fbDataConfirmedEmpty || !_fbOK){
+      saveData(); // Safe: Firebase confirmed empty, or no Firebase (localStorage-only mode)
+    } else {
+      // Firebase is configured but we don't know its state (timeout/error path).
+      // Save to localStorage only – do NOT push to Firebase.
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
+      console.warn('_finishStartup: skipped Firebase write (data not confirmed empty)');
+    }
+  }
   // Restore session from sessionStorage (auto-login on page refresh)
   if(!state.currentUser && !window._testMode){
     try{
@@ -1771,11 +1805,20 @@ function submitTeamSetup(){
   const grid=document.getElementById('regRoleGrid');
   if(grid) grid.innerHTML='<div style="grid-column:1/-1;padding:10px;background:#EFF6FF;border-radius:8px;font-size:12px;font-weight:700;color:#1e3a5f;">👑 Du gründest dieses Team als CEO. Andere Rollen können deine Mitglieder wählen, wenn sie mit dem Einladungscode beitreten.</div>';
 }
-function checkInviteCode(){
+function checkInviteCode(_retry){
   const code=document.getElementById('regInviteCode').value.trim().toUpperCase();
   const errEl=document.getElementById('regInviteError');
   errEl.style.display='none';
   if(!code){errEl.textContent='Bitte Code eingeben.';errEl.style.display='block';return;}
+  // If TEAMS appears empty and Firebase hasn't confirmed data yet, wait and retry (max 3x)
+  if(!_fbDataLoaded && TEAMS.filter(t=>t.status!=='pending'&&t.code).length===0 && (_retry||0)<3){
+    errEl.textContent='⏳ Daten werden noch geladen – bitte einen Moment warten…';
+    errEl.style.display='block';errEl.style.color='#1d4ed8';
+    const retryN=(_retry||0)+1;
+    setTimeout(()=>{ errEl.style.display='none'; checkInviteCode(retryN); }, 2000);
+    return;
+  }
+  errEl.style.color='';
 
   // ── Check for SETUP CODE (team slot not yet set up)
   const pendingTeam=TEAMS.find(t=>t.setupCode&&(t.setupCode.toUpperCase()===code||t.setupCode===code)&&t.status==='pending');
@@ -2131,6 +2174,35 @@ function showToast(msg,type='success'){
   t.style.color='white';t.textContent=msg;
   document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
+function showUndoToast(msg, undoFn){
+  // Remove any existing undo toast
+  document.querySelectorAll('.undo-toast').forEach(x=>x.remove());
+  const t=document.createElement('div');
+  t.className='undo-toast';
+  t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:10000;padding:10px 14px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .2s;max-width:360px;display:flex;align-items:center;gap:10px;background:#444;color:white;';
+  const txt=document.createElement('span');
+  txt.style.flex='1';txt.textContent=msg;
+  const bar=document.createElement('div');
+  bar.style.cssText='position:absolute;bottom:0;left:0;height:3px;background:#facc15;border-radius:0 0 9px 9px;transition:width linear;width:100%;';
+  const btn=document.createElement('button');
+  btn.textContent='↩ Rückgängig';
+  btn.style.cssText='background:#facc15;color:#333;border:none;border-radius:6px;padding:4px 10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;';
+  let cancelled=false;
+  btn.onclick=()=>{ cancelled=true; t.remove(); undoFn(); showToast('↩ Wiederhergestellt','success'); };
+  t.appendChild(txt);t.appendChild(btn);t.appendChild(bar);
+  document.body.appendChild(t);
+  // Countdown bar
+  const dur=10000;
+  const start=performance.now();
+  function tick(){
+    const elapsed=performance.now()-start;
+    const pct=Math.max(0,100-(elapsed/dur*100));
+    bar.style.width=pct+'%';
+    if(elapsed<dur&&!cancelled) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  setTimeout(()=>{ if(!cancelled) t.remove(); }, dur);
+}
 function countChars(el,counterId,max){
   const len=el.value.length;const c=document.getElementById(counterId);
   if(!c)return;c.textContent=len+' / '+max;
@@ -2156,7 +2228,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.7.4)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.7.6)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2166,7 +2238,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.7.4)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.7.6)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -3245,17 +3317,30 @@ function editTransaction(txId){
 function deleteTransaction(txId){
   if(!confirm('Buchung wirklich löschen?')) return;
   const tx=TRANSACTIONS.find(t=>t.id===txId);if(!tx) return;
+  const txSnap=JSON.parse(JSON.stringify(tx));
   const team=TEAMS.find(t=>t.id===tx.teamId);
   TRANSACTIONS.splice(TRANSACTIONS.indexOf(tx),1);
-  // Recalculate team totals
-  if(team){
-    const txs=TRANSACTIONS.filter(t=>t.teamId===team.id);
-    team.revenue=txs.filter(t=>t.type==='income'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
-    team.expenses=txs.filter(t=>t.type==='expense'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
-    team.capital=txs.filter(t=>t.cat==='Kapital').reduce((s,t)=>s+t.amount,0);
-    team.transactions=txs.length;
+  function recalcTeam(t){
+    if(!t) return;
+    const txs=TRANSACTIONS.filter(x=>x.teamId===t.id);
+    t.revenue=txs.filter(x=>x.type==='income'&&x.cat!=='Kapital').reduce((s,x)=>s+x.amount,0);
+    t.expenses=txs.filter(x=>x.type==='expense'&&x.cat!=='Kapital').reduce((s,x)=>s+x.amount,0);
+    t.capital=txs.filter(x=>x.cat==='Kapital').reduce((s,x)=>s+x.amount,0);
+    t.transactions=txs.length;
   }
-  saveData();buildTicker();showToast('Buchung gelöscht','info');
+  recalcTeam(team);
+  if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
+  DELETED_ITEMS.push({id:'del_'+Date.now(),type:'transaction',deletedAt:new Date().toISOString(),label:'Buchung: '+txSnap.desc+' ('+txSnap.amount+'€, '+(team?.name||txSnap.teamId)+')',data:txSnap});
+  saveData();buildTicker();
+  showUndoToast('🗑️ Buchung gelöscht', ()=>{
+    TRANSACTIONS.push(txSnap);
+    recalcTeam(TEAMS.find(t=>t.id===txSnap.teamId));
+    DELETED_ITEMS.splice(DELETED_ITEMS.findIndex(d=>d.data.id===txSnap.id),1);
+    saveData();buildTicker();
+    if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
+    else if(state.currentPage==='tx') renderTxPage();
+    else if(state.currentPage==='admin') renderAdminPage();
+  });
   if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
   else if(state.currentPage==='tx') renderTxPage();
   else if(state.currentPage==='admin') renderAdminPage();
@@ -3866,7 +3951,18 @@ function markMessageRead(id){
 
 function deleteMessage(id){
   const idx=MESSAGES.findIndex(m=>m.id===id);
-  if(idx>=0){MESSAGES.splice(idx,1);saveData();renderKontaktPage();buildNavigation();}
+  if(idx<0) return;
+  const snap=JSON.parse(JSON.stringify(MESSAGES[idx]));
+  MESSAGES.splice(idx,1);
+  if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
+  DELETED_ITEMS.push({id:'del_'+Date.now(),type:'message',deletedAt:new Date().toISOString(),label:'Nachricht: "'+snap.text?.substring(0,50)+'"',data:snap});
+  saveData();
+  showUndoToast('🗑️ Nachricht gelöscht', ()=>{
+    MESSAGES.push(snap);
+    DELETED_ITEMS.splice(DELETED_ITEMS.findIndex(d=>d.data.id===snap.id),1);
+    saveData();renderKontaktPage();buildNavigation();
+  });
+  renderKontaktPage();buildNavigation();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3889,6 +3985,9 @@ function renderAdminPage(){
   const pending=BLOGS.filter(b=>b.status==='pending').length;
   document.getElementById('approvalCount').textContent=pending;
   document.getElementById('reflectionCount').textContent=REFLECTIONS.length;
+  // Papierkorb badge
+  const pkorBadge=document.getElementById('pkorCount');
+  if(pkorBadge){ pkorBadge.textContent=DELETED_ITEMS.length; pkorBadge.style.display=DELETED_ITEMS.length>0?'inline-flex':'none'; }
 }
 function switchAdminTab(tabId){
   document.querySelectorAll('#page-admin .admin-tab').forEach(t=>t.classList.remove('active'));
@@ -3900,6 +3999,7 @@ function switchAdminTab(tabId){
   else if(tabId==='messaging') renderMessaging();
   else if(tabId==='teamAward') renderTeamAwardPanel();
   else if(tabId==='log') renderActivityLog();
+  else if(tabId==='papierkorb') renderPapierkorb();
   if(state.lang==='en') setTimeout(applyLang,200);
 }
 function renderApprovalQueue(){
@@ -4264,6 +4364,109 @@ function exportActivityLog(){
   showToast('📥 CSV exportiert','success');
 }
 
+// ── PAPIERKORB (Recycle Bin) ──────────────────────────────────────────────────
+function renderPapierkorb(){
+  const el=document.getElementById('pkorContent');
+  if(!el) return;
+  // Update badge
+  const badge=document.getElementById('pkorCount');
+  if(badge){ badge.textContent=DELETED_ITEMS.length; badge.style.display=DELETED_ITEMS.length>0?'inline-flex':'none'; }
+  if(DELETED_ITEMS.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🗑️</div><h3>Papierkorb leer</h3><p>Gelöschte Elemente erscheinen hier und können wiederhergestellt werden.</p></div>';
+    return;
+  }
+  const sorted=[...DELETED_ITEMS].reverse();
+  const typeLabels={member:'👤 Mitglied',team:'👥 Team',transaction:'💳 Buchung',reflection:'📝 Reflexion',message:'✉️ Nachricht'};
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:14px;color:var(--gray-mid);">${DELETED_ITEMS.length} gelöschte Elemente · werden nach 30 Tagen endgültig entfernt</div>
+      <button class="btn btn-outline" onclick="clearOldDeletedItems()" style="font-size:12px;">🧹 Alte löschen</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="text-align:left;border-bottom:2px solid #eee;">
+        <th style="padding:8px 10px;">Typ</th>
+        <th style="padding:8px 10px;">Element</th>
+        <th style="padding:8px 10px;">Gelöscht am</th>
+        <th style="padding:8px 10px;">Aktion</th>
+      </tr></thead>
+      <tbody>
+        ${sorted.map(item=>`
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:8px 10px;">${typeLabels[item.type]||item.type}</td>
+            <td style="padding:8px 10px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.label||''}">${item.label||'—'}</td>
+            <td style="padding:8px 10px;color:var(--gray-mid);">${item.deletedAt?new Date(item.deletedAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+            <td style="padding:8px 10px;white-space:nowrap;">
+              <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;" onclick="restoreDeletedItem('${item.id}')">↩ Wiederherstellen</button>
+              <button class="btn" style="font-size:11px;padding:4px 10px;background:#C00000;margin-left:4px;" onclick="permanentlyDeleteItem('${item.id}')">✕ Endgültig löschen</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+function restoreDeletedItem(delId){
+  const item=DELETED_ITEMS.find(d=>d.id===delId);
+  if(!item){showToast('Element nicht gefunden','error');return;}
+  if(item.type==='member'){
+    MEMBERS.push(item.data);
+    rebuildCodes();
+    showToast('↩ '+item.data.name+' wiederhergestellt','success');
+    logEvent('↩ Mitglied wiederhergestellt aus Papierkorb: '+item.data.name);
+  } else if(item.type==='team'){
+    TEAMS.push(item.data.team);
+    (item.data.members||[]).forEach(m=>MEMBERS.push(m));
+    const g=GAMES.find(x=>x.id===item.data.team.gameId);
+    if(g) g.teamCount=TEAMS.filter(t=>t.gameId===g.id).length;
+    rebuildCodes();
+    showToast('↩ Team "'+item.data.team.name+'" wiederhergestellt','success');
+    logEvent('↩ Team wiederhergestellt aus Papierkorb: '+item.data.team.name);
+  } else if(item.type==='transaction'){
+    TRANSACTIONS.push(item.data);
+    const team=TEAMS.find(t=>t.id===item.data.teamId);
+    if(team){
+      const txs=TRANSACTIONS.filter(t=>t.teamId===team.id);
+      team.revenue=txs.filter(t=>t.type==='income'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+      team.expenses=txs.filter(t=>t.type==='expense'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
+      team.capital=txs.filter(t=>t.cat==='Kapital').reduce((s,t)=>s+t.amount,0);
+      team.transactions=txs.length;
+    }
+    buildTicker();
+    showToast('↩ Buchung wiederhergestellt','success');
+  } else if(item.type==='reflection'){
+    REFLECTIONS.push(item.data);
+    showToast('↩ Reflexion wiederhergestellt','success');
+  } else if(item.type==='message'){
+    MESSAGES.push(item.data);
+    buildNavigation();
+    showToast('↩ Nachricht wiederhergestellt','success');
+  }
+  const idx=DELETED_ITEMS.findIndex(d=>d.id===delId);
+  if(idx>=0) DELETED_ITEMS.splice(idx,1);
+  saveData();
+  renderPapierkorb();
+  if(state.currentPage==='admin') setTimeout(renderAdminPage,100);
+}
+function permanentlyDeleteItem(delId){
+  const item=DELETED_ITEMS.find(d=>d.id===delId);
+  if(!item) return;
+  if(!confirm('Element endgültig löschen? Dies kann nicht rückgängig gemacht werden.')) return;
+  const idx=DELETED_ITEMS.findIndex(d=>d.id===delId);
+  if(idx>=0) DELETED_ITEMS.splice(idx,1);
+  saveData();
+  renderPapierkorb();
+  showToast('🗑️ Endgültig gelöscht','info');
+}
+function clearOldDeletedItems(){
+  const cutoff=Date.now()-30*24*60*60*1000;
+  const before=DELETED_ITEMS.length;
+  for(let i=DELETED_ITEMS.length-1;i>=0;i--){
+    if(new Date(DELETED_ITEMS[i].deletedAt).getTime()<cutoff) DELETED_ITEMS.splice(i,1);
+  }
+  const removed=before-DELETED_ITEMS.length;
+  saveData();renderPapierkorb();
+  showToast('🧹 '+removed+' alte Einträge entfernt','info');
+}
+
 // Emoji Picker for Teams
 function openEmojiPickerForTeam(teamId){
   const team=TEAMS.find(t=>t.id===teamId);
@@ -4445,7 +4648,9 @@ function renderKonzept(){
           ['v0.7.1','Fix: Admin-Nachrichten jetzt immer zugestellt (In-App-Postfach, E-Mail als optionaler Hintergrund-Versand), ID-Kollision im Nachrichten-Modal behoben'],
           ['v0.7.2','Fix: Ghost-Teams (pending/namenlos) aus Ranking/Teams ausgeblendet, Kontakt-Verzeichnis für Superadmin korrekt befüllt, Teams-Seite und Admin-Panel jetzt am gleichen Spielscope ausgerichtet'],
           ['v0.7.3','Kassenbuch (Soll/Haben/Saldo), Reflexion-Detail-Modal, Stimmungsbarometer-Chart, Bugfixes: Ghost-Teams, Testumgebung, Kontakt'],
-          ['v0.7.4','Session-Persistenz (Auto-Login nach Refresh), MVP-Ticker, Passwort-Reset via Admin, ⚡ Team-Aktivierung, Gruppe der Woche, Aktivitätslog (CSV-Export), Reflexions-Status in Blog-Freigabe, Stimmungsbarometer ans Ende, Team-Emoji änderbar, Nachrichten-Sendenfix, Support-Button', true],
+          ['v0.7.4','Session-Persistenz (Auto-Login nach Refresh), MVP-Ticker, Passwort-Reset via Admin, ⚡ Team-Aktivierung, Gruppe der Woche, Aktivitätslog (CSV-Export), Reflexions-Status in Blog-Freigabe, Stimmungsbarometer ans Ende, Team-Emoji änderbar, Nachrichten-Sendenfix, Support-Button'],
+          ['v0.7.5','Soft-Delete mit Undo: 10-Sekunden Rückgängig-Toast bei Löschen von Mitglied/Team/Buchung/Reflexion/Nachricht; Papierkorb-Tab im Admin-Panel mit Wiederherstellung und endgültigem Löschen'],
+          ['v0.7.6','🔒 Kritischer Bugfix: Firebase-Timeout auf 10s erhöht; verhindert Datenverlust durch Überschreiben von Firebase bei langsamer Verbindung; Retry-Logik in Einladungscode-Prüfung; Realtime-Listener auch im Fehler-Pfad aktiv', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -4799,13 +5004,23 @@ function editReflection(id){
 }
 
 function deleteReflection(id){
-  if(!confirm('Reflexion wirklich löschen? Sie kann nicht wiederhergestellt werden.')) return;
+  if(!confirm('Reflexion wirklich löschen?')) return;
   const idx=REFLECTIONS.findIndex(r=>r.id===id);
   if(idx<0) return;
+  const snap=JSON.parse(JSON.stringify(REFLECTIONS[idx]));
+  const m=MEMBERS.find(x=>x.id===snap.memberId);
   REFLECTIONS.splice(idx,1);
+  if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
+  DELETED_ITEMS.push({id:'del_'+Date.now(),type:'reflection',deletedAt:new Date().toISOString(),label:'Reflexion W'+snap.week+': '+(m?.name||snap.memberId),data:snap});
   saveData();
-  showToast('🗑️ Reflexion gelöscht','info');
-  // Re-render whichever panel is showing
+  showUndoToast('🗑️ Reflexion gelöscht', ()=>{
+    REFLECTIONS.push(snap);
+    DELETED_ITEMS.splice(DELETED_ITEMS.findIndex(d=>d.data.id===snap.id),1);
+    saveData();
+    if(state.currentPage==='admin') renderAdminPage();
+    else if(state.currentPage==='superadmin') renderSuperPage();
+    else if(state.currentPage==='reflection') renderReflectionPage();
+  });
   if(state.currentPage==='admin') renderAdminPage();
   else if(state.currentPage==='superadmin') renderSuperPage();
   else if(state.currentPage==='reflection') renderReflectionPage();
@@ -5115,10 +5330,21 @@ function addMemberToTeam(){
 function deleteMemberFromTeam(memberId){
   const m = MEMBERS.find(x=>x.id===memberId);
   if(!m) return;
-  if(!confirm('Mitglied "'+m.name+'" wirklich löschen?')) return;
+  if(!confirm('Mitglied "'+m.name+'" wirklich entfernen?')) return;
+  const snapshot = JSON.parse(JSON.stringify(m));
   const idx = MEMBERS.indexOf(m); if(idx>=0) MEMBERS.splice(idx,1);
+  // Store in soft-delete bin
+  if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
+  DELETED_ITEMS.push({id:'del_'+Date.now(),type:'member',deletedAt:new Date().toISOString(),label:snapshot.name+' ('+snapshot.role+', '+(TEAMS.find(t=>t.id===snapshot.teamId)?.name||snapshot.teamId)+')',data:snapshot});
   rebuildCodes(); saveData();
-  showToast('🗑️ '+m.name+' entfernt');
+  showUndoToast('🗑️ '+snapshot.name+' entfernt', ()=>{
+    MEMBERS.push(snapshot);
+    DELETED_ITEMS.splice(DELETED_ITEMS.findIndex(d=>d.data.id===snapshot.id),1);
+    rebuildCodes(); saveData();
+    renderMemberMgmtList();
+    logEvent('↩ Mitglied wiederhergestellt: '+snapshot.name);
+  });
+  logEvent('🗑️ Mitglied gelöscht: '+snapshot.name+' ('+snapshot.role+')');
   renderMemberMgmtList();
 }
 function resetMemberPassword(code){
@@ -5149,15 +5375,28 @@ function activatePendingTeamAdmin(teamId){
 function deleteTeam(teamId){
   const team = TEAMS.find(t=>t.id===teamId);
   if(!team) return;
-  if(!confirm('Team "'+team.name+'" und alle zugehörigen Mitglieder löschen?')) return;
+  if(!confirm('Team "'+team.name+'" und alle zugehörigen Mitglieder wirklich löschen?')) return;
+  const teamSnap = JSON.parse(JSON.stringify(team));
+  const memberSnaps = MEMBERS.filter(m=>m.teamId===teamId).map(m=>JSON.parse(JSON.stringify(m)));
   const idx = TEAMS.indexOf(team); if(idx>=0) TEAMS.splice(idx,1);
-  // Remove members
-  const memberIds = MEMBERS.filter(m=>m.teamId===teamId).map(m=>m.id);
-  memberIds.forEach(id=>{ const i=MEMBERS.findIndex(m=>m.id===id); if(i>=0) MEMBERS.splice(i,1); });
-  const game = GAMES.find(g=>g.id===team.gameId);
+  memberSnaps.forEach(ms=>{ const i=MEMBERS.findIndex(m=>m.id===ms.id); if(i>=0) MEMBERS.splice(i,1); });
+  const game = GAMES.find(g=>g.id===teamSnap.gameId);
   if(game) game.teamCount = TEAMS.filter(t=>t.gameId===game.id).length;
+  // Store in soft-delete bin
+  if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
+  DELETED_ITEMS.push({id:'del_'+Date.now(),type:'team',deletedAt:new Date().toISOString(),label:'Team: '+teamSnap.name+' ('+memberSnaps.length+' Mitglieder)',data:{team:teamSnap,members:memberSnaps}});
   rebuildCodes(); saveData();
-  showToast('🗑️ Team "'+team.name+'" gelöscht');
+  showUndoToast('🗑️ Team "'+teamSnap.name+'" gelöscht', ()=>{
+    TEAMS.push(teamSnap);
+    memberSnaps.forEach(ms=>MEMBERS.push(ms));
+    DELETED_ITEMS.splice(DELETED_ITEMS.findIndex(d=>d.data.team&&d.data.team.id===teamSnap.id),1);
+    const g2=GAMES.find(g=>g.id===teamSnap.gameId);
+    if(g2) g2.teamCount=TEAMS.filter(t=>t.gameId===g2.id).length;
+    rebuildCodes(); saveData();
+    renderAdminPage();
+    logEvent('↩ Team wiederhergestellt: '+teamSnap.name);
+  });
+  logEvent('🗑️ Team gelöscht: '+teamSnap.name+' ('+memberSnaps.length+' Mitglieder)');
   renderAdminPage();
 }
 
