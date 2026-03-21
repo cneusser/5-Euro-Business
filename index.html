@@ -898,6 +898,8 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchAdminTab('teams-admin')">&#128101; Teams</button>
      <button class="admin-tab" onclick="switchAdminTab('transactions-admin')">&#128179; Buchungen</button>
      <button class="admin-tab" onclick="switchAdminTab('codes')">&#128273; Codes</button>
+     <button class="admin-tab" onclick="switchAdminTab('teamAward')">&#127893; Gruppe der Woche</button>
+     <button class="admin-tab" onclick="switchAdminTab('log')">&#128203; Aktivitätslog</button>
      <button class="admin-tab" onclick="switchAdminTab('pinnwand')">&#128226; Pinnwand</button>
      <button class="admin-tab" onclick="switchAdminTab('dokumente')">&#128196; Dokumente</button>
      <button class="admin-tab" onclick="switchAdminTab('messaging')">&#9993;&#65039; Nachrichten</button>
@@ -927,6 +929,14 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="admin-panel" id="adminPanel-codes">
      <div class="section-header"><div class="section-title admin-title">Zugangscodes</div></div>
      <div id="codesPanel"></div>
+    </div>
+    <div class="admin-panel" id="adminPanel-teamAward">
+     <div class="section-header"><div class="section-title admin-title">🏅 Gruppe der Woche</div></div>
+     <div id="teamAwardPanel"></div>
+    </div>
+    <div class="admin-panel" id="adminPanel-log">
+     <div class="section-header"><div class="section-title admin-title">📋 Aktivitätslog</div></div>
+     <div id="activityLogPanel"></div>
     </div>
     <div class="admin-panel" id="adminPanel-pinnwand"><div id="pinnwandContent"></div></div>
     <div class="admin-panel" id="adminPanel-dokumente"><div id="dokumenteContent"></div></div>
@@ -1288,6 +1298,8 @@ let MESSAGES = [];
 
 // FEEDBACK submissions
 let FEEDBACKS = [];
+// Activity logs
+let LOGS = [];
 let SUPERADMINS = []; // zusätzliche Superadmins
 let FAQ_DOCS   = []; // PDFs/Docs in FAQ
 let ANNOUNCEMENTS = [];
@@ -1355,6 +1367,7 @@ function _replaceArrays(d){
   replace(BLOGS,d.BLOGS);              replace(TRANSACTIONS,d.TRANSACTIONS);
   replace(REFLECTIONS,d.REFLECTIONS);  replace(ADMINS,d.ADMINS);
   replace(MESSAGES,d.MESSAGES||[]);    replace(FEEDBACKS,d.FEEDBACKS||[]);
+  replace(LOGS,d.LOGS||[]);
   replace(SUPERADMINS,d.SUPERADMINS||[]);
   replace(FAQ_DOCS,d.FAQ_DOCS||[]);    replace(ANNOUNCEMENTS,d.ANNOUNCEMENTS||[]);
   // Merge PASSWORDS dict
@@ -1384,7 +1397,7 @@ function _postLoadCalc(){
 }
 
 function _buildPayload(){
-  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
+  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,LOGS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
 }
 
 // ── saveData (localStorage + Firebase async) ─────────────────────────
@@ -1892,7 +1905,7 @@ function loginWithNewCode(){
   setTimeout(()=>doLoginStep1(),100);
 }
 // ── TEST MODE ────────────────────────────────────────────────────────────
-const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:3,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t3',gameId:'test-g1',name:'Prepify',logo:'📋',color:'#7C3AED',code:'TEAM-PREP1',approach:'B2B-Direktvertrieb',strategy:'Spezialisierung',biz:'Prüfungsvorbereitung für Studenten',revenue:6.00,expenses:1.50,capital:5.00,transactions:2,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Vorbereitet studieren',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null},{id:'test-mb5',teamId:'test-t3',name:'Tina Heckel',firstName:'Tina',lastName:'Heckel',email:'tina@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-PREP-CEO',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false},{id:'test-tx8',teamId:'test-t3',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx9',teamId:'test-t3',date:'2026-03-10',desc:'Erste Nachhilfesession',cat:'Umsatz',type:'income',amount:6.00,receipt:false},{id:'test-tx10',teamId:'test-t3',date:'2026-03-12',desc:'Druckkosten Lernmaterial',cat:'Kosten',type:'expense',amount:1.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Prof. Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
+const TEST_DATA={UNIVERSITIES:[{id:'test-uni',name:'DHBW Stuttgart',short:'DHBW',slug:'DHBW',city:'Stuttgart',adminCount:1,gameCount:1}],GAMES:[{id:'test-g1',name:'VentureLab Demo SoSe 2026',universityId:'test-uni',uni:'DHBW',status:'active',isLive:true,currentWeek:2,teamCount:3,start:'2026-03-01',end:'2026-07-31',mode:'intern',capital:5,teamSize:5,weeklyDeadline:'Sonntag 23:59',autoApprove:0,rounds:1,currentRound:1,adminEmail:'demo@dhbw.de',faqs:[],faqPdfs:[]}],TEAMS:[{id:'test-t1',gameId:'test-g1',name:'Die Ideenschmiede',logo:'💡',color:'#2563EB',code:'TEAM-DEMO1',approach:'Direktvertrieb',strategy:'Kostenführerschaft',biz:'Innovative Dienstleistungen',revenue:12.50,expenses:3.00,capital:5.00,transactions:4,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Ideen verwirklichen',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t2',gameId:'test-g1',name:'GreenWheels',logo:'🌿',color:'#16A34A',code:'TEAM-DEMO2',approach:'Online-First',strategy:'Nachhaltigkeit',biz:'Fahrrad-Sharing',revenue:8.00,expenses:2.50,capital:5.00,transactions:3,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Grün und schnell',desc:'',email:'',notif:{},lang:'de',weekGoal:50},{id:'test-t3',gameId:'test-g1',name:'Prepify',logo:'📋',color:'#7C3AED',code:'TEAM-PREP1',approach:'B2B-Direktvertrieb',strategy:'Spezialisierung',biz:'Prüfungsvorbereitung für Studenten',revenue:6.00,expenses:1.50,capital:5.00,transactions:2,currentWeek:2,weekStatus:'open',mvps:[],mvpOverride:{},slogan:'Vorbereitet studieren',desc:'',email:'',notif:{},lang:'de',weekGoal:50}],MEMBERS:[{id:'test-mb1',teamId:'test-t1',name:'Anna Müller',firstName:'Anna',lastName:'Müller',email:'anna@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO',avatarDataUrl:null},{id:'test-mb2',teamId:'test-t1',name:'Ben Schneider',firstName:'Ben',lastName:'Schneider',email:'ben@test.de',mobile:'',role:'CFO',title:'CFO',bio:'',code:'TEST-CFO',avatarDataUrl:null},{id:'test-mb3',teamId:'test-t1',name:'Lisa Weber',firstName:'Lisa',lastName:'Weber',email:'lisa@test.de',mobile:'',role:'CMO',title:'CMO',bio:'',code:'TEST-CMO',avatarDataUrl:null},{id:'test-mb4',teamId:'test-t2',name:'Tim Braun',firstName:'Tim',lastName:'Braun',email:'tim@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-CEO2',avatarDataUrl:null},{id:'test-mb5',teamId:'test-t3',name:'Tina Heckel',firstName:'Tina',lastName:'Heckel',email:'tina@test.de',mobile:'',role:'CEO',title:'CEO',bio:'',code:'TEST-PREP-CEO',avatarDataUrl:null}],TRANSACTIONS:[{id:'test-tx1',teamId:'test-t1',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx2',teamId:'test-t1',date:'2026-03-08',desc:'Ersten Kunden gewonnen',cat:'Umsatz',type:'income',amount:8.50,receipt:false},{id:'test-tx3',teamId:'test-t1',date:'2026-03-10',desc:'Materialeinkauf',cat:'Kosten',type:'expense',amount:3.00,receipt:false},{id:'test-tx4',teamId:'test-t1',date:'2026-03-12',desc:'Beratungsservice',cat:'Umsatz',type:'income',amount:4.00,receipt:false},{id:'test-tx5',teamId:'test-t2',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx6',teamId:'test-t2',date:'2026-03-09',desc:'Fahrrad-Verleih',cat:'Umsatz',type:'income',amount:8,receipt:false},{id:'test-tx7',teamId:'test-t2',date:'2026-03-11',desc:'Reparaturkosten',cat:'Kosten',type:'expense',amount:2.50,receipt:false},{id:'test-tx8',teamId:'test-t3',date:'2026-03-07',desc:'Startkapital',cat:'Kapital',type:'income',amount:5,receipt:false},{id:'test-tx9',teamId:'test-t3',date:'2026-03-10',desc:'Erste Nachhilfesession',cat:'Umsatz',type:'income',amount:6.00,receipt:false},{id:'test-tx10',teamId:'test-t3',date:'2026-03-12',desc:'Druckkosten Lernmaterial',cat:'Kosten',type:'expense',amount:1.50,receipt:false}],BLOGS:[],REFLECTIONS:[],ADMINS:[{id:'test-a1',gameId:'test-g1',name:'Dr. Neusser',code:'TEST-ADMIN',email:'neusser@dhbw.de',uni:'DHBW'}],FEEDBACKS:[],SUPERADMINS:[],FAQ_DOCS:[],ANNOUNCEMENTS:[{id:'test-ann1',gameId:'test-g1',text:'Willkommen in der Testumgebung! 🚀',date:'2026-03-01',pinned:true}]};
 const TEST_PWDS={'TEST-CEO':'test','TEST-CFO':'test','TEST-CMO':'test','TEST-CEO2':'test','TEST-PREP-CEO':'test','TEST-ADMIN':'test'};
 function loadTestData(){
   window._testModeActive=true;
@@ -1905,7 +1918,7 @@ function loadTestData(){
   localStorage.setItem('5euro_passwords',JSON.stringify(TEST_PWDS));
   loadData();
   rebuildCodes();
-  const accounts=[{code:'TEST-CEO',label:'💡 Die Ideenschmiede',role:'CEO (Anna Müller)'},{code:'TEST-CFO',label:'💡 Die Ideenschmiede',role:'CFO (Ben Schneider)'},{code:'TEST-CMO',label:'💡 Die Ideenschmiede',role:'CMO (Lisa Weber)'},{code:'TEST-CEO2',label:'🌿 GreenWheels',role:'CEO (Tim Braun)'},{code:'TEST-PREP-CEO',label:'📋 Prepify',role:'CEO (Tina Heckel)'},{code:'TEST-ADMIN',label:'🏫 DHBW Stuttgart',role:'Admin (Prof. Dr. Neusser)'}];
+  const accounts=[{code:'TEST-CEO',label:'💡 Die Ideenschmiede',role:'CEO (Anna Müller)'},{code:'TEST-CFO',label:'💡 Die Ideenschmiede',role:'CFO (Ben Schneider)'},{code:'TEST-CMO',label:'💡 Die Ideenschmiede',role:'CMO (Lisa Weber)'},{code:'TEST-CEO2',label:'🌿 GreenWheels',role:'CEO (Tim Braun)'},{code:'TEST-PREP-CEO',label:'📋 Prepify',role:'CEO (Tina Heckel)'},{code:'TEST-ADMIN',label:'🏫 DHBW Stuttgart',role:'Admin (Dr. Neusser)'}];
   document.getElementById('testAccountList').innerHTML=accounts.map(a=>'<button onclick="testLogin(\''+a.code+'\')" style="width:100%;text-align:left;background:white;border:2px solid #E0E7F0;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div><div style="font-size:13px;font-weight:700;color:#1e3a5f;">'+a.role+'</div><div style="font-size:11px;color:#888;">'+a.label+'</div></div><div style="margin-left:auto;font-size:11px;color:#2563EB;font-weight:700;">Einloggen →</div></button>').join('');
   const existing=document.getElementById('testModeBanner');if(existing) existing.remove();
   const banner=document.createElement('div');
@@ -2355,6 +2368,15 @@ function initApp(){
   navigateTo(def);
   logEvent('page_load',{page:def});
   sendAutoBackup();
+  // Show unread message notification
+  const u_msg=state.currentUser;
+  const myMsgId=u_msg.memberId||u_msg.code;
+  const unreadMsgs=MESSAGES.filter(m=>m.toId===myMsgId&&!m.read);
+  if(unreadMsgs.length>0){
+    setTimeout(()=>{
+      showToast('📬 '+unreadMsgs.length+' neue Nachricht'+(unreadMsgs.length>1?'en':'')+'! Unter Kontakt ansehen.','success');
+    },800);
+  }
   if(state.lang==='en') setTimeout(applyLang,200);
 }
 
@@ -2820,7 +2842,7 @@ function renderPage(p){
     reflection:renderReflectionPage,teams:renderTeamsPage,blog:renderBlogPage,
     kontakt:renderKontaktPage,tx:renderTxPage,feedback:renderFeedback,admin:renderAdminPage,
     superadmin:renderSuperPage,konzept:renderKonzept})[p]?.();
-  if(state.lang==='en') setTimeout(applyLang,80);
+  if(state.lang==='en') setTimeout(applyLang,180);
 }
 
 // ── Re-render current view WITHOUT triggering saveData (used by Firebase listener)
@@ -3095,6 +3117,11 @@ function renderTeamProfileForm(team){
       <input class="form-control" id="tpBiz" value="${team.biz}"></div>
     <div class="form-group"><label class="form-label">Detaillierte Beschreibung</label>
       <textarea class="form-control" id="tpDesc" rows="3" placeholder="Beschreibt euer Business ausführlicher...">${team.desc||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Team-Emoji</label>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="tpLogoPreview" style="font-size:28px;">${team.logo}</span>
+      <button class="btn btn-outline btn-sm" type="button" onclick="changTeamEmoji()">Emoji ändern</button>
+    </div></div>
     <button class="btn btn-primary btn-sm" onclick="saveTeamProfile()">💾 Speichern</button>`;
   document.getElementById('logoUploadSection').innerHTML=`
     <div class="form-section-title">Team-Logo</div>
@@ -3753,7 +3780,8 @@ function renderKontaktPage(){
   // Get messages for current user
   const myId_safe=myId.replace(/'/g,"\\'");
   const inbox=MESSAGES.filter(m=>m.toId===myId).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const sent=MESSAGES.filter(m=>m.fromId===myId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const allMyIds=new Set([myId,u.code,u.memberId,u.adminId].filter(Boolean));
+  const sent=MESSAGES.filter(m=>allMyIds.has(m.fromId)).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   const inboxHtml=inbox.length===0?'<div style="text-align:center;padding:20px;color:var(--gray-mid);">📭 Keine Nachrichten</div>':
     inbox.map(msg=>`<div class="card" style="margin-bottom:10px;padding:12px;${msg.read?'':'background:var(--blue-lt);'} opacity:${msg.read?0.7:1}">
@@ -3766,6 +3794,7 @@ function renderKontaktPage(){
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           ${!msg.read?'<button class="btn btn-xs" onclick="markMessageRead(\''+msg.id+'\')">✅</button>':''}
+          <button class="btn btn-xs btn-outline" onclick="openMessageModal(\''+msg.fromId+'\',\''+msg.fromName.replace(/'/g,"\\'")+'\')" title="Antworten">↩️</button>
           <button class="btn btn-danger btn-xs" onclick="deleteMessage(\''+msg.id+'\')">🗑️</button>
         </div>
       </div>
@@ -3855,7 +3884,7 @@ function renderAdminPage(){
   const backImpBtn=document.getElementById('adminBackFromImpersonate');
   if(backImpBtn) backImpBtn.style.display = state.prevUser ? 'inline-flex' : 'none';
   if(game) document.getElementById('adminHeroSub').textContent=game.name+' · '+(game.uni||'');
-  renderApprovalQueue();renderWeeksAdmin();renderReflectionsAdmin();renderAdminTeamsTable();renderAdminTxTable();renderCodesPanel();
+  renderApprovalQueue();renderWeeksAdmin();renderReflectionsAdmin();renderAdminTeamsTable();renderAdminTxTable();renderCodesPanel();renderTeamAwardPanel();renderActivityLog();
   // notification dots
   const pending=BLOGS.filter(b=>b.status==='pending').length;
   document.getElementById('approvalCount').textContent=pending;
@@ -3869,6 +3898,9 @@ function switchAdminTab(tabId){
   if(tabId==='pinnwand') renderPinnwand();
   else if(tabId==='dokumente') renderDokumente();
   else if(tabId==='messaging') renderMessaging();
+  else if(tabId==='teamAward') renderTeamAwardPanel();
+  else if(tabId==='log') renderActivityLog();
+  if(state.lang==='en') setTimeout(applyLang,200);
 }
 function renderApprovalQueue(){
   const u=state.currentUser;
@@ -3879,6 +3911,15 @@ function renderApprovalQueue(){
   if(pending.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><h3>Alle geprüft</h3><p>Keine ausstehenden Berichte.</p></div>';return;}
   el.innerHTML=pending.map(b=>{
     const team=TEAMS.find(t=>t.id===b.teamId);
+    const teamMembers=MEMBERS.filter(m=>m.teamId===b.teamId);
+    const refsForWeek=REFLECTIONS.filter(r=>r.teamId===b.teamId&&r.week===b.week);
+    const reflStatusHtml=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:var(--bg-light);border-top:1px solid var(--border);font-size:11px;">
+      <span style="color:var(--gray-mid);font-weight:600;">📝 Reflexionen W${b.week}:</span>
+      ${teamMembers.map(m=>{
+        const hasRef=refsForWeek.find(r=>r.memberId===m.id);
+        return '<span style="padding:2px 8px;border-radius:12px;font-weight:600;background:'+(hasRef?team?.color+'33':'#F3F4F6')+';color:'+(hasRef?team?.color:'#9CA3AF')+';border:1px solid '+(hasRef?team?.color+'66':'#E5E7EB')+';">'+m.name+' ('+(hasRef?'✓':'fehlt')+')</span>';
+      }).join('')}
+    </div>`;
     return `<div class="approval-row">
       <div class="approval-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
         <div style="width:30px;height:30px;border-radius:8px;background:${team?.color};color:white;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${team?.logo}</div>
@@ -3886,7 +3927,17 @@ function renderApprovalQueue(){
         <span class="blog-status status-pending" style="margin-left:auto;">⏳</span>
         <button style="background:none;border:none;cursor:pointer;font-size:12px;margin-left:6px;">▼</button>
       </div>
-      <div class="approval-content"><p>${b.body}</p>${b.highlight?`<p style="margin-top:6px;"><strong>⭐ Highlight:</strong> ${b.highlight}</p>`:''}</div>
+      <div class="approval-content" style="display:block!important;">
+        ${b.body?`<div style="margin-bottom:8px;"><label style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px;">Aktivitäten</label><div style="padding:8px;background:var(--bg-light);border-radius:6px;font-size:13px;">${b.body}</div></div>`:''}
+        ${b.highlight?`<div style="margin-bottom:8px;"><label style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px;">⭐ Highlight</label><div style="padding:8px;background:#FFFBEB;border-radius:6px;font-size:13px;">${b.highlight}</div></div>`:''}
+        ${b.challenges?`<div style="margin-bottom:8px;"><label style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px;">⚠️ Herausforderungen</label><div style="padding:8px;background:var(--bg-light);border-radius:6px;font-size:13px;">${b.challenges}</div></div>`:''}
+        ${b.nextSteps?`<div style="margin-bottom:8px;"><label style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px;">▶️ Nächste Schritte</label><div style="padding:8px;background:var(--bg-light);border-radius:6px;font-size:13px;">${b.nextSteps}</div></div>`:''}
+        ${b.adminFeedback?`<div style="margin-bottom:8px;"><label style="font-size:10px;font-weight:700;color:#2563EB;text-transform:uppercase;letter-spacing:.5px;">💬 Admin-Feedback</label><div style="padding:8px;background:#EFF6FF;border-radius:6px;font-size:13px;">${b.adminFeedback}</div></div>`:''}
+      </div>
+      ${reflStatusHtml}
+      <div style="padding:8px 12px;background:var(--gray-lt);border-top:1px solid var(--border);">
+        <textarea id="blogFeedback_${b.id}" placeholder="💬 Individuelles Feedback (optional)..." class="form-control" rows="2" style="font-size:12px;">${b.adminFeedback||''}</textarea>
+      </div>
       <div class="approval-actions">
         <button class="btn btn-success btn-sm" onclick="approveBlog('${b.id}')">✅ Freigeben</button>
         <button class="btn btn-warning btn-sm" onclick="rejectBlog('${b.id}')">🔄 Überarbeitung</button>
@@ -3897,7 +3948,11 @@ function renderApprovalQueue(){
 }
 function renderWeeksAdmin(){
   const teams=TEAMS.filter(t=>t.gameId==='g1');
-  document.getElementById('weeksAdminTable').innerHTML=`
+  let html=`<div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;align-items:center;"><strong>Legende:</strong>
+<span class="tag tag-blue">📝 Offen</span>
+<span class="tag tag-orange">⏳ Eingereicht</span>
+<span class="tag tag-green">✅ Freigegeben</span></div>`;
+  html+=`
     <table class="data-table" style="width:100%">
       <thead><tr><th>Team</th><th>Aktuelle Woche</th><th>Status</th><th>Bericht Woche ${1}</th><th>Aktion</th></tr></thead>
       <tbody>${teams.map(team=>{
@@ -3910,21 +3965,50 @@ function renderWeeksAdmin(){
           <td style="display:flex;gap:4px;"><button class="btn btn-outline btn-xs" onclick="manualRollbackWeek('${team.id}')" title="Eine Woche zurück">⏮️ Zurück</button><button class="btn btn-outline btn-xs" onclick="manualAdvanceWeek('${team.id}')">⏭️ Weiter</button></td>
         </tr>`;}).join('')}</tbody>
     </table>`;
+  document.getElementById('weeksAdminTable').innerHTML=html;
 }
 function renderReflectionsAdmin(){
   const el=document.getElementById('reflectionsAdminPanel');
   if(REFLECTIONS.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><h3>Keine Reflexionen</h3></div>';return;}
-  // Add mood chart section
-  let chartHtml=`<div class="card" style="margin-bottom:20px;">
+  // Build missing reflections overview
+  const gameTeams_r=getVisibleTeams();
+  const weeks_r=[...new Set(REFLECTIONS.map(r=>r.week))].sort((a,b)=>a-b);
+  gameTeams_r.forEach(t=>{if(!weeks_r.includes(t.currentWeek))weeks_r.push(t.currentWeek);});
+  weeks_r.sort((a,b)=>a-b);
+  const missingHtml=`<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h3>📋 Reflexions-Status</h3></div>
+  <div class="card-body" style="padding:12px;">
+    ${weeks_r.map(w=>`
+      <div style="margin-bottom:12px;">
+        <div style="font-weight:700;font-size:12px;color:var(--gray-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Woche ${w}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+        ${gameTeams_r.map(team=>{
+          const members=MEMBERS.filter(m=>m.teamId===team.id);
+          const refsW=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===w);
+          return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;width:120px;flex-shrink:0;">${team.logo} ${team.name}</span>
+            ${members.map(m=>{
+              const has=refsW.find(r=>r.memberId===m.id);
+              return '<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:default;background:'+(has?team.color+'22':'#F3F4F6')+';color:'+(has?team.color:'#9CA3AF')+';border:1px solid '+(has?team.color+'55':'#E5E7EB')+';white-space:nowrap;" title="'+(has?'Reflexion abgegeben':'Fehlt noch')+'">'+(m.name.split(' ')[0])+'</span>';
+            }).join('')}
+          </div>`;
+        }).join('')}
+        </div>
+      </div>
+    `).join('')}
+  </div>
+</div>`;
+  // Add mood chart section (moved to bottom, more compact)
+  let chartHtml=`<div class="card" style="margin-top:20px;">
   <div class="card-header"><h3>📊 Stimmungsbarometer</h3></div>
   <div class="card-body">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px;" id="moodByWeek"></div>
-    <canvas id="moodChartAdmin" height="120"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px;" id="moodByWeek"></div>
+    <canvas id="moodChartAdmin" height="80"></canvas>
   </div>
 </div>`;
   const grouped={};
   REFLECTIONS.forEach(r=>{if(!grouped[r.teamId])grouped[r.teamId]=[];grouped[r.teamId].push(r);});
-  el.innerHTML=chartHtml+Object.entries(grouped).map(([teamId,refs])=>{
+  el.innerHTML=missingHtml+Object.entries(grouped).map(([teamId,refs])=>{
     const team=TEAMS.find(t=>t.id===teamId);
     return `<div class="card" style="margin-bottom:14px;">
       <div class="card-header"><h3>${team?.logo} ${team?.name}</h3></div>
@@ -3934,7 +4018,7 @@ function renderReflectionsAdmin(){
         return `<div style="border-bottom:1px solid var(--border);padding:10px 0;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:7px;">
           <div style="width:28px;height:28px;border-radius:50%;background:${team?.color};color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${m?.name?.charAt(0)}</div>
           <strong>${m?.name}</strong><span style="color:var(--gray-mid);font-size:11px;">(${m?.role})</span>
-          <span style="margin-left:auto;font-size:12px;">${moodEmoji} ${r.mood}/5 · Woche ${r.week}</span></div>
+          <span style="margin-left:auto;font-size:12px;">${moodEmoji} ${r.mood}/5 · W${r.week}${r.date?' · '+fmtDate(r.date):''}</span></div>
           ${r.experience?`<div style="font-size:12px;color:var(--gray-dark);margin-bottom:4px;"><strong>Erfahrungen:</strong> ${r.experience}</div>`:''}
           ${r.liked?`<div style="font-size:12px;color:var(--green);margin-bottom:4px;">👍 ${r.liked}</div>`:''}
           ${r.improved?`<div style="font-size:12px;color:var(--orange);margin-bottom:6px;">💡 ${r.improved}</div>`:''}
@@ -3943,7 +4027,7 @@ function renderReflectionsAdmin(){
             <button class="btn btn-danger btn-xs" onclick="deleteReflection('${r.id}')" title="Reflexion löschen">🗑️ Löschen</button>
           </div>
         </div>`;}).join('')}</div>
-    </div>`;}).join('');
+    </div>`;}).join('')+chartHtml;
   renderMoodChart();
 }
 function renderAdminTeamsTable(){
@@ -3989,6 +4073,7 @@ function renderAdminTeamsTable(){
           +'<td><div style="display:flex;gap:3px;">'
           +'<button class="btn btn-outline btn-xs" onclick="openMemberMgmt(this.dataset.id)" data-id="'+team.id+'" title="Mitglieder verwalten">👤 '+MEMBERS.filter(m=>m.teamId===team.id).length+'</button>'
           +'<button class="btn btn-outline btn-xs" onclick="openAdminKassenbuch(this.dataset.id)" data-id="'+team.id+'" title="Kassenbuch anzeigen">📒</button>'
+          +'<button class="btn btn-outline btn-xs" onclick="openEmojiPickerForTeam(\''+team.id+'\')" title="Emoji ändern">'+team.logo+' ✏️</button>'
           +'<button class="btn btn-danger btn-xs" onclick="deleteTeam(this.dataset.id)" data-id="'+team.id+'" title="Team löschen">🗑️</button>'
           +'</div></td></tr>';}).join('')
       +'</tbody></table>';
@@ -4053,6 +4138,156 @@ function renderCodesPanel(){
         </td>
       </tr>`;}).join('')}</tbody>
     </table>`;
+}
+
+// Team Award Panel
+function renderTeamAwardPanel(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u.gameId;
+  const gameTeams=getVisibleTeams();
+  const currentWeek=gameTeams[0]?.currentWeek||1;
+  const scores=gameTeams.map(team=>{
+    const members=MEMBERS.filter(m=>m.teamId===team.id);
+    const revScore=Math.min(10,Math.round((team.revenue/(team.capital||5))*5));
+    const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===currentWeek&&b.status!=='draft');
+    const blogScore=hasBlog?10:0;
+    const refs=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===currentWeek);
+    const refScore=Math.round((refs.length/Math.max(members.length,1))*10);
+    const avgMood=refs.length>0?refs.reduce((s,r)=>s+(r.mood||3),0)/refs.length:0;
+    const moodScore=Math.round((avgMood/5)*10);
+    const txScore=Math.min(10,team.transactions||0);
+    const total=revScore+blogScore+refScore+moodScore+txScore;
+    return {team,revScore,blogScore,refScore,moodScore,txScore,total};
+  }).sort((a,b)=>b.total-a.total);
+  const awards=GAMES.find(g=>g.id===effectiveGameId)?.teamAwards||[];
+  const el=document.getElementById('teamAwardPanel');
+  if(!el) return;
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3>🏅 Gruppe der Woche – Automatische Auswertung</h3></div>
+      <div class="card-body">
+        <div style="font-size:12px;color:var(--gray-mid);margin-bottom:12px;">Woche ${currentWeek} · Kriterien: Umsatz (20%), Wochenbericht (20%), Reflexionen (20%), Stimmung (20%), Aktivität (20%)</div>
+        <table class="data-table" style="width:100%;">
+          <thead><tr><th>Platz</th><th>Team</th><th>Umsatz</th><th>Bericht</th><th>Reflexion</th><th>Stimmung</th><th>Aktivität</th><th>Gesamt</th></tr></thead>
+          <tbody>${scores.map((s,i)=>`<tr style="${i===0?'background:#FFFBEB;font-weight:700;':''}">
+            <td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}</td>
+            <td><span style="color:${s.team.color};">${s.team.logo}</span> ${s.team.name}</td>
+            <td><div style="width:${s.revScore*10}%;height:8px;background:${s.team.color};border-radius:4px;min-width:2px;"></div>${s.revScore}/10</td>
+            <td>${s.blogScore}/10</td>
+            <td>${s.refScore}/10</td>
+            <td>${s.moodScore}/10</td>
+            <td>${s.txScore}/10</td>
+            <td style="font-weight:700;color:${i===0?'var(--orange)':'var(--gray-dark)'};">${s.total}/50</td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <div style="margin-top:16px;padding:12px;background:var(--blue-xlt);border-radius:8px;">
+          <div style="font-weight:700;margin-bottom:8px;">✅ Gruppe der Woche ${currentWeek} manuell vergeben:</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select class="form-control" id="awardTeamSelect" style="max-width:200px;">
+              ${scores.map((s,i)=>`<option value="${s.team.id}" ${i===0?'selected':''}>${s.team.logo} ${s.team.name} (${s.total}/50)</option>`).join('')}
+            </select>
+            <input class="form-control" id="awardReason" placeholder="Begründung (optional)..." style="flex:1;min-width:200px;">
+            <button class="btn btn-primary btn-sm" onclick="saveTeamAward(${currentWeek})">🏅 Auszeichnen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${awards.length>0?`<div class="card">
+      <div class="card-header"><h3>🏆 Vergabeverlauf</h3></div>
+      <div class="card-body">${[...awards].reverse().map(a=>{const t=TEAMS.find(x=>x.id===a.teamId);return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:20px;">${t?.logo}</span>
+        <div><strong>${t?.name}</strong><div style="font-size:11px;color:var(--gray-mid);">Woche ${a.week}${a.reason?' · '+a.reason:''}</div></div>
+        <span class="tag tag-green" style="margin-left:auto;">🏅 Ausgezeichnet</span>
+      </div>`;}).join('')}</div>
+    </div>`:''}
+  `;
+}
+function saveTeamAward(week){
+  const teamId=document.getElementById('awardTeamSelect')?.value;
+  const reason=document.getElementById('awardReason')?.value.trim();
+  if(!teamId) return;
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u.gameId;
+  const game=GAMES.find(g=>g.id===effectiveGameId);
+  if(!game) return;
+  if(!game.teamAwards) game.teamAwards=[];
+  const idx=game.teamAwards.findIndex(a=>a.week===week);
+  if(idx>=0) game.teamAwards.splice(idx,1);
+  game.teamAwards.push({week,teamId,reason,date:new Date().toISOString().split('T')[0]});
+  const team=TEAMS.find(t=>t.id===teamId);
+  saveData();
+  showToast('🏅 Gruppe der Woche ausgezeichnet!','success');
+  renderTeamAwardPanel();
+}
+
+// Activity Log Panel
+function renderActivityLog(){
+  const el=document.getElementById('activityLogPanel');
+  if(!el) return;
+  const sorted=[...LOGS].reverse().slice(0,200);
+  const actionIcon={login:'🔑',logout:'🚪',blog_submit:'📤',blog_approve:'✅',blog_reject:'🔄',reflection_submit:'📝',week_advance:'⏭️',week_rollback:'⏮️',admin_member_add:'👤',tx_add:'💰'};
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--gray-mid);">${sorted.length} Einträge (max. 200 angezeigt)</div>
+      <button class="btn btn-outline btn-sm" onclick="exportActivityLog()">📥 CSV Export</button>
+    </div>
+    ${sorted.length===0?'<div class="empty-state"><div class="empty-icon">📋</div><h3>Noch keine Aktivitäten</h3></div>':''}
+    <table class="data-table" style="width:100%;font-size:11px;">
+      <thead><tr><th>Zeit</th><th>Aktion</th><th>Person</th><th>Team</th><th>Details</th></tr></thead>
+      <tbody>${sorted.map(e=>`<tr>
+        <td style="white-space:nowrap;color:var(--gray-mid);">${e.ts?new Date(e.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+        <td><span style="white-space:nowrap;">${actionIcon[e.action]||'📌'} ${e.action}</span></td>
+        <td>${e.uname||'—'}<span style="color:var(--gray-mid);"> (${e.urole||'—'})</span></td>
+        <td>${e.tname||'—'}</td>
+        <td style="color:var(--gray-mid);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.data||''}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+function exportActivityLog(){
+  const sorted=[...LOGS].reverse();
+  const header='Zeit,Aktion,Person,Rolle,Team,Spiel,Details';
+  const rows=sorted.map(e=>[
+    e.ts?new Date(e.ts).toLocaleString('de-DE'):'',
+    e.action||'',
+    (e.uname||'').replace(/,/g,' '),
+    e.urole||'',
+    (e.tname||'').replace(/,/g,' '),
+    (e.gname||'').replace(/,/g,' '),
+    (e.data||'').replace(/,/g,' ').replace(/"/g,'').substring(0,100)
+  ].map(v=>'"'+v+'"').join(','));
+  const csv=header+'\n'+rows.join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='venturelab_log_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('📥 CSV exportiert','success');
+}
+
+// Emoji Picker for Teams
+function openEmojiPickerForTeam(teamId){
+  const team=TEAMS.find(t=>t.id===teamId);
+  if(!team) return;
+  const emojis=['🚀','💡','🌿','📋','🔥','⚡','🌟','🎯','💎','🏆','🎪','🛒','📱','🤝','🌈','🍀','🦁','🐉','🎭','🎨'];
+  const chosen=prompt('Wähle ein Emoji für '+team.name+':\n'+emojis.join(' ')+'\n\nOder gib ein eigenes Emoji ein:',team.logo||'🚀');
+  if(chosen&&chosen.trim()){
+    team.logo=chosen.trim().substring(0,2);
+    saveData();rebuildCodes();
+    renderAdminTeamsTable();
+    showToast('✅ Emoji für '+team.name+' geändert','success');
+  }
+}
+
+function changTeamEmoji(){
+  const team=getMyTeam();if(!team) return;
+  const emojis=['🚀','💡','🌿','📋','🔥','⚡','🌟','🎯','💎','🏆','🎪','🛒','📱','🤝','🌈','🍀','🦁','🐉','🎭','🎨'];
+  const chosen=prompt('Emoji ändern:\n'+emojis.join(' ')+'\n\nOder eigenes Emoji eingeben:',team.logo||'🚀');
+  if(chosen&&chosen.trim()){
+    team.logo=chosen.trim().substring(0,2);
+    saveData();rebuildCodes();
+    renderMyTeam();
+    showToast('✅ Emoji geändert: '+team.logo,'success');
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4210,7 +4445,7 @@ function renderKonzept(){
           ['v0.7.1','Fix: Admin-Nachrichten jetzt immer zugestellt (In-App-Postfach, E-Mail als optionaler Hintergrund-Versand), ID-Kollision im Nachrichten-Modal behoben'],
           ['v0.7.2','Fix: Ghost-Teams (pending/namenlos) aus Ranking/Teams ausgeblendet, Kontakt-Verzeichnis für Superadmin korrekt befüllt, Teams-Seite und Admin-Panel jetzt am gleichen Spielscope ausgerichtet'],
           ['v0.7.3','Kassenbuch (Soll/Haben/Saldo), Reflexion-Detail-Modal, Stimmungsbarometer-Chart, Bugfixes: Ghost-Teams, Testumgebung, Kontakt'],
-          ['v0.7.4','Session-Persistenz (kein Re-Login nach Seiten-Refresh), MVP-Ticker nach Wochenabschluss, Change-Historie automatisch aktualisiert', true],
+          ['v0.7.4','Session-Persistenz (Auto-Login nach Refresh), MVP-Ticker, Passwort-Reset via Admin, ⚡ Team-Aktivierung, Gruppe der Woche, Aktivitätslog (CSV-Export), Reflexions-Status in Blog-Freigabe, Stimmungsbarometer ans Ende, Team-Emoji änderbar, Nachrichten-Sendenfix, Support-Button', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -4365,6 +4600,8 @@ function updateBlogReflectionStatus(){
 function approveBlog(id){
   logEvent('admin_blog_approve', {blogId: id});
   const b=BLOGS.find(x=>x.id===id);if(!b)return;
+  const feedbackEl=document.getElementById('blogFeedback_'+id);
+  if(feedbackEl&&feedbackEl.value.trim()) b.adminFeedback=feedbackEl.value.trim();
   b.status='approved';
   const team=TEAMS.find(t=>t.id===b.teamId);
   if(team&&team.weekStatus==='submitted'){
@@ -4400,7 +4637,7 @@ function manualRollbackWeek(teamId){
   saveData();renderWeeksAdmin();showToast('⏮️ '+team.name+' – zurück auf Woche '+team.currentWeek);
 }
 function quickApprove(id){approveBlog(id);}
-function rejectBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){b.status='pending';renderApprovalQueue();showToast('🔄 Überarbeitung angefragt','info');}}
+function rejectBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){const feedbackEl=document.getElementById('blogFeedback_'+id);if(feedbackEl&&feedbackEl.value.trim()) b.adminFeedback=feedbackEl.value.trim();b.status='pending';saveData();renderApprovalQueue();showToast('🔄 Überarbeitung angefragt','info');}}
 function deleteBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){b.status='rejected';renderApprovalQueue();showToast('❌ Abgelehnt','error');}}
 function approveAll(){BLOGS.filter(b=>b.status==='pending').forEach(b=>approveBlog(b.id));showToast('✅ Alle freigegeben!');}
 
@@ -5760,6 +5997,70 @@ const TRANS_MAP = {
   'Freigabe erhalten!':'Approved!',
   'abgeschlossen. Ihr seid jetzt in Woche':'completed. You are now in week',
   'Wochenbericht eingereicht':'Weekly report submitted',
+  // Week / Status
+  'Woche ':'Week ', 'Wochen ':'Weeks ',
+  'aktuelle Woche':'current week', 'Aktuelle Woche':'Current Week',
+  'Ausstehend':'Pending', 'ausstehend':'pending',
+  'Freigeben':'Approve', 'Ablehnen':'Reject', 'Überarbeitung':'Revision',
+  'Legende':'Legend',
+  // Contact / Messages
+  'Kontakt':'Contact', 'Kontakt & Verzeichnis':'Contact & Directory',
+  'Team-Verzeichnis':'Team Directory',
+  'Posteingang':'Inbox', 'Gesendet':'Sent',
+  'Nachricht senden':'Send Message', 'Nachricht versenden':'Send Message',
+  'Antworten':'Reply', 'antworten':'reply',
+  'Keine Nachrichten':'No messages', 'Noch keine Nachrichten gesendet':'No messages sent yet',
+  // Admin new features
+  'Stimmungsbarometer':'Mood Barometer',
+  'Reflexions-Status':'Reflection Status',
+  'Gruppe der Woche':'Team of the Week',
+  'Aktivitätslog':'Activity Log',
+  'Individuelles Feedback':'Individual Feedback',
+  'Kriterien':'Criteria', 'Auszeichnen':'Award',
+  'Vergabeverlauf':'Award History', 'Ausgezeichnet':'Awarded',
+  'Automatische Auswertung':'Automatic Evaluation',
+  'Gruppe der Woche – Automatische Auswertung':'Team of the Week – Automatic Evaluation',
+  'Vergabe':'Award', 'manuell vergeben':'manually award',
+  'Begründung':'Reason', 'Begründung (optional)':'Reason (optional)',
+  'Gesamt':'Total', 'gesamt':'total',
+  'Umsatz (20%)':'Revenue (20%)', 'Bericht (20%)':'Report (20%)',
+  'Stimmung (20%)':'Mood (20%)', 'Aktivität (20%)':'Activity (20%)',
+  // Kassenbuch
+  'Kassenbuch':'Cash Book', 'Soll':'Debit', 'Haben':'Credit', 'Saldo':'Balance',
+  'Startkapital':'Start Capital',
+  // Teams / Admin
+  'Team-Verwaltung':'Team Management', 'Team-Slot':'Team Slot',
+  'Aktion':'Action', 'Aktionen':'Actions',
+  'Emoji ändern':'Change Emoji', 'Emoji':'Emoji',
+  'Passwort zurücksetzen':'Reset Password', 'kein Passwort':'no password',
+  'Aktivieren':'Activate', 'aktivieren':'activate',
+  'Einladungscode':'Invite Code',
+  'Mitglieder':'Members', 'Mitglied':'Member',
+  'Platz':'Rank', 'Plätze':'Ranks',
+  'Umsatz':'Revenue', 'Gewinn':'Profit',
+  // Log / Export
+  'CSV Export':'CSV Export',
+  'Einträge (max. 200 angezeigt)':'entries (max. 200 shown)',
+  'Noch keine Aktivitäten':'No activities yet',
+  'Zeit':'Time', 'Aktion':'Action', 'Person':'Person', 'Details':'Details',
+  // Reflections
+  'Noch keine Reflexion eingereicht':'No reflection submitted yet',
+  'Reflexion abgegeben':'Reflection submitted', 'Fehlt noch':'Missing',
+  'fehlt':'missing',
+  // Blog approval
+  'Aktivitäten':'Activities', 'Highlight':'Highlight',
+  'Herausforderungen':'Challenges', 'Nächste Schritte':'Next Steps',
+  'Admin-Feedback':'Admin Feedback',
+  'Reflexionen W':'Reflections W',
+  // Support
+  'Support VentureLab':'Support VentureLab',
+  'Dieses Projekt unterstützen – Buy Me a Coffee':'Support this project – Buy Me a Coffee',
+  // Misc new
+  'kein Passwort':'no password', 'Reset':'Reset',
+  'Alle geprüft':'All reviewed',
+  'Keine ausstehenden Berichte.':'No pending reports.',
+  'Ø Stimmung nach Freigabe sichtbar':'Avg mood visible after approval',
+  'Stimmung: ':'Mood: ',
 };
 
 function applyLang(){
@@ -5877,6 +6178,12 @@ function logEvent(action, data){
     data: typeof data === 'object' ? JSON.stringify(data) : String(data||'')
   };
   _trackBuffer.push(evt);
+  // Persist important events
+  const importantActions=['login','logout','blog_submit','blog_approve','blog_reject','reflection_submit','week_advance','week_rollback','admin_member_add','tx_add'];
+  if(importantActions.includes(action)){
+    LOGS.push({...evt, id:'log'+Date.now()+Math.random().toString(36).substr(2,4)});
+    if(LOGS.length>500) LOGS.shift();
+  }
   if(_trackBuffer.length >= TRACK_BATCH_SIZE) flushTrackBuffer();
 }
 
