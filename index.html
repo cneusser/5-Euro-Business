@@ -456,7 +456,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.7.7)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.0)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -692,7 +692,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.7.7</div>
+ <div class="version-footer" id="versionFooter">v0.8.0</div>
 </div>
 
 <!-- APP -->
@@ -910,12 +910,13 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div id="approvalQueue"></div>
     </div>
     <div class="admin-panel" id="adminPanel-weeks">
-     <div class="section-header"><div class="section-title admin-title">Wochen-Status pro Team</div></div>
+     <div class="section-header"><div class="section-title admin-title">Wochen-Status pro Team</div><button class="btn btn-outline btn-sm" onclick="checkAndSendReminders(null,true)">&#128276; Erinnerungen senden</button></div>
+     <div id="customQuestionsAdminWrap"></div>
      <div class="info-box blue"><span class="info-box-icon">&#128161;</span>Jedes Team durchl&#228;uft die Wochen unabh&#228;ngig voneinander. Nach Freigabe des Wochenberichts wird das Team automatisch in die n&#228;chste Woche versetzt.</div>
      <div class="data-table-wrap"><div id="weeksAdminTable"></div></div>
     </div>
     <div class="admin-panel" id="adminPanel-reflections-admin">
-     <div class="section-header"><div class="section-title admin-title">Pers&#246;nliche Reflexionen (Admin-Sicht)</div></div>
+     <div class="section-header"><div class="section-title admin-title">Pers&#246;nliche Reflexionen (Admin-Sicht)</div><button class="btn btn-outline btn-sm" onclick="exportReflectionsCSV()">&#128229; CSV Export</button></div>
      <div class="info-box gold"><span class="info-box-icon">&#128274;</span>Diese Reflexionen sind <strong>privat</strong> und nur f&#252;r den jeweiligen Nutzer und Admins sichtbar. Bitte vertraulich behandeln.</div>
      <div id="reflectionsAdminPanel"></div>
     </div>
@@ -924,7 +925,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="data-table-wrap"><div id="adminTeamsTable"></div></div>
     </div>
     <div class="admin-panel" id="adminPanel-transactions-admin">
-     <div class="section-header"><div class="section-title admin-title">Alle Buchungen</div></div>
+     <div class="section-header"><div class="section-title admin-title">Alle Buchungen</div><button class="btn btn-outline btn-sm" onclick="exportTransactionsCSV()">&#128229; CSV Export</button></div>
      <div class="tx-table" id="adminTxTable"></div>
     </div>
     <div class="admin-panel" id="adminPanel-codes">
@@ -959,6 +960,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchSuperTab('admins')">&#128737;&#65039; Admins</button>
      <button class="admin-tab" onclick="switchSuperTab('universities')">&#127979; Hochschulen</button>
      <button class="admin-tab" onclick="switchSuperTab('reflections-super')">&#128172; Alle Reflexionen</button>
+     <button class="admin-tab" onclick="switchSuperTab('guest-admins')">&#128737;&#65039; Gastadmins</button>
     </div>
     <div class="admin-panel active" id="superPanel-overview">
      <div class="info-box blue" style="margin-bottom:16px;" id="storageStatus">
@@ -996,12 +998,77 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="info-box gold"><span class="info-box-icon">&#128274;</span>&#220;bersicht aller pers&#246;nlichen Reflexionen. Vertraulich behandeln.</div>
      <div id="superReflectionsPanel"></div>
     </div>
+    <div class="admin-panel" id="superPanel-guest-admins">
+     <div class="section-header"><div class="section-title super-title">&#128737;&#65039; Gastadmins pro Spiel</div><button class="btn btn-purple btn-sm" onclick="openGuestAdminModal()">+ Gastadmin ernennen</button></div>
+     <div class="info-box blue"><span class="info-box-icon">&#128161;</span>Gastadmins haben Lese- und Moderationszugang zu einem Spiel (z.B. Co-Dozenten). Sie k&ouml;nnen keine Spieleinstellungen &auml;ndern.</div>
+     <div id="guestAdminListWrap"></div>
+    </div>
+
    </div>
   </div>
 
   <!-- PAGE: Konzept -->
   <div class="page" id="page-konzept">
    <div class="container" id="konzeptContent"></div>
+  </div>
+
+  <!-- PAGE: Business Model Canvas (CMO) -->
+  <div class="page" id="page-canvas">
+   <div class="container">
+    <div class="section-header">
+     <div class="section-title">&#128506;&#65039; Business Model Canvas</div>
+     <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="saveCanvasDraft()">&#128196; Entwurf speichern</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCanvas()">&#128228; Zur Genehmigung einreichen</button>
+     </div>
+    </div>
+    <div class="info-box blue" id="canvasInfoBox"><span class="info-box-icon">&#128161;</span>Als CMO erstellst du den Business Model Canvas f&#252;r euer Team. Der CEO kann ihn genehmigen; der Dozent gibt Feedback. Letzte Einreichung: <span id="canvasLastSubmit">—</span></div>
+    <div id="canvasAdminFeedbackWrap" style="display:none;"></div>
+    <div id="canvasGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto;gap:10px;margin-top:16px;">
+     <div class="card" style="border-top:4px solid #7C3AED;">
+      <div class="card-header" style="background:#F5F3FF;"><h3 style="font-size:13px;color:#7C3AED;">&#128101; Schl&#252;sselpartner</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_partners" rows="4" placeholder="Wer sind unsere wichtigsten Partner &amp; Lieferanten?"></textarea></div>
+     </div>
+     <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
+      <div class="card" style="border-top:4px solid #2563EB;">
+       <div class="card-header" style="background:#EFF6FF;"><h3 style="font-size:13px;color:#2563EB;">&#9889; Schl&#252;sselaktivit&#228;ten</h3></div>
+       <div class="card-body"><textarea class="form-control" id="bmc_activities" rows="3" placeholder="Was sind unsere wichtigsten T&#228;tigkeiten?"></textarea></div>
+      </div>
+      <div class="card" style="border-top:4px solid #0891B2;">
+       <div class="card-header" style="background:#ECFEFF;"><h3 style="font-size:13px;color:#0891B2;">&#128170; Schl&#252;sselressourcen</h3></div>
+       <div class="card-body"><textarea class="form-control" id="bmc_resources" rows="3" placeholder="Welche Ressourcen ben&#246;tigen wir?"></textarea></div>
+      </div>
+     </div>
+     <div class="card" style="border-top:4px solid #16A34A;">
+      <div class="card-header" style="background:#F0FDF4;"><h3 style="font-size:13px;color:#16A34A;">&#127775; Wertangebote</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_value" rows="4" placeholder="Welchen Wert liefern wir? Welches Problem l&#246;sen wir?"></textarea></div>
+     </div>
+     <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
+      <div class="card" style="border-top:4px solid #EA580C;">
+       <div class="card-header" style="background:#FFF7ED;"><h3 style="font-size:13px;color:#EA580C;">&#10084;&#65039; Kundenbeziehungen</h3></div>
+       <div class="card-body"><textarea class="form-control" id="bmc_relations" rows="3" placeholder="Welche Beziehung haben wir zu unseren Kunden?"></textarea></div>
+      </div>
+      <div class="card" style="border-top:4px solid #DC2626;">
+       <div class="card-header" style="background:#FEF2F2;"><h3 style="font-size:13px;color:#DC2626;">&#128226; Kan&#228;le</h3></div>
+       <div class="card-body"><textarea class="form-control" id="bmc_channels" rows="3" placeholder="Wie erreichen wir unsere Kunden?"></textarea></div>
+      </div>
+     </div>
+     <div class="card" style="border-top:4px solid #D97706;">
+      <div class="card-header" style="background:#FFFBEB;"><h3 style="font-size:13px;color:#D97706;">&#128106; Kundensegmente</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_segments" rows="4" placeholder="F&#252;r wen schaffen wir Wert? Wer sind unsere wichtigsten Kunden?"></textarea></div>
+     </div>
+     <div class="card" style="border-top:4px solid #64748B;grid-column:1/3;">
+      <div class="card-header" style="background:#F8FAFC;"><h3 style="font-size:13px;color:#64748B;">&#128176; Kostenstruktur</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_costs" rows="3" placeholder="Was sind unsere wichtigsten Kostenbl&#246;cke? Welche Ressourcen/Aktivit&#228;ten sind am teuersten?"></textarea></div>
+     </div>
+     <div class="card" style="border-top:4px solid #16A34A;grid-column:3/4;">
+      <div class="card-header" style="background:#F0FDF4;"><h3 style="font-size:13px;color:#16A34A;">&#128185; Einnahmequellen</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_revenue" rows="3" placeholder="Wof&#252;r sind unsere Kunden bereit zu zahlen?"></textarea></div>
+     </div>
+    </div>
+    <!-- CEO view / approval section -->
+    <div id="canvasCeoSection" style="display:none;margin-top:20px;"></div>
+   </div>
   </div>
 
  </div><!-- /pages -->
@@ -1065,6 +1132,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <textarea class="form-control" id="blogNextSteps" rows="2" placeholder="Was planen wir f&#252;r n&#228;chste Woche?"></textarea></div>
    <div class="form-group"><label class="form-label">Tags (kommagetrennt)</label>
     <input type="text" class="form-control" id="blogTags" placeholder="z.B. Marketing, Produktion, Marktstand"></div>
+   <div id="blogCustomQuestions" style="margin-bottom:10px;"></div>
    <div class="form-section-title">&#127942; Mitglied der Woche &amp; Reflexionsstatus</div>
    <div id="blogReflectionStatus" style="margin-bottom:10px;"></div>
    <div id="blogMvpOverrideRow" style="display:none;">
@@ -1116,6 +1184,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="char-counter" id="refImpCount">0 / 300</div></div>
    <div class="form-group"><label class="form-label">Meine Rolle im Team diese Woche</label>
     <textarea class="form-control" id="refRole" rows="2" placeholder="Wie habe ich zum Team beigetragen? Wo k&#246;nnte ich mehr einbringen?"></textarea></div>
+   <div id="refCustomQuestions" style="margin-bottom:10px;"></div>
    <div class="form-section-title">&#127942; Abstimmung: Mitglied der Woche</div>
    <div class="info-box gold"><span class="info-box-icon">&#127942;</span>Wen nominierst du als Mitglied der Woche? Dein CEO kann das Ergebnis &#252;berstimmen; bei Stimmengleichheit z&#228;hlt die Stimme des CEO doppelt.</div>
    <div class="form-group"><label class="form-label">&#127942; Mein MVP-Vote</label>
@@ -1307,6 +1376,7 @@ let DELETED_ITEMS = [];
 let SUPERADMINS = []; // zusätzliche Superadmins
 let FAQ_DOCS   = []; // PDFs/Docs in FAQ
 let ANNOUNCEMENTS = [];
+let CANVASES   = []; // Business Model Canvas (CMO, pro Team)
 let PASSWORDS  = {}; // {code: sha256hash} – shared via Firebase
 
 // ════════════════════════════════════════════════════════════════════
@@ -1377,6 +1447,7 @@ function _replaceArrays(d){
   replace(DELETED_ITEMS,d.DELETED_ITEMS||[]);
   replace(SUPERADMINS,d.SUPERADMINS||[]);
   replace(FAQ_DOCS,d.FAQ_DOCS||[]);    replace(ANNOUNCEMENTS,d.ANNOUNCEMENTS||[]);
+  replace(CANVASES,d.CANVASES||[]);
   // Merge PASSWORDS dict
   if(d.PASSWORDS && typeof d.PASSWORDS==='object') Object.assign(PASSWORDS, d.PASSWORDS);
   // Migrate legacy localStorage passwords
@@ -1404,7 +1475,7 @@ function _postLoadCalc(){
 }
 
 function _buildPayload(){
-  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,LOGS,DELETED_ITEMS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,PASSWORDS};
+  return {UNIVERSITIES,GAMES,TEAMS,MEMBERS,BLOGS,TRANSACTIONS,REFLECTIONS,MESSAGES,ADMINS,FEEDBACKS,LOGS,DELETED_ITEMS,SUPERADMINS,FAQ_DOCS,ANNOUNCEMENTS,CANVASES,PASSWORDS};
 }
 
 // ── saveData (localStorage + Firebase async) ─────────────────────────
@@ -2206,7 +2277,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.7.7)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.0)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2216,7 +2287,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.7.7)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.0)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -2320,6 +2391,7 @@ async function doSetFirstPassword(){
 }
 function skipPassword(){finishLogin(_loginTempCode);}
 function saveProfileAndLogin(){
+  logEvent('profile_save',{});
   const code=_profileLoginCode||_loginTempCode;
   if(!code) return;
   const mem=MEMBERS.find(m=>m.code===code);
@@ -2452,6 +2524,7 @@ function buildNavigation(){
     pages.push({id:'reflection', label:'🔒 Reflexion'});
     // All members get Buchung nav item
     pages.push({id:'__booking',label:'💰 Buchung'});
+    if(getMyMember()?.role==='CMO') pages.push({id:'canvas',label:'🗺️ Canvas'});
     pages.push({id:'blog',       label:'📖 Blog'});
     pages.push({id:'kontakt',    label:kontaktLabel});
     pages.push({id:'feedback',   label:'💬 Feedback'});
@@ -2891,7 +2964,7 @@ function renderPage(p){
   ({dashboard:renderDashboard,myteam:renderMyTeam,profile:renderProfile,
     reflection:renderReflectionPage,teams:renderTeamsPage,blog:renderBlogPage,
     kontakt:renderKontaktPage,tx:renderTxPage,feedback:renderFeedback,admin:renderAdminPage,
-    superadmin:renderSuperPage,konzept:renderKonzept})[p]?.();
+    superadmin:renderSuperPage,konzept:renderKonzept,canvas:renderCanvasPage})[p]?.();
   if(state.lang==='en') setTimeout(applyLang,180);
 }
 
@@ -3307,6 +3380,7 @@ function deleteTransaction(txId){
     t.transactions=txs.length;
   }
   recalcTeam(team);
+  logEvent('tx_delete',{desc:txSnap.desc,amount:txSnap.amount,teamId:txSnap.teamId});
   if(DELETED_ITEMS.length>=100) DELETED_ITEMS.shift();
   DELETED_ITEMS.push({id:'del_'+Date.now(),type:'transaction',deletedAt:new Date().toISOString(),label:'Buchung: '+txSnap.desc+' ('+txSnap.amount+'€, '+(team?.name||txSnap.teamId)+')',data:txSnap});
   saveData();buildTicker();
@@ -3957,7 +4031,7 @@ function renderAdminPage(){
   // Show "Zurück zu Super" button also when impersonating (prevUser set)
   const backImpBtn=document.getElementById('adminBackFromImpersonate');
   if(backImpBtn) backImpBtn.style.display = state.prevUser ? 'inline-flex' : 'none';
-  if(game) document.getElementById('adminHeroSub').textContent=game.name+' · '+(game.uni||'');
+  if(game) document.getElementById('adminHeroSub').textContent=game.name+' · '+(game.uni||'')+(u?.isGuest?' · Gastadmin':'');
   renderApprovalQueue();renderWeeksAdmin();renderReflectionsAdmin();renderAdminTeamsTable();renderAdminTxTable();renderCodesPanel();renderTeamAwardPanel();renderActivityLog();
   // notification dots
   const pending=BLOGS.filter(b=>b.status==='pending').length;
@@ -3972,7 +4046,8 @@ function switchAdminTab(tabId){
   event.currentTarget.classList.add('active');
   document.querySelectorAll('#page-admin .admin-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('adminPanel-'+tabId)?.classList.add('active');
-  if(tabId==='pinnwand') renderPinnwand();
+  if(tabId==='weeks') renderCustomQuestionsAdmin();
+  else if(tabId==='pinnwand') renderPinnwand();
   else if(tabId==='dokumente') renderDokumente();
   else if(tabId==='messaging') renderMessaging();
   else if(tabId==='teamAward') renderTeamAwardPanel();
@@ -4025,7 +4100,9 @@ function renderApprovalQueue(){
     </div>`;}).join('');
 }
 function renderWeeksAdmin(){
-  const teams=TEAMS.filter(t=>t.gameId==='g1');
+  const _u=state.currentUser;
+  const _egId=state.managingGameId||_u?.gameId;
+  const teams=TEAMS.filter(t=>t.gameId===_egId&&t.status!=='pending');
   let html=`<div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;align-items:center;"><strong>Legende:</strong>
 <span class="tag tag-blue">📝 Offen</span>
 <span class="tag tag-orange">⏳ Eingereicht</span>
@@ -4532,6 +4609,7 @@ function switchSuperTab(tabId){
   event.currentTarget.classList.add('active');
   document.querySelectorAll('#page-superadmin .admin-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('superPanel-'+tabId)?.classList.add('active');
+  if(tabId==='guest-admins') renderGuestAdminList();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4630,7 +4708,8 @@ function renderKonzept(){
           ['v0.7.4','Session-Persistenz (Auto-Login nach Refresh), MVP-Ticker, Passwort-Reset via Admin, ⚡ Team-Aktivierung, Gruppe der Woche, Aktivitätslog (CSV-Export), Reflexions-Status in Blog-Freigabe, Stimmungsbarometer ans Ende, Team-Emoji änderbar, Nachrichten-Sendenfix, Support-Button'],
           ['v0.7.5','Soft-Delete mit Undo: 10-Sekunden Rückgängig-Toast bei Löschen von Mitglied/Team/Buchung/Reflexion/Nachricht; Papierkorb-Tab im Admin-Panel mit Wiederherstellung und endgültigem Löschen'],
           ['v0.7.6','🔒 Kritischer Bugfix: Firebase-Timeout auf 10s erhöht; verhindert Datenverlust durch Überschreiben von Firebase bei langsamer Verbindung; Retry-Logik in Einladungscode-Prüfung; Realtime-Listener auch im Fehler-Pfad aktiv'],
-          ['v0.7.7','🐛 Vollständiger Code-Audit (6 Bugs): copyRegCode()-Shadowing (Copy-Button defekt), showRegister()-Shadowing (alte Funktion überschrieb aktive), openAddMemberModal()-Crash (fehlende DOM-Elemente), addMemberToTeam()-fehlende Felder (firstName/lastName/email/mobile), Superadmin-Zugriffsgate, E-Mail-Feld im Mitglied-Modal', true],
+          ['v0.7.7','🐛 Vollständiger Code-Audit (6 Bugs): copyRegCode()-Shadowing (Copy-Button defekt), showRegister()-Shadowing (alte Funktion überschrieb aktive), openAddMemberModal()-Crash (fehlende DOM-Elemente), addMemberToTeam()-fehlende Felder (firstName/lastName/email/mobile), Superadmin-Zugriffsgate, E-Mail-Feld im Mitglied-Modal'],
+          ['v0.8.0','🚀 6 neue Features: (a) Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht, (b) Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback, (c) Automatische In-App-Erinnerungen vor Abgabe-Deadlines, (d) CSV-Export für Reflexionen &amp; Buchungen, (e) Vollständiger Aktivitätslog aller Aktionen (alle Rollen), (f) Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -4645,15 +4724,17 @@ function renderKonzept(){
       <h2>🚀 Roadmap – Nächste Schritte</h2>
       <p>Was als nächstes kommt – geordnet nach Priorität für den laufenden SoSe 2026-Betrieb:</p>
 
-      <!-- Kurzfristig (v0.7.x) -->
-      <div style="margin:14px 0 6px;padding:4px 10px;background:var(--green-lt);border-radius:6px;font-size:11px;font-weight:700;color:var(--green);letter-spacing:.5px;text-transform:uppercase;">🟢 Kurzfristig – laufende Verbesserungen (v0.7.x)</div>
+      <!-- In v0.8.0 abgeschlossen -->
+      <div style="margin:14px 0 6px;padding:4px 10px;background:var(--green-lt);border-radius:6px;font-size:11px;font-weight:700;color:var(--green);letter-spacing:.5px;text-transform:uppercase;">✅ In v0.8.0 abgeschlossen</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
         ${[
-          ['📝 Admin-Zusatzfragen','Pro Woche individuelle Reflexions- und Berichtsfragen ergänzen (z. B. „Wie war die Kundenkommunikation?")'],
-          ['📊 Export / Reporting','PDF- oder Excel-Export aller Reflexionen und Buchungen pro Gruppe für Benotung und Forschung'],
-          ['🔔 Erinnerungen','Automatische In-App-Benachrichtigungen vor Abgabe-Deadline per In-App-Nachricht'],
-          ['🔒 Superadmin je Spiel','Superadmin kann pro Spiel eine Gast-Admin-Rolle vergeben (z. B. für Co-Dozenten)'],
-        ].map(([t,d])=>`<div style="background:var(--bg-light);padding:10px 14px;border-radius:var(--radius);border-left:3px solid var(--green);">
+          ['✅ Admin-Zusatzfragen','Pro Woche individuelle Reflexions- und Berichtsfragen — im Admin Wochen-Status-Tab verwaltbar'],
+          ['✅ Export / Reporting','CSV-Export aller Reflexionen und Buchungen pro Spiel — Buttons in Admin-Tabs'],
+          ['✅ Erinnerungen','Automatische In-App-Benachrichtigungen vor Abgabe-Deadline — Button im Wochen-Status-Tab'],
+          ['✅ Gastadmin je Spiel','Superadmin vergibt Gast-Admin-Rolle pro Spiel (Co-Dozenten) — Tab im Superadmin-Panel'],
+          ['✅ Business Model Canvas','CMO erstellt 9-Felder-Canvas; CEO genehmigt; Dozent gibt Feedback — neuer Canvas-Tab für CMO'],
+          ['✅ Vollständiger Aktivitätslog','Alle Aktionen aller Rollen werden protokolliert — CSV-Export im Aktivitätslog-Tab'],
+        ].map(([t,d])=>`<div style="background:var(--green-lt);padding:10px 14px;border-radius:var(--radius);border-left:3px solid var(--green);opacity:.85;">
           <div style="font-weight:700;font-size:13px;margin-bottom:3px;">${t}</div>
           <div style="font-size:12px;color:var(--gray-dark);">${d}</div>
         </div>`).join('')}
@@ -4818,11 +4899,12 @@ function manualRollbackWeek(teamId){
   const team=TEAMS.find(t=>t.id===teamId);if(!team)return;
   if(team.currentWeek<=1){showToast('Bereits in Woche 1','info');return;}
   if(!confirm('Team "'+team.name+'" eine Woche zurücksetzen auf Woche '+(team.currentWeek-1)+'? Der Bericht der aktuellen Woche bleibt erhalten.')) return;
+  logEvent('week_rollback',{teamId,week:team.currentWeek});
   team.currentWeek--;team.weekStatus='open';
   saveData();renderWeeksAdmin();showToast('⏮️ '+team.name+' – zurück auf Woche '+team.currentWeek);
 }
 function quickApprove(id){approveBlog(id);}
-function rejectBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){const feedbackEl=document.getElementById('blogFeedback_'+id);if(feedbackEl&&feedbackEl.value.trim()) b.adminFeedback=feedbackEl.value.trim();b.status='pending';saveData();renderApprovalQueue();showToast('🔄 Überarbeitung angefragt','info');}}
+function rejectBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){const feedbackEl=document.getElementById('blogFeedback_'+id);if(feedbackEl&&feedbackEl.value.trim()) b.adminFeedback=feedbackEl.value.trim();b.status='pending';logEvent('blog_reject',{blogId:id});saveData();renderApprovalQueue();showToast('🔄 Überarbeitung angefragt','info');}}
 function deleteBlog(id){const b=BLOGS.find(x=>x.id===id);if(b){b.status='rejected';renderApprovalQueue();showToast('❌ Abgelehnt','error');}}
 function approveAll(){BLOGS.filter(b=>b.status==='pending').forEach(b=>approveBlog(b.id));showToast('✅ Alle freigegeben!');}
 
@@ -4864,6 +4946,7 @@ function submitBooking(){
   team.expenses=allTx.filter(t=>t.type==='expense'&&t.cat!=='Kapital').reduce((s,t)=>s+t.amount,0);
   team.capital=allTx.filter(t=>t.cat==='Kapital').reduce((s,t)=>s+t.amount,0);
   team.transactions=allTx.length;
+  logEvent(editTxId?'tx_edit':'tx_add',{desc,amount:amt,teamId:team.id,type:tx.type});
   saveData();closeModal('modalBooking');showToast(editTxId?'\u270f\ufe0f Buchung aktualisiert!':'\U0001f4b0 Buchung gespeichert!');buildTicker();
   if(state.currentPage==='myteam') renderMyTeamPanel('transactions');
 }
@@ -4901,7 +4984,9 @@ function submitBlog(){
     mood:avgMood,
     tags:document.getElementById('blogTags').value.split(',').map(t=>t.trim()).filter(Boolean),
     status:'pending',date:new Date().toISOString().split('T')[0]};
-  BLOGS.push(blog);team.weekStatus='submitted';saveData();
+  BLOGS.push(blog);team.weekStatus='submitted';
+  logEvent('blog_submit',{week:team.currentWeek,title,teamId:team.id});
+  saveData();
   closeModal('modalBlog');showToast('📤 Bericht eingereicht – wartet auf Freigabe!');
   if(state.currentPage==='myteam'){renderWeekSteps(team);renderMyTeamPanel(state.currentMyTeamTab);}
 }
@@ -4950,13 +5035,16 @@ function submitReflection(){
     existing.role=document.getElementById('refRole').value;
     existing.mvpVote=mvpVote||null;
     existing.updatedAt=new Date().toISOString().split('T')[0];
+    logEvent('reflection_update',{week,teamId:m.teamId});
     saveData();closeModal('modalReflection');showToast('✏️ Reflexion aktualisiert!');
   } else {
     REFLECTIONS.push({id:'r'+Date.now(),memberId:m.id,teamId:m.teamId,
       week,mood:state.selectedMood,experience:exp,liked,improved:imp,
       role:document.getElementById('refRole').value,
       mvpVote:mvpVote||null,
+      customAnswers:collectCustomAnswers('refCustomQuestions'),
       date:new Date().toISOString().split('T')[0]});
+    logEvent('reflection_submit',{week,teamId:m.teamId,role:document.getElementById('refRole').value||''});
     saveData();closeModal('modalReflection');showToast('💾 Reflexion gespeichert!');
   }
   renderReflectionPage();
@@ -5172,6 +5260,7 @@ window.openModal=function(id){
   if(id==='modalBlog'){
     const team=getMyTeam();
     const w=team?.currentWeek||1;
+    setTimeout(()=>populateCustomQuestionsModal('blog',w),30);
     document.getElementById('blogWeek').value='Woche '+w;
     // Reset fields
     ['blogTitle','blogActivities','blogHighlight','blogChallenges','blogNextSteps','blogTags'].forEach(fid=>{const el=document.getElementById(fid);if(el)el.value='';});
@@ -5180,6 +5269,7 @@ window.openModal=function(id){
   }
   if(id==='modalReflection'){
     const me=getMyMember();const team=getMyTeam();const w=team?.currentWeek||1;
+    setTimeout(()=>populateCustomQuestionsModal('reflection',w),30);
     if(document.getElementById('refWeek')) document.getElementById('refWeek').value='Woche '+w;
     // ALWAYS clear text fields first (prevents showing another member's data)
     ['refExperience','refWell','refImproved','refRole'].forEach(fid=>{
@@ -6382,6 +6472,389 @@ let _trackBuffer = [];
 const TRACK_BATCH_SIZE = 10;
 const TRACK_KEY = '5euro_trackbuffer';
 
+
+// ════════════════════════════════════════════════════════════════════
+//  FEATURE (a): CUSTOM WEEKLY QUESTIONS
+// ════════════════════════════════════════════════════════════════════
+function getGameCustomQuestions(gameId){
+  const g=GAMES.find(x=>x.id===gameId);
+  if(!g) return [];
+  if(!g.customQuestions) g.customQuestions=[];
+  return g.customQuestions;
+}
+function renderCustomQuestionsAdmin(){
+  const wrap=document.getElementById('customQuestionsAdminWrap');
+  if(!wrap) return;
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const game=GAMES.find(g=>g.id===effectiveGameId);
+  if(!game) return;
+  if(!game.customQuestions) game.customQuestions=[];
+  const qs=game.customQuestions;
+  wrap.innerHTML=`
+    <div class="card" style="margin-top:18px;margin-bottom:16px;">
+      <div class="card-header"><h3 style="font-size:13px;">&#128221; Zusatzfragen pro Woche</h3></div>
+      <div class="card-body">
+        <div class="info-box blue" style="margin-bottom:12px;"><span class="info-box-icon">&#128161;</span>Zusatzfragen erscheinen in den Reflexions- bzw. Berichtsformularen der jeweiligen Woche zus&#228;tzlich zu den Standard-Fragen.</div>
+        <div class="form-row" style="align-items:flex-end;gap:8px;flex-wrap:wrap;">
+          <div class="form-group" style="min-width:180px;flex:2"><label class="form-label">Frage</label>
+            <input class="form-control" id="cqText" placeholder="z.B. Wie war die Kundenkommunikation?"></div>
+          <div class="form-group"><label class="form-label">Woche</label>
+            <select class="form-control" id="cqWeek">${[1,2,3,4,5,6,7,8].map(w=>`<option value="${w}">Woche ${w}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Ziel</label>
+            <select class="form-control" id="cqTarget"><option value="reflection">Reflexion</option><option value="blog">Wochenbericht</option><option value="both">Beide</option></select></div>
+          <div class="form-group" style="align-self:flex-end;">
+            <button class="btn btn-primary btn-sm" onclick="addCustomQuestion('${effectiveGameId}')">+ Hinzuf&#252;gen</button>
+          </div>
+        </div>
+        ${qs.length===0?'<div style="color:var(--gray-mid);font-size:12px;padding:8px 0;">Noch keine Zusatzfragen angelegt.</div>':''}
+        <table class="data-table" style="width:100%;${qs.length===0?'display:none':''}">
+          <thead><tr><th>Woche</th><th>Ziel</th><th>Frage</th><th>Aktion</th></tr></thead>
+          <tbody>${qs.map(q=>`<tr>
+            <td>W${q.week}</td>
+            <td><span class="tag tag-blue">${q.target==='reflection'?'Reflexion':q.target==='blog'?'Bericht':'Beide'}</span></td>
+            <td style="font-size:12px;">${q.text}</td>
+            <td><button class="btn btn-danger btn-xs" onclick="deleteCustomQuestion('${effectiveGameId}','${q.id}')">&#128465;&#65039;</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+function addCustomQuestion(gameId){
+  const text=document.getElementById('cqText')?.value.trim();
+  if(!text){showToast('Bitte Fragetext eingeben','error');return;}
+  const week=parseInt(document.getElementById('cqWeek')?.value||1);
+  const target=document.getElementById('cqTarget')?.value||'reflection';
+  const game=GAMES.find(g=>g.id===gameId);if(!game) return;
+  if(!game.customQuestions) game.customQuestions=[];
+  const q={id:'cq'+Date.now(),week,target,text};
+  game.customQuestions.push(q);
+  logEvent('custom_q_add',{gameId,week,target,text});
+  saveData();renderCustomQuestionsAdmin();
+  document.getElementById('cqText').value='';
+  showToast('&#128221; Zusatzfrage hinzugef&#252;gt','success');
+}
+function deleteCustomQuestion(gameId,qId){
+  const game=GAMES.find(g=>g.id===gameId);if(!game||!game.customQuestions) return;
+  const idx=game.customQuestions.findIndex(q=>q.id===qId);
+  if(idx<0) return;
+  game.customQuestions.splice(idx,1);
+  logEvent('custom_q_delete',{gameId,qId});
+  saveData();renderCustomQuestionsAdmin();
+  showToast('&#10005; Frage gel&#246;scht','info');
+}
+function populateCustomQuestionsModal(target,week){
+  const team=getMyTeam();if(!team) return;
+  const game=GAMES.find(g=>g.id===team.gameId);if(!game) return;
+  const qs=(game.customQuestions||[]).filter(q=>q.week===week&&(q.target===target||q.target==='both'));
+  const containerId=target==='reflection'?'refCustomQuestions':'blogCustomQuestions';
+  const el=document.getElementById(containerId);if(!el) return;
+  if(qs.length===0){el.innerHTML='';return;}
+  el.innerHTML=`<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+    <div class="form-section-title">&#128221; Zusatzfragen Woche ${week}</div>
+    ${qs.map(q=>`<div class="form-group">
+      <label class="form-label">${q.text}</label>
+      <textarea class="form-control" id="cqa_${q.id}" rows="2" data-cqid="${q.id}" placeholder="Deine Antwort..."></textarea>
+    </div>`).join('')}
+  </div>`;
+}
+function collectCustomAnswers(containerId){
+  const el=document.getElementById(containerId);if(!el) return {};
+  const ans={};
+  el.querySelectorAll('[data-cqid]').forEach(inp=>{
+    if(inp.value.trim()) ans[inp.dataset.cqid]=inp.value.trim();
+  });
+  return ans;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FEATURE (c): AUTOMATIC IN-APP REMINDERS
+// ════════════════════════════════════════════════════════════════════
+function checkAndSendReminders(gameId,force){
+  const u=state.currentUser;
+  const effectiveGameId=gameId||state.managingGameId||u?.gameId;
+  if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
+  const game=GAMES.find(g=>g.id===effectiveGameId);if(!game) return;
+  const now=new Date().toISOString();
+  const cutoff=new Date(Date.now()-23*60*60*1000).toISOString(); // don't spam: 23h interval
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
+  let sent=0;
+  gameTeams.forEach(team=>{
+    const members=MEMBERS.filter(m=>m.teamId===team.id);
+    const w=team.currentWeek;
+    // Check reflections
+    members.forEach(m=>{
+      const hasRef=REFLECTIONS.find(r=>r.memberId===m.id&&r.week===w);
+      if(!hasRef){
+        // Check if we sent a reminder recently
+        const recentReminder=MESSAGES.find(msg=>msg.toId===m.id&&msg.type==='reminder'&&msg.week===w&&msg.sentAt>cutoff);
+        if(!recentReminder||force){
+          const msgId='msg-rem-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
+          MESSAGES.push({
+            id:msgId,type:'reminder',from:'System',fromId:'system',
+            toId:m.id,toTeamId:team.id,gameId:effectiveGameId,
+            subject:'&#9201;&#65039; Erinnerung: Reflexion Woche '+w,
+            body:'Hallo '+m.name+',\n\nbitte reiche deine Reflexion f&#252;r Woche '+w+' noch ein. Deadline: Samstag 23:59 Uhr.\n\nViele Gr&#252;&#223;e,\ndein VentureLab-Team',
+            date:new Date().toISOString().split('T')[0],sentAt:now,
+            read:false,week:w
+          });
+          sent++;
+        }
+      }
+    });
+    // Check blog
+    const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===w&&(b.status==='pending'||b.status==='approved'));
+    if(!hasBlog){
+      const ceo=members.find(m=>m.role==='CEO');
+      if(ceo){
+        const recentBlogReminder=MESSAGES.find(msg=>msg.toId===ceo.id&&msg.type==='blog_reminder'&&msg.week===w&&msg.sentAt>cutoff);
+        if(!recentBlogReminder||force){
+          MESSAGES.push({
+            id:'msg-brem-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+            type:'blog_reminder',from:'System',fromId:'system',
+            toId:ceo.id,toTeamId:team.id,gameId:effectiveGameId,
+            subject:'&#9201;&#65039; Erinnerung: Wochenbericht Woche '+w,
+            body:'Hallo '+ceo.name+',\n\nbitte reiche den Wochenbericht f&#252;r Woche '+w+' noch ein. Deadline: Sonntag 23:59 Uhr.\n\nViele Gr&#252;&#223;e,\ndein VentureLab-Team',
+            date:new Date().toISOString().split('T')[0],sentAt:now,
+            read:false,week:w
+          });
+          sent++;
+        }
+      }
+    }
+  });
+  if(sent>0){
+    logEvent('reminder_sent',{gameId:effectiveGameId,count:sent});
+    saveData();buildNavigation();
+    showToast('&#128276; '+sent+' Erinnerung(en) versendet','success');
+  } else {
+    showToast('Alle Mitglieder haben bereits eingereicht &#10003;','info');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FEATURE (d): EXPORT / REPORTING
+// ════════════════════════════════════════════════════════════════════
+function exportReflectionsCSV(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  const refs=REFLECTIONS.filter(r=>gameTeams.some(t=>t.id===r.teamId));
+  if(refs.length===0){showToast('Keine Reflexionen vorhanden','info');return;}
+  const header='Datum,Woche,Name,Rolle,Team,Stimmung,Erfahrungen,Was war gut,Verbesserungen,Eigene Rolle,MVP-Vote';
+  const rows=refs.map(r=>{
+    const m=MEMBERS.find(x=>x.id===r.memberId);
+    const team=TEAMS.find(t=>t.id===r.teamId);
+    const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
+    return [r.date,r.week,m?.name,m?.role,team?.name,r.mood,r.experience,r.liked,r.improved,r.role,MEMBERS.find(x=>x.id===r.mvpVote)?.name||''].map(esc).join(',');
+  }).join('\n');
+  const csv=header+'\n'+rows;
+  _downloadCSV(csv,'venturelab_reflexionen_'+new Date().toISOString().split('T')[0]+'.csv');
+  showToast('&#128229; Reflexionen exportiert','success');
+}
+function exportTransactionsCSV(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  const txs=TRANSACTIONS.filter(tx=>gameTeams.some(t=>t.id===tx.teamId));
+  if(txs.length===0){showToast('Keine Buchungen vorhanden','info');return;}
+  const header='Datum,Team,Beschreibung,Kategorie,Typ,Betrag';
+  const rows=txs.map(tx=>{
+    const team=TEAMS.find(t=>t.id===tx.teamId);
+    const esc=v=>('"'+(v||'').replace(/"/g,"''")+'"');
+    return [tx.date,team?.name,tx.desc,tx.cat,tx.type,tx.amount].map(esc).join(',');
+  }).join('\n');
+  const csv=header+'\n'+rows;
+  _downloadCSV(csv,'venturelab_buchungen_'+new Date().toISOString().split('T')[0]+'.csv');
+  showToast('&#128229; Buchungen exportiert','success');
+}
+function _downloadCSV(csvContent,filename){
+  const blob=new Blob(['\ufeff'+csvContent],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FEATURE (f): GUEST ADMIN
+// ════════════════════════════════════════════════════════════════════
+function renderGuestAdminList(){
+  const el=document.getElementById('guestAdminListWrap');if(!el) return;
+  const guestAdmins=ADMINS.filter(a=>a.isGuest);
+  if(guestAdmins.length===0){
+    el.innerHTML='<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">&#128737;&#65039;</div><h3>Noch keine Gastadmins</h3><p>Ernennen Sie Co-Dozenten als Gastadmins f&#252;r einzelne Spiele.</p></div>';
+    return;
+  }
+  el.innerHTML=`<table class="data-table" style="width:100%;margin-top:12px;">
+    <thead><tr><th>Name</th><th>E-Mail</th><th>Spiel</th><th>Code</th><th>Aktion</th></tr></thead>
+    <tbody>${guestAdmins.map(a=>{const game=GAMES.find(g=>g.id===a.gameId);return `<tr>
+      <td><strong>${a.name}</strong></td>
+      <td style="font-size:12px;color:var(--gray-mid);">${a.email||'—'}</td>
+      <td>${game?.name||'—'}</td>
+      <td><code style="font-size:11px;background:var(--blue-xlt);padding:2px 7px;border-radius:4px;">${a.code}</code>
+        <button class="btn btn-outline btn-xs" onclick="copyCode('${a.code}')" title="Kopieren" style="margin-left:4px;">&#128203;</button></td>
+      <td><button class="btn btn-danger btn-xs" onclick="removeGuestAdmin('${a.id}')">&#128465;&#65039; Entfernen</button></td>
+    </tr>`;}).join('')}</tbody>
+  </table>`;
+}
+function addGuestAdmin(){
+  const name=(document.getElementById('gaName')?.value||'').trim();
+  const email=(document.getElementById('gaEmail')?.value||'').trim();
+  const gameId=document.getElementById('gaGameId')?.value||'';
+  const code=(document.getElementById('gaCode')?.value||'').trim().toUpperCase();
+  if(!name||!gameId||!code){showToast('Bitte Name, Spiel und Code eingeben','error');return;}
+  if(CODES[code]){showToast('Code bereits vergeben','error');return;}
+  const game=GAMES.find(g=>g.id===gameId);if(!game) return;
+  const gaId='ga'+Date.now();
+  ADMINS.push({id:gaId,gameId,name,email,code,uni:game.uni||'',isGuest:true});
+  rebuildCodes();
+  logEvent('guest_admin_add',{gameId,name,code});
+  saveData();renderGuestAdminList();renderSuperAdminList();
+  closeModal('modalNewGuestAdmin');
+  showToast('&#128737;&#65039; Gastadmin ernennt: '+name,'success');
+}
+function removeGuestAdmin(gaId){
+  if(!confirm('Gastadmin wirklich entfernen?')) return;
+  const idx=ADMINS.findIndex(a=>a.id===gaId&&a.isGuest);if(idx<0) return;
+  const ga=ADMINS[idx];
+  ADMINS.splice(idx,1);
+  rebuildCodes();
+  logEvent('guest_admin_remove',{gaId,name:ga.name});
+  saveData();renderGuestAdminList();renderSuperAdminList();
+  showToast('Gastadmin entfernt','info');
+}
+function openGuestAdminModal(){
+  // Pre-fill game dropdown
+  const sel=document.getElementById('gaGameId');
+  if(sel){sel.innerHTML=GAMES.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');}
+  document.getElementById('gaCode').value='GUEST-'+Math.random().toString(36).toUpperCase().substr(2,5);
+  openModal('modalNewGuestAdmin');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FEATURE (b): BUSINESS MODEL CANVAS (CMO)
+// ════════════════════════════════════════════════════════════════════
+function renderCanvasPage(){
+  const me=getMyMember();const team=getMyTeam();
+  if(!team){showToast('Nur für Teammitglieder','error');return;}
+  const u=state.currentUser;
+  const isCMO=me?.role==='CMO';
+  const isCEO=me?.role==='CEO';
+  const isAdmin=u.role==='admin'||u.role==='superadmin';
+  // Find latest canvas for this team
+  const canvas=CANVASES.filter(c=>c.teamId===team.id).sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0];
+  const BMC_IDS=['partners','activities','resources','value','relations','channels','segments','costs','revenue'];
+  // Fill in fields if canvas exists
+  BMC_IDS.forEach(k=>{
+    const el=document.getElementById('bmc_'+k);
+    if(el) el.value=canvas?.blocks?.[k]||'';
+    if(el) el.readOnly=(!isCMO&&!isAdmin);
+  });
+  // Status info
+  const infoBox=document.getElementById('canvasInfoBox');
+  if(canvas&&infoBox){
+    const statusLabel=canvas.status==='approved'?'<span style="color:var(--green);font-weight:700;">&#10003; Genehmigt</span>':canvas.status==='submitted'?'<span style="color:var(--orange);font-weight:700;">&#8987; Eingereicht</span>':'<span style="color:var(--gray-mid);">Entwurf</span>';
+    document.getElementById('canvasLastSubmit').innerHTML=statusLabel+(canvas.submittedAt?' am '+fmtDate(canvas.submittedAt):'');
+  }
+  // Admin feedback
+  const feedbackWrap=document.getElementById('canvasAdminFeedbackWrap');
+  if(feedbackWrap&&canvas?.adminFeedback){
+    feedbackWrap.style.display='block';
+    feedbackWrap.innerHTML=`<div class="info-box blue" style="margin-bottom:12px;"><span class="info-box-icon">&#128172;</span><strong>Dozenten-Feedback:</strong> ${canvas.adminFeedback}</div>`;
+  }
+  // Show/hide CMO buttons
+  const btnWrap=document.querySelector('#page-canvas .section-header > div');
+  if(btnWrap) btnWrap.style.display=(isCMO?'flex':'none');
+  // CEO section
+  const ceoSec=document.getElementById('canvasCeoSection');
+  if(ceoSec){
+    if((isCEO||isAdmin)&&canvas&&canvas.status==='submitted'){
+      ceoSec.style.display='block';
+      ceoSec.innerHTML=`<div class="card"><div class="card-header"><h3>&#128081; CEO – Canvas genehmigen</h3></div><div class="card-body">
+        ${isAdmin?`<div class="form-group"><label class="form-label">&#128172; Dozenten-Feedback (optional)</label><textarea class="form-control" id="canvasFeedbackInput" rows="2" placeholder="Feedback an das Team...">${canvas.adminFeedback||''}</textarea></div>`:''}
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button class="btn btn-success" onclick="approveCanvas('${canvas.id}')">&#10003; Canvas genehmigen</button>
+          ${isAdmin?`<button class="btn btn-primary btn-sm" onclick="saveCanvasFeedback('${canvas.id}')">&#128172; Feedback speichern</button>`:''}
+        </div>
+      </div></div>`;
+    } else if(isAdmin&&canvas){
+      ceoSec.style.display='block';
+      ceoSec.innerHTML=`<div class="card"><div class="card-header"><h3>&#128272; Admin – Canvas Feedback</h3></div><div class="card-body">
+        <div class="form-group"><label class="form-label">&#128172; Feedback</label><textarea class="form-control" id="canvasFeedbackInput" rows="2" placeholder="Feedback an das Team...">${canvas.adminFeedback||''}</textarea></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveCanvasFeedback('${canvas.id}')">&#128190; Feedback speichern</button>
+      </div></div>`;
+    } else {
+      ceoSec.style.display='none';
+    }
+  }
+}
+function _getCanvasBlocks(){
+  return {
+    partners:document.getElementById('bmc_partners')?.value||'',
+    activities:document.getElementById('bmc_activities')?.value||'',
+    resources:document.getElementById('bmc_resources')?.value||'',
+    value:document.getElementById('bmc_value')?.value||'',
+    relations:document.getElementById('bmc_relations')?.value||'',
+    channels:document.getElementById('bmc_channels')?.value||'',
+    segments:document.getElementById('bmc_segments')?.value||'',
+    costs:document.getElementById('bmc_costs')?.value||'',
+    revenue:document.getElementById('bmc_revenue')?.value||''
+  };
+}
+function saveCanvasDraft(){
+  const me=getMyMember();const team=getMyTeam();if(!team) return;
+  if(me?.role!=='CMO'){showToast('Nur der CMO kann den Canvas bearbeiten','error');return;}
+  const blocks=_getCanvasBlocks();
+  const existing=CANVASES.find(c=>c.teamId===team.id&&c.status!=='approved');
+  if(existing){
+    existing.blocks=blocks;existing.updatedAt=new Date().toISOString();existing.status='draft';
+  } else {
+    CANVASES.push({id:'canvas'+Date.now(),teamId:team.id,gameId:team.gameId,blocks,status:'draft',
+      createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),adminFeedback:''});
+  }
+  saveData();showToast('&#128196; Entwurf gespeichert','success');
+}
+function submitCanvas(){
+  const me=getMyMember();const team=getMyTeam();if(!team) return;
+  if(me?.role!=='CMO'){showToast('Nur der CMO kann den Canvas einreichen','error');return;}
+  const blocks=_getCanvasBlocks();
+  const hasContent=Object.values(blocks).some(v=>v.trim().length>0);
+  if(!hasContent){showToast('Bitte mind. ein Feld ausf&#252;llen','error');return;}
+  const existing=CANVASES.find(c=>c.teamId===team.id&&c.status!=='approved');
+  if(existing){
+    existing.blocks=blocks;existing.status='submitted';existing.submittedAt=new Date().toISOString();existing.updatedAt=new Date().toISOString();
+  } else {
+    CANVASES.push({id:'canvas'+Date.now(),teamId:team.id,gameId:team.gameId,blocks,status:'submitted',
+      createdAt:new Date().toISOString(),submittedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),adminFeedback:''});
+  }
+  logEvent('canvas_submit',{teamId:team.id});
+  saveData();renderCanvasPage();showToast('&#128228; Canvas eingereicht!','success');
+}
+function approveCanvas(canvasId){
+  const c=CANVASES.find(x=>x.id===canvasId);if(!c) return;
+  // Save admin feedback if present
+  const feedbackEl=document.getElementById('canvasFeedbackInput');
+  if(feedbackEl&&feedbackEl.value.trim()) c.adminFeedback=feedbackEl.value.trim();
+  c.status='approved';c.approvedAt=new Date().toISOString();
+  logEvent('canvas_approve',{canvasId,teamId:c.teamId});
+  saveData();renderCanvasPage();showToast('&#10003; Canvas genehmigt!','success');
+}
+function saveCanvasFeedback(canvasId){
+  const c=CANVASES.find(x=>x.id===canvasId);if(!c) return;
+  const feedbackEl=document.getElementById('canvasFeedbackInput');
+  if(!feedbackEl) return;
+  c.adminFeedback=feedbackEl.value.trim();
+  logEvent('canvas_feedback',{canvasId,teamId:c.teamId});
+  saveData();renderCanvasPage();showToast('&#128172; Feedback gespeichert','success');
+}
+// Admin: show all canvases for a game
+function renderAdminCanvases(gameId){
+  const effectiveGameId=gameId||state.managingGameId||state.currentUser?.gameId;
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  const canvases=CANVASES.filter(c=>gameTeams.some(t=>t.id===c.teamId));
+  return canvases;
+}
+
 function logEvent(action, data){
   const u = state.currentUser;
   if(!u) return;
@@ -6402,7 +6875,7 @@ function logEvent(action, data){
   };
   _trackBuffer.push(evt);
   // Persist important events
-  const importantActions=['login','logout','blog_submit','blog_approve','blog_reject','reflection_submit','week_advance','week_rollback','admin_member_add','tx_add'];
+  const importantActions=['login','logout','blog_submit','blog_submit_draft','blog_approve','blog_reject','reflection_submit','reflection_update','reflection_delete','week_advance','week_rollback','admin_member_add','admin_member_delete','admin_team_delete','tx_add','tx_edit','tx_delete','canvas_submit','canvas_approve','canvas_feedback','profile_save','password_change','reminder_sent','custom_q_add','custom_q_delete','guest_admin_add','guest_admin_remove'];
   if(importantActions.includes(action)){
     LOGS.push({...evt, id:'log'+Date.now()+Math.random().toString(36).substr(2,4)});
     if(LOGS.length>500) LOGS.shift();
@@ -6719,6 +7192,29 @@ window.addEventListener('DOMContentLoaded', function(){
   <div class="modal-body" id="adminKassenbuchBody"></div>
   <div class="modal-footer">
    <button class="btn btn-secondary" onclick="closeModal('modalAdminKassenbuch')">Schließen</button>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL: Neuer Gastadmin -->
+<div class="modal-overlay" id="modalNewGuestAdmin">
+ <div class="modal">
+  <div class="modal-header"><h3>&#128737;&#65039; Gastadmin ernennen</h3><button class="modal-close" onclick="closeModal('modalNewGuestAdmin')">&#215;</button></div>
+  <div class="modal-body">
+   <div class="info-box blue"><span class="info-box-icon">&#128161;</span>Gastadmins haben vollen Lese- und Moderationszugang zu einem Spiel, aber keine Spiel-Einstellungen.</div>
+   <div class="form-group"><label class="form-label">Name <span class="req">*</span></label>
+    <input class="form-control" id="gaName" placeholder="Dr. Max Mustermann"></div>
+   <div class="form-group"><label class="form-label">E-Mail</label>
+    <input type="email" class="form-control" id="gaEmail" placeholder="max.mustermann@dhbw.de"></div>
+   <div class="form-group"><label class="form-label">Spiel <span class="req">*</span></label>
+    <select class="form-control" id="gaGameId"></select></div>
+   <div class="form-group"><label class="form-label">Zugangscode <span class="req">*</span></label>
+    <div style="display:flex;gap:8px;"><input class="form-control" id="gaCode" placeholder="GUEST-XXXXX" style="font-family:monospace;font-weight:700;">
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('gaCode').value='GUEST-'+Math.random().toString(36).toUpperCase().substr(2,5)">&#127922;</button></div></div>
+  </div>
+  <div class="modal-footer">
+   <button class="btn btn-secondary" onclick="closeModal('modalNewGuestAdmin')">Abbrechen</button>
+   <button class="btn btn-purple" onclick="addGuestAdmin()">&#43; Gastadmin ernennen</button>
   </div>
  </div>
 </div>
