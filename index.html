@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.1)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.1.1)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.1</div>
+ <div class="version-footer" id="versionFooter">v0.8.1.1</div>
 </div>
 
 <!-- APP -->
@@ -979,6 +979,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
        <select class="form-control" style="width:auto;font-size:12px;" id="adminBlogTeamFilter" onchange="renderAdminBlogsPanel()"><option value="all">Alle Teams</option></select>
        <select class="form-control" style="width:auto;font-size:12px;" id="adminBlogWeekFilter" onchange="renderAdminBlogsPanel()"><option value="all">Alle Wochen</option><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option><option value="5">W5</option><option value="6">W6</option></select>
        <button class="btn btn-outline btn-sm" onclick="exportBlogsCSV()">&#128229; CSV</button>
+       <button class="btn btn-outline btn-sm" onclick="exportBlogsPDF()">&#128196; PDF</button>
       </div>
      </div>
      <div id="adminBlogsPanel"></div>
@@ -990,6 +991,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
        <select class="form-control" style="width:auto;font-size:12px;" id="adminRefTeamFilter" onchange="renderReflectionsAdmin()"><option value="all">Alle Teams</option></select>
        <select class="form-control" style="width:auto;font-size:12px;" id="adminRefWeekFilter" onchange="renderReflectionsAdmin()"><option value="all">Alle Wochen</option><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option><option value="5">W5</option><option value="6">W6</option></select>
        <button class="btn btn-outline btn-sm" onclick="exportReflectionsCSV()">&#128229; CSV</button>
+       <button class="btn btn-outline btn-sm" onclick="exportReflectionsPDF()">&#128196; PDF</button>
       </div>
      </div>
      <div class="info-box gold"><span class="info-box-icon">&#128274;</span>Diese Reflexionen sind <strong>privat</strong> und nur f&#252;r den jeweiligen Nutzer und Admins sichtbar. Bitte vertraulich behandeln.</div>
@@ -2679,6 +2681,10 @@ function initApp(){
   navigateTo(def);
   logEvent('page_load',{page:def});
   sendAutoBackup();
+  // Auto-reminders for admins/superadmins on Fri/Sat
+  if(u.role==='admin'||u.role==='superadmin'||u.role==='guest'){
+    setTimeout(checkAutoReminders,3000);
+  }
   // Show unread message notification
   const u_msg=state.currentUser;
   const myMsgId=u_msg.memberId||u_msg.code;
@@ -4461,7 +4467,7 @@ function renderReflectionsAdmin(){
   </div>
 </div>`;
   const grouped={};
-  REFLECTIONS.forEach(r=>{if(!grouped[r.teamId])grouped[r.teamId]=[];grouped[r.teamId].push(r);});
+  allRefs.forEach(r=>{if(!grouped[r.teamId])grouped[r.teamId]=[];grouped[r.teamId].push(r);});
   el.innerHTML=missingHtml+Object.entries(grouped).map(([teamId,refs])=>{
     const team=TEAMS.find(t=>t.id===teamId);
     return `<div class="card" style="margin-bottom:14px;">
@@ -4660,12 +4666,13 @@ function renderTeamAwardPanel(){
         <!-- Self-Eval inputs -->
         ${W.selfEval>0?`<div style="background:#F0FFF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;margin-bottom:14px;">
           <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#166534;">🌟 Eigene Einschätzung (0–10 pro Team, Woche ${currentWeek})</div>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
             ${gameTeams.map(t=>`<div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:13px;">${t.logo} ${t.name}</span>
-              <input type="number" class="form-control" style="width:65px;" min="0" max="10" step="0.5" value="${game.gdwSelfEvals[t.id+'_w'+currentWeek]||0}" onchange="saveGdwSelfEval('${effectiveGameId}','${t.id}',${currentWeek},this.value)">
+              <input type="number" id="selfEval_${t.id}" class="form-control" style="width:65px;" min="0" max="10" step="0.5" value="${game.gdwSelfEvals[t.id+'_w'+currentWeek]||0}">
             </div>`).join('')}
           </div>
+          <button class="btn btn-success btn-sm" onclick="saveAllGdwSelfEvals('${effectiveGameId}',${currentWeek})">💾 Speichern &amp; Auswertung aktualisieren</button>
         </div>`:''}
         <table class="data-table" style="width:100%;">
           <thead><tr><th>Platz</th><th>Team</th><th>Umsatz</th><th>Bericht</th><th>Reflexion</th><th>Stimmung</th><th>Aktivität</th>${W.selfEval>0?'<th>Eigene Einsch.</th>':''}<th>Gesamt</th></tr></thead>
@@ -4746,6 +4753,18 @@ function saveGdwSelfEval(gameId,teamId,week,value){
   if(!game.gdwSelfEvals) game.gdwSelfEvals={};
   game.gdwSelfEvals[teamId+'_w'+week]=Math.min(10,Math.max(0,parseFloat(value)||0));
   saveData();
+}
+function saveAllGdwSelfEvals(gameId,week){
+  const game=GAMES.find(g=>g.id===gameId);if(!game)return;
+  if(!game.gdwSelfEvals) game.gdwSelfEvals={};
+  const gameTeams=TEAMS.filter(t=>t.gameId===gameId&&t.status!=='pending'&&t.name&&t.name.trim());
+  gameTeams.forEach(t=>{
+    const inp=document.getElementById('selfEval_'+t.id);
+    if(inp) game.gdwSelfEvals[t.id+'_w'+week]=Math.min(10,Math.max(0,parseFloat(inp.value)||0));
+  });
+  saveData();
+  showToast('✅ Eigene Einschätzung gespeichert','success');
+  renderTeamAwardPanel();
 }
 function saveTeamAward(week){
   const teamId=document.getElementById('awardTeamSelect')?.value;
@@ -5188,7 +5207,8 @@ function renderKonzept(){
           ['v0.7.6','🔒 Kritischer Bugfix: Firebase-Timeout auf 10s erhöht; verhindert Datenverlust durch Überschreiben von Firebase bei langsamer Verbindung; Retry-Logik in Einladungscode-Prüfung; Realtime-Listener auch im Fehler-Pfad aktiv'],
           ['v0.7.7','🐛 Vollständiger Code-Audit (6 Bugs): copyRegCode()-Shadowing (Copy-Button defekt), showRegister()-Shadowing (alte Funktion überschrieb aktive), openAddMemberModal()-Crash (fehlende DOM-Elemente), addMemberToTeam()-fehlende Felder (firstName/lastName/email/mobile), Superadmin-Zugriffsgate, E-Mail-Feld im Mitglied-Modal'],
           ['v0.8.0','🚀 6 neue Features: (a) Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht, (b) Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback, (c) Automatische In-App-Erinnerungen vor Abgabe-Deadlines, (d) CSV-Export für Reflexionen &amp; Buchungen, (e) Vollständiger Aktivitätslog aller Aktionen (alle Rollen), (f) Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel'],
-          ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab', true],
+          ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab'],
+          ['v0.8.1.1','🐛 4 Bugfixes: (1) GdW Eigene Einschätzung: Expliziter Speichern-Button mit sofortiger Auswertungsaktualisierung; (2) Erinnerungssystem: 24h-Vorlauf – Reflexion freitags, Bericht+Buchungen samstags, auto-Trigger nach Login; (3) Reflexionen: Team-Filter jetzt auch für Karten aktiv (fix), CSV-Export robuster, PDF-Export hinzugefügt; (4) Berichte: Volltext-Leseansicht (Button + neues Fenster), CSV enthält alle Felder, PDF-Export hinzugefügt', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -7093,11 +7113,40 @@ function collectCustomAnswers(containerId){
 // ════════════════════════════════════════════════════════════════════
 //  FEATURE (c): AUTOMATIC IN-APP REMINDERS
 // ════════════════════════════════════════════════════════════════════
-function checkAndSendReminders(gameId,force){
+// checkAutoReminders: called on login for admin/superadmin roles, checks day-of-week
+// Reflexion deadline: Saturday 23:59 → remind on Friday (day 5)
+// Blog + Buchungen deadline: Sunday 23:59 → remind on Saturday (day 6)
+function checkAutoReminders(){
+  const u=state.currentUser;
+  if(!u||u.role==='member') return;
+  const today=new Date();
+  const dow=today.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  if(dow!==5&&dow!==6) return; // only fire on Friday or Saturday
+  const dayKey=today.toISOString().split('T')[0];
+  const storeKey='_vl_autoremind_'+dayKey;
+  if(localStorage.getItem(storeKey)) return; // already sent today
+  // Collect game IDs to remind for
+  const gameIds=[];
+  if(u.role==='superadmin'){
+    GAMES.forEach(g=>{if(g.id) gameIds.push(g.id);});
+  } else if(u.role==='admin'||u.role==='guest'){
+    const gId=state.managingGameId||u.gameId;
+    if(gId) gameIds.push(gId);
+  }
+  if(gameIds.length===0) return;
+  gameIds.forEach(gId=>{
+    // On Friday: reflexion reminders only
+    // On Saturday: blog + booking reminders only
+    checkAndSendReminders(gId,false,dow===5?'reflect':dow===6?'blogbook':'all');
+  });
+  localStorage.setItem(storeKey,'1');
+}
+function checkAndSendReminders(gameId,force,reminderTypes){
   const u=state.currentUser;
   const effectiveGameId=gameId||state.managingGameId||u?.gameId;
   if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
   const game=GAMES.find(g=>g.id===effectiveGameId);if(!game) return;
+  const types=reminderTypes||'all'; // 'reflect', 'blogbook', or 'all'
   const now=new Date().toISOString();
   const cutoff=new Date(Date.now()-23*60*60*1000).toISOString();
   const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
@@ -7106,7 +7155,8 @@ function checkAndSendReminders(gameId,force){
   gameTeams.forEach(team=>{
     const members=MEMBERS.filter(m=>m.teamId===team.id);
     const w=team.currentWeek;
-    // ── Reflexion reminder ──
+    // ── Reflexion reminder (Friday → Sat 23:59 deadline) ──
+    if(types==='reflect'||types==='all'){
     members.forEach(m=>{
       const hasRef=REFLECTIONS.find(r=>r.memberId===m.id&&r.week===w);
       if(!hasRef){
@@ -7117,7 +7167,7 @@ function checkAndSendReminders(gameId,force){
             type:'reminder',from:'System',fromId:'system',
             toId:m.id,toTeamId:team.id,gameId:effectiveGameId,
             subject:'⏰ Erinnerung: Reflexion Woche '+w,
-            body:'Hallo '+m.name+',\n\nbitte reiche deine Reflexion für Woche '+w+' noch ein. Deadline: Samstag 23:59 Uhr.\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
+            body:'Hallo '+m.name+',\n\nbitte reiche deine Reflexion für Woche '+w+' noch ein. Deadline: Freitag 23:59 Uhr (24 h vor Ablauf).\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
             date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
           });
           sent++;
@@ -7128,7 +7178,9 @@ function checkAndSendReminders(gameId,force){
         }
       }
     });
-    // ── Blog reminder (CEO only) ──
+    } // end reflect
+    // ── Blog reminder (CEO only; Saturday → Sun 23:59 deadline) ──
+    if(types==='blogbook'||types==='all'){
     const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===w&&(b.status==='pending'||b.status==='approved'));
     if(!hasBlog){
       const ceo=members.find(m=>m.role==='CEO');
@@ -7140,7 +7192,7 @@ function checkAndSendReminders(gameId,force){
             type:'blog_reminder',from:'System',fromId:'system',
             toId:ceo.id,toTeamId:team.id,gameId:effectiveGameId,
             subject:'⏰ Erinnerung: Wochenbericht Woche '+w,
-            body:'Hallo '+ceo.name+',\n\nbitte reiche den Wochenbericht für Woche '+w+' noch ein. Deadline: Sonntag 23:59 Uhr.\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
+            body:'Hallo '+ceo.name+',\n\nbitte reiche den Wochenbericht für Woche '+w+' noch ein. Deadline: Samstag 23:59 Uhr (24 h vor Ablauf).\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
             date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
           });
           sent++;
@@ -7150,7 +7202,9 @@ function checkAndSendReminders(gameId,force){
         }
       }
     }
-    // ── Booking reminder (CFO – no transactions yet this week) ──
+    } // end blogbook types-guard
+    // ── Booking reminder (CFO – no transactions yet this week; Saturday → Sun 23:59) ──
+    if(types==='blogbook'||types==='all'){
     const cfo=members.find(m=>m.role==='CFO');
     if(cfo&&team.transactions===0){
       const recent=MESSAGES.find(msg=>msg.toId===cfo.id&&msg.type==='booking_reminder'&&msg.week===w&&msg.sentAt>cutoff);
@@ -7160,7 +7214,7 @@ function checkAndSendReminders(gameId,force){
           type:'booking_reminder',from:'System',fromId:'system',
           toId:cfo.id,toTeamId:team.id,gameId:effectiveGameId,
           subject:'⏰ Erinnerung: Buchungen Woche '+w,
-          body:'Hallo '+cfo.name+',\n\nfür Woche '+w+' wurden noch keine Buchungen erfasst. Bitte trage Einnahmen und Ausgaben im Kassenbuch ein.\n\nViele Grüße,\ndein VentureLab-Team',
+          body:'Hallo '+cfo.name+',\n\nfür Woche '+w+' wurden noch keine Buchungen erfasst. Bitte trage Einnahmen und Ausgaben im Kassenbuch ein (Deadline: Samstag 23:59 Uhr).\n\nViele Grüße,\ndein VentureLab-Team',
           date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
         });
         sent++;
@@ -7169,6 +7223,7 @@ function checkAndSendReminders(gameId,force){
         }
       }
     }
+    } // end blogbook types-guard
   });
   if(sent>0){
     logEvent('reminder_sent',{gameId:effectiveGameId,count:sent,emails:emailJobs.length});
@@ -7177,14 +7232,14 @@ function checkAndSendReminders(gameId,force){
     // Send emails async
     emailJobs.forEach(job=>{
       const subjectMap={
-        reflect:'⏰ Erinnerung: Reflexion Woche '+job.week,
-        blog:'⏰ Erinnerung: Wochenbericht Woche '+job.week+' (CEO)',
-        booking:'⏰ Erinnerung: Buchungen Woche '+job.week+' (CFO)'
+        reflect:'⏰ Erinnerung: Reflexion Woche '+job.week+' (Deadline: Fr 23:59)',
+        blog:'⏰ Erinnerung: Wochenbericht Woche '+job.week+' (Deadline: Sa 23:59)',
+        booking:'⏰ Erinnerung: Buchungen Woche '+job.week+' (Deadline: Sa 23:59)'
       };
       const bodyMap={
-        reflect:`Hallo ${job.member.name},\n\nbitte reiche deine Reflexion für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Samstag 23:59).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
-        blog:`Hallo ${job.member.name},\n\nbitte reiche als CEO den Wochenbericht für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Sonntag 23:59).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
-        booking:`Hallo ${job.member.name},\n\nfür ${job.game?.name||'das Spiel'} Woche ${job.week} wurden noch keine Buchungen erfasst. Bitte Kassenbuch aktualisieren.\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`
+        reflect:`Hallo ${job.member.name},\n\nbitte reiche deine Reflexion für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Freitag 23:59 – noch 24 h).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
+        blog:`Hallo ${job.member.name},\n\nbitte reiche als CEO den Wochenbericht für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Samstag 23:59 – noch 24 h).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
+        booking:`Hallo ${job.member.name},\n\nfür ${job.game?.name||'das Spiel'} Woche ${job.week} wurden noch keine Buchungen erfasst. Bitte Kassenbuch aktualisieren (Deadline: Samstag 23:59 – noch 24 h).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`
       };
       fetch(CONFIG.FEEDBACK_ENDPOINT,{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -7239,7 +7294,8 @@ function renderAdminBlogsPanel(){
       <div class="card-body">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">${b.title}</h3>
         ${b.highlight?`<div style="background:var(--green-lt);color:var(--green);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:8px;">⭐ ${b.highlight}</div>`:''}
-        <p style="font-size:13px;color:var(--gray-dark);margin-bottom:8px;">${(b.body||'').substring(0,300)}${b.body&&b.body.length>300?'…':''}</p>
+        <p style="font-size:13px;color:var(--gray-dark);margin-bottom:4px;">${(b.body||'').substring(0,300)}${b.body&&b.body.length>300?'…':''}</p>
+        ${b.body&&b.body.length>300?`<button class="btn btn-outline btn-xs" style="margin-bottom:8px;" onclick="openBlogDetailAdmin('${b.id}')">📖 Vollständig lesen</button>`:''}
         ${b.challenges?`<div style="font-size:12px;color:var(--orange);margin-bottom:4px;">⚠️ <strong>Herausforderungen:</strong> ${b.challenges}</div>`:''}
         ${b.nextSteps?`<div style="font-size:12px;color:var(--blue);margin-bottom:8px;">▶️ <strong>Nächste Schritte:</strong> ${b.nextSteps}</div>`:''}
         ${b.adminFeedback?`<div class="info-box blue" style="margin-top:8px;padding:8px 12px;font-size:12px;"><strong>💬 Feedback:</strong> ${b.adminFeedback}</div>`:''}
@@ -7250,54 +7306,180 @@ function renderAdminBlogsPanel(){
         ${b.status==='pending'?`<div style="display:flex;gap:8px;margin-top:10px;">
           <button class="btn btn-success btn-sm" onclick="quickApprove('${b.id}');renderAdminBlogsPanel()">✅ Freigeben</button>
           <button class="btn btn-outline btn-sm" onclick="rejectBlog('${b.id}');renderAdminBlogsPanel()">🔄 Überarbeitung</button>
-        </div>`:''}
+          <button class="btn btn-outline btn-xs" onclick="openBlogDetailAdmin('${b.id}')">📖 Vollständig lesen</button>
+        </div>`:`<div style="margin-top:8px;"><button class="btn btn-outline btn-xs" onclick="openBlogDetailAdmin('${b.id}')">📖 Vollständig lesen</button></div>`}
       </div>
     </div>`;}).join('');
+}
+function openBlogDetailAdmin(blogId){
+  const b=BLOGS.find(x=>x.id===blogId);if(!b) return;
+  const team=TEAMS.find(t=>t.id===b.teamId);
+  const game=GAMES.find(g=>g.id===(state.managingGameId||(state.currentUser?.gameId)));
+  const moodEmoji=['','😩','😟','😐','😊','🚀'];
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>${team?.name||''} – Wochenbericht W${b.week}</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:800px;margin:30px auto;padding:0 20px;color:#1a1a2e;font-size:14px;line-height:1.6;}
+    h1{font-size:22px;margin-bottom:4px;}
+    .meta{color:#666;font-size:12px;margin-bottom:20px;}
+    .section{margin-bottom:16px;}
+    .section-title{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#555;margin-bottom:4px;}
+    .highlight{background:#fef3c7;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:4px;font-weight:600;}
+    .challenges{background:#fff7ed;border-left:3px solid #f97316;padding:8px 12px;border-radius:4px;}
+    .nextsteps{background:#eff6ff;border-left:3px solid #3b82f6;padding:8px 12px;border-radius:4px;}
+    .feedback{background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:4px;}
+    .body-text{white-space:pre-wrap;background:#f9fafb;padding:14px;border-radius:6px;border:1px solid #e5e7eb;}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <button class="no-print" onclick="window.print()" style="background:#2E75B6;color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;margin-bottom:20px;font-size:14px;">🖨️ Drucken / PDF speichern</button>
+  <h1>${team?.logo||'📋'} ${team?.name||''} – Wochenbericht Woche ${b.week}</h1>
+  <div class="meta">${b.date||'—'} · Status: ${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ Ausstehend':'📄 Entwurf'} · Stimmung: ${moodEmoji[b.mood]||''} ${b.mood}/5 · Spiel: ${game?.name||''}</div>
+  <div class="section"><div class="section-title">📰 Titel</div><div style="font-size:16px;font-weight:700;">${b.title||'—'}</div></div>
+  ${b.highlight?`<div class="section"><div class="section-title">⭐ Highlight der Woche</div><div class="highlight">${b.highlight}</div></div>`:''}
+  <div class="section"><div class="section-title">📝 Wochenbericht</div><div class="body-text">${(b.body||'—').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>
+  ${b.challenges?`<div class="section"><div class="section-title">⚠️ Herausforderungen</div><div class="challenges">${b.challenges}</div></div>`:''}
+  ${b.nextSteps?`<div class="section"><div class="section-title">▶️ Nächste Schritte</div><div class="nextsteps">${b.nextSteps}</div></div>`:''}
+  ${b.adminFeedback?`<div class="section"><div class="section-title">💬 Dozenten-Feedback</div><div class="feedback">${b.adminFeedback}</div></div>`:''}
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else{showToast('Bitte Popup-Blocker deaktivieren','error');}
 }
 function exportBlogsCSV(){
   const u=state.currentUser;
   const effectiveGameId=state.managingGameId||u?.gameId;
-  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
   const tf=document.getElementById('adminBlogTeamFilter')?.value||'all';
   const wf=document.getElementById('adminBlogWeekFilter')?.value||'all';
   let blogs=BLOGS.filter(b=>{
     const teamOk=gameTeams.some(t=>t.id===b.teamId);
     const fT=tf==='all'||b.teamId===tf;
-    const fW=wf==='all'||b.week==wf;
+    const fW=wf==='all'||String(b.week)===String(wf);
     return teamOk&&fT&&fW;
   });
-  if(blogs.length===0){showToast('Keine Berichte vorhanden','info');return;}
-  const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
-  const header='Woche,Datum,Team,Titel,Status,Stimmung,Aktivitaeten,Highlight,Herausforderungen,Naechste Schritte,Feedback';
+  if(blogs.length===0){showToast('Keine Berichte für die aktuellen Filter gefunden','info');return;}
+  const esc=v=>('"'+(String(v||'')).replace(/"/g,"''").replace(/\n/g,' ')+'"');
+  const header='Woche,Datum,Team,Titel,Status,Stimmung,Volltext Wochenbericht,Highlight,Herausforderungen,Naechste Schritte,Feedback,Spiel';
   const rows=blogs.map(b=>{
     const team=TEAMS.find(t=>t.id===b.teamId);
-    return [b.week,b.date,team?.name,b.title,b.status,b.mood,b.body,b.highlight,b.challenges,b.nextSteps,b.adminFeedback||''].map(esc).join(',');
+    const game=GAMES.find(g=>g.id===effectiveGameId);
+    return [b.week||'',b.date||'',team?.name||'',b.title||'',b.status||'',b.mood||'',b.body||'',b.highlight||'',b.challenges||'',b.nextSteps||'',b.adminFeedback||'',game?.name||''].map(esc).join(',');
   }).join('\n');
   _downloadCSV(header+'\n'+rows,'venturelab_berichte_'+new Date().toISOString().split('T')[0]+'.csv');
-  showToast('&#128229; Berichte exportiert','success');
+  showToast('&#128229; '+blogs.length+' Berichte exportiert','success');
+}
+function exportBlogsPDF(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
+  const tf=document.getElementById('adminBlogTeamFilter')?.value||'all';
+  const wf=document.getElementById('adminBlogWeekFilter')?.value||'all';
+  let blogs=BLOGS.filter(b=>{
+    const teamOk=gameTeams.some(t=>t.id===b.teamId);
+    const fT=tf==='all'||b.teamId===tf;
+    const fW=wf==='all'||String(b.week)===String(wf);
+    return teamOk&&fT&&fW;
+  }).sort((a,b)=>b.week-a.week||(a.teamId>b.teamId?1:-1));
+  if(blogs.length===0){showToast('Keine Berichte für die aktuellen Filter gefunden','info');return;}
+  const game=GAMES.find(g=>g.id===effectiveGameId);
+  const moodEmoji=['','😩','😟','😐','😊','🚀'];
+  const cards=blogs.map(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    return `<div style="page-break-inside:avoid;border:1px solid #ddd;border-radius:6px;padding:16px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+        <div><span style="font-size:20px;">${team?.logo||'📋'}</span> <strong style="font-size:15px;">${team?.name||''}</strong> · Woche ${b.week}</div>
+        <div style="font-size:12px;color:#555;">${b.date||''} · ${moodEmoji[b.mood]||''} ${b.mood}/5 · ${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ Ausstehend':'📄 Entwurf'}</div>
+      </div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px;">${b.title||''}</div>
+      ${b.highlight?`<div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:6px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:8px;">⭐ ${b.highlight}</div>`:''}
+      <div style="font-size:12px;color:#333;white-space:pre-wrap;background:#f9fafb;padding:10px;border-radius:4px;margin-bottom:8px;">${(b.body||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      ${b.challenges?`<div style="font-size:12px;color:#c2410c;margin-bottom:4px;">⚠️ <strong>Herausforderungen:</strong> ${b.challenges}</div>`:''}
+      ${b.nextSteps?`<div style="font-size:12px;color:#1d4ed8;margin-bottom:4px;">▶️ <strong>Nächste Schritte:</strong> ${b.nextSteps}</div>`:''}
+      ${b.adminFeedback?`<div style="font-size:12px;color:#15803d;margin-top:6px;background:#f0fdf4;padding:6px 10px;border-radius:4px;">💬 <strong>Feedback:</strong> ${b.adminFeedback}</div>`:''}
+    </div>`;
+  }).join('');
+  const filterLabel=(tf!=='all'?(TEAMS.find(t=>t.id===tf)?.name||tf):'Alle Teams')+' · '+(wf!=='all'?'Woche '+wf:'Alle Wochen');
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Wochenberichte – ${game?.name||''}</title>
+  <style>body{font-family:Arial,sans-serif;margin:20px;font-size:13px;color:#222;}h1{font-size:18px;margin-bottom:4px;}h2{font-size:13px;color:#666;font-weight:normal;margin-bottom:20px;}@media print{.no-print{display:none}}</style>
+  </head><body>
+  <button class="no-print" onclick="window.print()" style="background:#2E75B6;color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;margin-bottom:16px;font-size:14px;">🖨️ Drucken / PDF speichern</button>
+  <h1>📋 Wochenberichte – ${game?.name||effectiveGameId}</h1>
+  <h2>${filterLabel} · ${blogs.length} Berichte · Exportiert am ${new Date().toLocaleDateString('de-DE')}</h2>
+  ${cards}
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else{showToast('Bitte Popup-Blocker deaktivieren','error');}
 }
 function exportReflectionsCSV(){
   const u=state.currentUser;
   const effectiveGameId=state.managingGameId||u?.gameId;
-  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
   const tf=document.getElementById('adminRefTeamFilter')?.value||'all';
   const wf=document.getElementById('adminRefWeekFilter')?.value||'all';
   let refs=REFLECTIONS.filter(r=>{
     const teamOk=gameTeams.some(t=>t.id===r.teamId);
     const fT=tf==='all'||r.teamId===tf;
-    const fW=wf==='all'||r.week==wf;
+    const fW=wf==='all'||String(r.week)===String(wf);
     return teamOk&&fT&&fW;
   });
-  if(refs.length===0){showToast('Keine Reflexionen vorhanden','info');return;}
+  if(refs.length===0){showToast('Keine Reflexionen für die aktuellen Filter gefunden','info');return;}
+  const esc=v=>('"'+(String(v||'')).replace(/"/g,"''").replace(/\n/g,' ')+'"');
   const header='Datum,Woche,Name,Rolle,Team,Stimmung,Erfahrungen,Was war gut,Verbesserungen,Eigene Rolle,MVP-Vote';
-  const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
   const rows=refs.map(r=>{
     const m=MEMBERS.find(x=>x.id===r.memberId);
     const team=TEAMS.find(t=>t.id===r.teamId);
-    return [r.date,r.week,m?.name,m?.role,team?.name,r.mood,r.experience,r.liked,r.improved,r.role,MEMBERS.find(x=>x.id===r.mvpVote)?.name||''].map(esc).join(',');
+    return [r.date||'',r.week||'',m?.name||'',m?.role||'',team?.name||'',r.mood||'',r.experience||'',r.liked||'',r.improved||'',r.role||'',MEMBERS.find(x=>x.id===r.mvpVote)?.name||''].map(esc).join(',');
   }).join('\n');
   _downloadCSV(header+'\n'+rows,'venturelab_reflexionen_'+new Date().toISOString().split('T')[0]+'.csv');
-  showToast('&#128229; Reflexionen exportiert','success');
+  showToast('&#128229; '+refs.length+' Reflexionen exportiert','success');
+}
+function exportReflectionsPDF(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
+  const tf=document.getElementById('adminRefTeamFilter')?.value||'all';
+  const wf=document.getElementById('adminRefWeekFilter')?.value||'all';
+  let refs=REFLECTIONS.filter(r=>{
+    const teamOk=gameTeams.some(t=>t.id===r.teamId);
+    const fT=tf==='all'||r.teamId===tf;
+    const fW=wf==='all'||String(r.week)===String(wf);
+    return teamOk&&fT&&fW;
+  });
+  if(refs.length===0){showToast('Keine Reflexionen für die aktuellen Filter gefunden','info');return;}
+  const game=GAMES.find(g=>g.id===effectiveGameId);
+  const moodEmoji=['','😩','😟','😐','😊','🚀'];
+  const cards=refs.map(r=>{
+    const m=MEMBERS.find(x=>x.id===r.memberId);
+    const team=TEAMS.find(t=>t.id===r.teamId);
+    return `<div style="page-break-inside:avoid;border:1px solid #ddd;border-radius:6px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <div><strong>${m?.name||'—'}</strong> <span style="color:#666;font-size:12px;">(${m?.role||'—'})</span> · <span style="color:#666;font-size:12px;">${team?.logo||''} ${team?.name||'—'}</span></div>
+        <div style="font-size:12px;color:#555;">${moodEmoji[r.mood]||''} ${r.mood}/5 · Woche ${r.week}${r.date?' · '+r.date:''}</div>
+      </div>
+      ${r.experience?`<div style="font-size:12px;margin-bottom:4px;"><strong>Erfahrungen:</strong> ${r.experience}</div>`:''}
+      ${r.liked?`<div style="font-size:12px;color:#16a34a;margin-bottom:4px;">👍 Was war gut: ${r.liked}</div>`:''}
+      ${r.improved?`<div style="font-size:12px;color:#d97706;margin-bottom:4px;">💡 Verbesserungen: ${r.improved}</div>`:''}
+      ${r.role?`<div style="font-size:12px;margin-bottom:4px;"><strong>Eigene Rolle:</strong> ${r.role}</div>`:''}
+      ${r.mvpVote?`<div style="font-size:11px;color:#7c3aed;">⭐ MVP-Vote: ${MEMBERS.find(x=>x.id===r.mvpVote)?.name||'—'}</div>`:''}
+    </div>`;
+  }).join('');
+  const filterLabel=(tf!=='all'?(TEAMS.find(t=>t.id===tf)?.name||tf):'Alle Teams')+' · '+(wf!=='all'?'Woche '+wf:'Alle Wochen');
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reflexionen – ${game?.name||''}</title>
+  <style>body{font-family:Arial,sans-serif;margin:20px;font-size:13px;color:#222;}h1{font-size:18px;margin-bottom:4px;}h2{font-size:13px;color:#666;font-weight:normal;margin-bottom:20px;}@media print{.no-print{display:none}}</style>
+  </head><body>
+  <button class="no-print" onclick="window.print()" style="background:#2E75B6;color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;margin-bottom:16px;font-size:14px;">🖨️ Drucken / PDF speichern</button>
+  <h1>📝 Reflexionen – ${game?.name||effectiveGameId}</h1>
+  <h2>${filterLabel} · ${refs.length} Einträge · Exportiert am ${new Date().toLocaleDateString('de-DE')}</h2>
+  ${cards}
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else{showToast('Bitte Popup-Blocker deaktivieren','error');}
 }
 function exportTransactionsCSV(){
   const u=state.currentUser;
