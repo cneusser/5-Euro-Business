@@ -428,6 +428,22 @@ textarea.form-control{resize:vertical;min-height:70px;}
 #fbStatus.online{color:#375623;}
 #fbStatus.offline{color:#C00000;}
 #fbStatus.syncing{color:#C55A11;}
+
+/* BUSINESS MODEL CANVAS GRID */
+.bmc-grid{display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:minmax(130px,auto) minmax(130px,auto) minmax(90px,auto);gap:8px;margin-top:16px;}
+.bmc-partners{grid-column:1/3;grid-row:1/3;}
+.bmc-activities{grid-column:3/5;grid-row:1/2;}
+.bmc-resources{grid-column:3/5;grid-row:2/3;}
+.bmc-value{grid-column:5/7;grid-row:1/3;}
+.bmc-relations{grid-column:7/9;grid-row:1/2;}
+.bmc-channels{grid-column:7/9;grid-row:2/3;}
+.bmc-segments{grid-column:9/11;grid-row:1/3;}
+.bmc-costs{grid-column:1/6;grid-row:3/4;}
+.bmc-revenue{grid-column:6/11;grid-row:3/4;}
+@media(max-width:768px){
+  .bmc-grid{display:flex;flex-direction:column;}
+  .bmc-segments{order:1;}.bmc-value{order:2;}.bmc-relations{order:3;}.bmc-revenue{order:4;}.bmc-channels{order:5;}.bmc-activities{order:6;}.bmc-resources{order:7;}.bmc-partners{order:8;}.bmc-costs{order:9;}
+}
 </style>
 </head>
 <body>
@@ -456,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.0)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.1)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -504,8 +520,47 @@ textarea.form-control{resize:vertical;min-height:70px;}
     </div>
     <div class="login-error" id="loginPwdError">&#10060; <span id="lt_errPwd">Falsches Passwort</span></div>
     <button class="login-btn" onclick="doLoginStep2()" id="lt_pwdBtn">&#128274; Weiter / Continue</button>
-    <div style="text-align:center;margin-top:8px;">
+    <div style="text-align:center;margin-top:8px;display:flex;justify-content:center;gap:16px;">
      <button onclick="loginBack()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; <span id="lt_back">Zur&#252;ck / Back</span></button>
+     <button onclick="showPwdResetRequest()" style="background:none;border:none;color:#6BA3FF;font-size:12px;cursor:pointer;text-decoration:underline;">🔑 Passwort vergessen?</button>
+    </div>
+   </div>
+   <!-- Step 5: Password reset – request -->
+   <div id="loginStep5" style="display:none;">
+    <div style="text-align:center;margin-bottom:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,.9);">🔑 Passwort zurücksetzen</div>
+    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
+     <span class="info-box-icon">ℹ️</span>Gib deine hinterlegte E-Mail-Adresse ein. Du erhältst einen 6-stelligen Reset-Code.
+    </div>
+    <div class="login-input-wrap">
+     <input type="email" id="resetEmail" placeholder="DEINE E-MAIL" maxlength="80" style="text-transform:none!important;"
+      onkeypress="if(event.key==='Enter')sendPwdResetToken()">
+    </div>
+    <div class="login-error" id="loginResetError">&#10060; E-Mail nicht gefunden</div>
+    <button class="login-btn" onclick="sendPwdResetToken()">📧 Reset-Code senden</button>
+    <div style="text-align:center;margin-top:8px;">
+     <button onclick="showLoginStep2()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zurück</button>
+    </div>
+   </div>
+   <!-- Step 6: Password reset – enter token + new password -->
+   <div id="loginStep6" style="display:none;">
+    <div style="text-align:center;margin-bottom:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,.9);">✅ Reset-Code eingeben</div>
+    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
+     <span class="info-box-icon">📧</span>Wir haben dir einen 6-stelligen Code geschickt. Gib ihn unten ein, dann kannst du ein neues Passwort setzen.
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="text" id="resetToken" placeholder="RESET-CODE (6 STELLEN)" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:18px;font-weight:700;">
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="resetNewPwd1" placeholder="NEUES PASSWORT" maxlength="64">
+    </div>
+    <div class="login-input-wrap">
+     <input type="password" id="resetNewPwd2" placeholder="PASSWORT BESTÄTIGEN" maxlength="64"
+      onkeypress="if(event.key==='Enter')verifyAndResetPwd()">
+    </div>
+    <div class="login-error" id="loginResetTokenError">&#10060; Code falsch oder abgelaufen</div>
+    <button class="login-btn" onclick="verifyAndResetPwd()">🔒 Passwort neu setzen</button>
+    <div style="text-align:center;margin-top:8px;">
+     <button onclick="showLoginStep5()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zurück</button>
     </div>
    </div>
    <!-- Step 3: First-time password setup -->
@@ -692,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.0</div>
+ <div class="version-footer" id="versionFooter">v0.8.1</div>
 </div>
 
 <!-- APP -->
@@ -894,6 +949,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="admin-tab-bar">
      <button class="admin-tab active" onclick="switchAdminTab('approval')">&#128203; Blog-Freigabe <span class="notif-dot" id="approvalCount">0</span></button>
      <button class="admin-tab" onclick="switchAdminTab('weeks')">&#128197; Wochen-Status</button>
+     <button class="admin-tab" onclick="switchAdminTab('berichte-admin')">&#128214; Berichte</button>
      <button class="admin-tab" onclick="switchAdminTab('reflections-admin')">&#128172; Reflexionen <span class="notif-dot" id="reflectionCount" style="background:var(--green);">0</span></button>
      <button class="admin-tab" onclick="switchAdminTab('teams-admin')">&#128101; Teams</button>
      <button class="admin-tab" onclick="switchAdminTab('transactions-admin')">&#128179; Buchungen</button>
@@ -904,6 +960,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchAdminTab('dokumente')">&#128196; Dokumente</button>
      <button class="admin-tab" onclick="switchAdminTab('messaging')">&#9993;&#65039; Nachrichten</button>
      <button class="admin-tab" onclick="switchAdminTab('papierkorb')" id="adminTabPapierkorb">&#128465;&#65039; Papierkorb <span class="notif-dot" id="pkorCount" style="background:#888;display:none;">0</span></button>
+     <button class="admin-tab" onclick="switchAdminTab('admin-profil')">&#128100; Mein Profil</button>
     </div>
     <div class="admin-panel active" id="adminPanel-approval">
      <div class="section-header"><div class="section-title admin-title">Blog-Berichte zur Freigabe</div><button class="btn btn-success btn-sm" onclick="approveAll()">&#9989; Alle freigeben</button></div>
@@ -915,8 +972,26 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="info-box blue"><span class="info-box-icon">&#128161;</span>Jedes Team durchl&#228;uft die Wochen unabh&#228;ngig voneinander. Nach Freigabe des Wochenberichts wird das Team automatisch in die n&#228;chste Woche versetzt.</div>
      <div class="data-table-wrap"><div id="weeksAdminTable"></div></div>
     </div>
+    <div class="admin-panel" id="adminPanel-berichte-admin">
+     <div class="section-header" style="flex-wrap:wrap;gap:8px;">
+      <div class="section-title admin-title">&#128214; Alle Wochenberichte</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+       <select class="form-control" style="width:auto;font-size:12px;" id="adminBlogTeamFilter" onchange="renderAdminBlogsPanel()"><option value="all">Alle Teams</option></select>
+       <select class="form-control" style="width:auto;font-size:12px;" id="adminBlogWeekFilter" onchange="renderAdminBlogsPanel()"><option value="all">Alle Wochen</option><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option><option value="5">W5</option><option value="6">W6</option></select>
+       <button class="btn btn-outline btn-sm" onclick="exportBlogsCSV()">&#128229; CSV</button>
+      </div>
+     </div>
+     <div id="adminBlogsPanel"></div>
+    </div>
     <div class="admin-panel" id="adminPanel-reflections-admin">
-     <div class="section-header"><div class="section-title admin-title">Pers&#246;nliche Reflexionen (Admin-Sicht)</div><button class="btn btn-outline btn-sm" onclick="exportReflectionsCSV()">&#128229; CSV Export</button></div>
+     <div class="section-header" style="flex-wrap:wrap;gap:8px;">
+      <div class="section-title admin-title">Pers&#246;nliche Reflexionen (Admin-Sicht)</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+       <select class="form-control" style="width:auto;font-size:12px;" id="adminRefTeamFilter" onchange="renderReflectionsAdmin()"><option value="all">Alle Teams</option></select>
+       <select class="form-control" style="width:auto;font-size:12px;" id="adminRefWeekFilter" onchange="renderReflectionsAdmin()"><option value="all">Alle Wochen</option><option value="1">W1</option><option value="2">W2</option><option value="3">W3</option><option value="4">W4</option><option value="5">W5</option><option value="6">W6</option></select>
+       <button class="btn btn-outline btn-sm" onclick="exportReflectionsCSV()">&#128229; CSV</button>
+      </div>
+     </div>
      <div class="info-box gold"><span class="info-box-icon">&#128274;</span>Diese Reflexionen sind <strong>privat</strong> und nur f&#252;r den jeweiligen Nutzer und Admins sichtbar. Bitte vertraulich behandeln.</div>
      <div id="reflectionsAdminPanel"></div>
     </div>
@@ -925,7 +1000,13 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="data-table-wrap"><div id="adminTeamsTable"></div></div>
     </div>
     <div class="admin-panel" id="adminPanel-transactions-admin">
-     <div class="section-header"><div class="section-title admin-title">Alle Buchungen</div><button class="btn btn-outline btn-sm" onclick="exportTransactionsCSV()">&#128229; CSV Export</button></div>
+     <div class="section-header" style="flex-wrap:wrap;gap:8px;">
+      <div class="section-title admin-title">Alle Buchungen</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+       <select class="form-control" style="width:auto;font-size:12px;" id="adminTxTeamFilter2" onchange="renderAdminTxTable()"><option value="all">Alle Teams</option></select>
+       <button class="btn btn-outline btn-sm" onclick="exportTransactionsCSV()">&#128229; CSV</button>
+      </div>
+     </div>
      <div class="tx-table" id="adminTxTable"></div>
     </div>
     <div class="admin-panel" id="adminPanel-codes">
@@ -944,6 +1025,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="admin-panel" id="adminPanel-dokumente"><div id="dokumenteContent"></div></div>
     <div class="admin-panel" id="adminPanel-messaging"><div id="messagingContent"></div></div>
     <div class="admin-panel" id="adminPanel-papierkorb"><div id="pkorContent"></div></div>
+    <div class="admin-panel" id="adminPanel-admin-profil"><div id="adminProfilContent"></div></div>
    </div>
   </div>
 
@@ -1022,47 +1104,44 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <button class="btn btn-primary btn-sm" onclick="submitCanvas()">&#128228; Zur Genehmigung einreichen</button>
      </div>
     </div>
+    <div id="canvasDocsWrap" style="display:none;margin-bottom:8px;"></div>
     <div class="info-box blue" id="canvasInfoBox"><span class="info-box-icon">&#128161;</span>Als CMO erstellst du den Business Model Canvas f&#252;r euer Team. Der CEO kann ihn genehmigen; der Dozent gibt Feedback. Letzte Einreichung: <span id="canvasLastSubmit">—</span></div>
     <div id="canvasAdminFeedbackWrap" style="display:none;"></div>
-    <div id="canvasGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto;gap:10px;margin-top:16px;">
-     <div class="card" style="border-top:4px solid #7C3AED;">
-      <div class="card-header" style="background:#F5F3FF;"><h3 style="font-size:13px;color:#7C3AED;">&#128101; Schl&#252;sselpartner</h3></div>
-      <div class="card-body"><textarea class="form-control" id="bmc_partners" rows="4" placeholder="Wer sind unsere wichtigsten Partner &amp; Lieferanten?"></textarea></div>
+    <div class="bmc-grid" id="canvasGrid">
+     <div class="card bmc-partners" style="border-top:4px solid #7C3AED;">
+      <div class="card-header" style="background:#F5F3FF;"><h3 style="font-size:12px;color:#7C3AED;">&#128101; Schl&#252;sselpartner</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_partners" rows="5" placeholder="Wer sind unsere wichtigsten Partner &amp; Lieferanten?"></textarea></div>
      </div>
-     <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
-      <div class="card" style="border-top:4px solid #2563EB;">
-       <div class="card-header" style="background:#EFF6FF;"><h3 style="font-size:13px;color:#2563EB;">&#9889; Schl&#252;sselaktivit&#228;ten</h3></div>
-       <div class="card-body"><textarea class="form-control" id="bmc_activities" rows="3" placeholder="Was sind unsere wichtigsten T&#228;tigkeiten?"></textarea></div>
-      </div>
-      <div class="card" style="border-top:4px solid #0891B2;">
-       <div class="card-header" style="background:#ECFEFF;"><h3 style="font-size:13px;color:#0891B2;">&#128170; Schl&#252;sselressourcen</h3></div>
-       <div class="card-body"><textarea class="form-control" id="bmc_resources" rows="3" placeholder="Welche Ressourcen ben&#246;tigen wir?"></textarea></div>
-      </div>
+     <div class="card bmc-activities" style="border-top:4px solid #2563EB;">
+      <div class="card-header" style="background:#EFF6FF;"><h3 style="font-size:12px;color:#2563EB;">&#9889; Schl&#252;sselaktivit&#228;ten</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_activities" rows="3" placeholder="Was sind unsere wichtigsten T&#228;tigkeiten?"></textarea></div>
      </div>
-     <div class="card" style="border-top:4px solid #16A34A;">
-      <div class="card-header" style="background:#F0FDF4;"><h3 style="font-size:13px;color:#16A34A;">&#127775; Wertangebote</h3></div>
-      <div class="card-body"><textarea class="form-control" id="bmc_value" rows="4" placeholder="Welchen Wert liefern wir? Welches Problem l&#246;sen wir?"></textarea></div>
+     <div class="card bmc-resources" style="border-top:4px solid #0891B2;">
+      <div class="card-header" style="background:#ECFEFF;"><h3 style="font-size:12px;color:#0891B2;">&#128170; Schl&#252;sselressourcen</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_resources" rows="3" placeholder="Welche Ressourcen ben&#246;tigen wir?"></textarea></div>
      </div>
-     <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
-      <div class="card" style="border-top:4px solid #EA580C;">
-       <div class="card-header" style="background:#FFF7ED;"><h3 style="font-size:13px;color:#EA580C;">&#10084;&#65039; Kundenbeziehungen</h3></div>
-       <div class="card-body"><textarea class="form-control" id="bmc_relations" rows="3" placeholder="Welche Beziehung haben wir zu unseren Kunden?"></textarea></div>
-      </div>
-      <div class="card" style="border-top:4px solid #DC2626;">
-       <div class="card-header" style="background:#FEF2F2;"><h3 style="font-size:13px;color:#DC2626;">&#128226; Kan&#228;le</h3></div>
-       <div class="card-body"><textarea class="form-control" id="bmc_channels" rows="3" placeholder="Wie erreichen wir unsere Kunden?"></textarea></div>
-      </div>
+     <div class="card bmc-value" style="border-top:4px solid #16A34A;">
+      <div class="card-header" style="background:#DCFCE7;"><h3 style="font-size:13px;font-weight:800;color:#16A34A;">&#127775; Wertangebote</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_value" rows="5" placeholder="Welchen Wert liefern wir? Welches Problem l&#246;sen wir?"></textarea></div>
      </div>
-     <div class="card" style="border-top:4px solid #D97706;">
-      <div class="card-header" style="background:#FFFBEB;"><h3 style="font-size:13px;color:#D97706;">&#128106; Kundensegmente</h3></div>
-      <div class="card-body"><textarea class="form-control" id="bmc_segments" rows="4" placeholder="F&#252;r wen schaffen wir Wert? Wer sind unsere wichtigsten Kunden?"></textarea></div>
+     <div class="card bmc-relations" style="border-top:4px solid #EA580C;">
+      <div class="card-header" style="background:#FFF7ED;"><h3 style="font-size:12px;color:#EA580C;">&#10084;&#65039; Kundenbeziehungen</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_relations" rows="3" placeholder="Welche Beziehung haben wir zu unseren Kunden?"></textarea></div>
      </div>
-     <div class="card" style="border-top:4px solid #64748B;grid-column:1/3;">
-      <div class="card-header" style="background:#F8FAFC;"><h3 style="font-size:13px;color:#64748B;">&#128176; Kostenstruktur</h3></div>
+     <div class="card bmc-channels" style="border-top:4px solid #DC2626;">
+      <div class="card-header" style="background:#FEF2F2;"><h3 style="font-size:12px;color:#DC2626;">&#128226; Kan&#228;le</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_channels" rows="3" placeholder="Wie erreichen wir unsere Kunden?"></textarea></div>
+     </div>
+     <div class="card bmc-segments" style="border-top:4px solid #D97706;">
+      <div class="card-header" style="background:#FFFBEB;"><h3 style="font-size:12px;color:#D97706;">&#128106; Kundensegmente</h3></div>
+      <div class="card-body"><textarea class="form-control" id="bmc_segments" rows="5" placeholder="F&#252;r wen schaffen wir Wert? Wer sind unsere wichtigsten Kunden?"></textarea></div>
+     </div>
+     <div class="card bmc-costs" style="border-top:4px solid #64748B;">
+      <div class="card-header" style="background:#F8FAFC;"><h3 style="font-size:12px;color:#64748B;">&#128176; Kostenstruktur</h3></div>
       <div class="card-body"><textarea class="form-control" id="bmc_costs" rows="3" placeholder="Was sind unsere wichtigsten Kostenbl&#246;cke? Welche Ressourcen/Aktivit&#228;ten sind am teuersten?"></textarea></div>
      </div>
-     <div class="card" style="border-top:4px solid #16A34A;grid-column:3/4;">
-      <div class="card-header" style="background:#F0FDF4;"><h3 style="font-size:13px;color:#16A34A;">&#128185; Einnahmequellen</h3></div>
+     <div class="card bmc-revenue" style="border-top:4px solid #16A34A;">
+      <div class="card-header" style="background:#F0FDF4;"><h3 style="font-size:12px;color:#16A34A;">&#128185; Einnahmequellen</h3></div>
       <div class="card-body"><textarea class="form-control" id="bmc_revenue" rows="3" placeholder="Wof&#252;r sind unsere Kunden bereit zu zahlen?"></textarea></div>
      </div>
     </div>
@@ -1479,19 +1558,23 @@ function _buildPayload(){
 }
 
 // ── saveData (localStorage + Firebase async) ─────────────────────────
+let _localWriteNonce='';
 function saveData(){
   try{
     if(!saveData._cnt) saveData._cnt=0;
     if(++saveData._cnt % 10 === 0) flushTrackBuffer();
+    // Generate a nonce so the real-time listener can skip our own echo
+    _localWriteNonce='w'+Date.now()+Math.random().toString(36).substr(2,4);
     const payload = _buildPayload();
+    payload._nonce = _localWriteNonce;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    // Firebase debounced write (max once per 1500ms)
+    // Firebase debounced write (max once per 800ms for faster persistence)
     if(_fbOK && _db){
       if(_fbSaveTimer) clearTimeout(_fbSaveTimer);
       _fbSaveTimer = setTimeout(()=>{
         _fbSaveTimer = null;
         _db.ref('5euro_tracker_v5').set(payload).catch(e=>console.warn('FB write error',e));
-      }, 1500);
+      }, 800);
     }
   }catch(e){console.warn('saveData error',e);}
 }
@@ -1517,17 +1600,21 @@ function _setupRealtimeListener(){
     if(_fbWriting) return; // own write, skip
     const d = snapshot.val();
     if(!d) return;
+    // Skip if this is an echo of our own write (same nonce)
+    const isOwnEcho = d._nonce && d._nonce === _localWriteNonce;
     _fbDataLoaded = true; // Mark that we have received Firebase data
-    _replaceArrays(d);
-    _postLoadCalc();
-    // Refresh cache ONLY - do NOT call saveData()
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
-    // Re-render current view if app is running - use renderCurrentView (no saveData)
-    if(state && state.currentPage && state.currentUser){
-      try{ renderCurrentView(); }catch(e){}
+    if(!isOwnEcho){
+      _replaceArrays(d);
+      _postLoadCalc();
+      // Refresh cache ONLY - do NOT call saveData()
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
+      // Re-render current view if app is running - use renderCurrentView (no saveData)
+      if(state && state.currentPage && state.currentUser){
+        try{ renderCurrentView(); }catch(e){}
+      }
+      _setFbStatus('online','Online');
+      showToast('🔄 Daten von anderem Gerät aktualisiert','info',2500);
     }
-    _setFbStatus('online','Online');
-    showToast('🔄 Daten von anderem Gerät aktualisiert','info',2500);
   });
   // Monitor connection state with enhanced offline detection
   let offlineWarnShown = false;
@@ -2277,7 +2364,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.0)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.1)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2287,7 +2374,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.0)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.1)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -2327,12 +2414,101 @@ function showLoginRolePreview(code){
   preview.style.display='block';
   preview.innerHTML=displayText;
 }
+function showPwdResetRequest(){
+  document.getElementById('loginStep2').style.display='none';
+  document.getElementById('loginStep5').style.display='block';
+  document.getElementById('loginResetError').style.display='none';
+  setTimeout(()=>document.getElementById('resetEmail')?.focus(),50);
+}
+function showLoginStep5(){
+  document.getElementById('loginStep6').style.display='none';
+  document.getElementById('loginStep5').style.display='block';
+  document.getElementById('loginResetError').style.display='none';
+}
+function showLoginStep2(){
+  document.getElementById('loginStep5').style.display='none';
+  document.getElementById('loginStep2').style.display='block';
+}
+window._resetTokenStore={};
+async function sendPwdResetToken(){
+  const email=document.getElementById('resetEmail').value.trim().toLowerCase();
+  if(!email){document.getElementById('loginResetError').style.display='block';return;}
+  // Find user by email across members and admins
+  const memberMatch=MEMBERS.find(m=>m.email&&m.email.toLowerCase()===email);
+  const adminMatch=ADMINS.find(a=>a.email&&a.email.toLowerCase()===email);
+  const superMatch=(CODES['SUPER-NEUSS']?.email||'').toLowerCase()===email?{code:'SUPER-NEUSS',name:CODES['SUPER-NEUSS']?.name}:null;
+  const saMatch=SUPERADMINS.find(s=>s.email&&s.email.toLowerCase()===email);
+  const userCode=memberMatch?.code||adminMatch?.code||(superMatch?'SUPER-NEUSS':null)||saMatch?.code;
+  if(!userCode){
+    document.getElementById('loginResetError').style.display='block';
+    setTimeout(()=>document.getElementById('loginResetError').style.display='none',3000);
+    return;
+  }
+  const token=String(Math.floor(100000+Math.random()*900000));
+  window._resetTokenStore[email]={token,code:userCode,expiry:Date.now()+15*60*1000};
+  // Send email
+  try{
+    const game=GAMES[0]||{};
+    await fetch(CONFIG.FEEDBACK_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:'notification',
+        to:email,
+        subject:'🔑 Dein Reset-Code für VentureLab',
+        message:`Hallo,\n\ndein Reset-Code lautet: ${token}\n\nDieser Code ist 15 Minuten gültig.\n\nFalls du kein Passwort-Reset beantragt hast, ignoriere diese E-Mail.\n\nVentureLab`,
+        sender:'VentureLab System',
+        team:'',
+        game:game.name||''
+      })
+    });
+    showToast('📧 Reset-Code gesendet an '+email,'success');
+  }catch(e){
+    showToast('E-Mail konnte nicht gesendet werden. Bitte Admin kontaktieren.','error');
+  }
+  document.getElementById('loginStep5').style.display='none';
+  document.getElementById('loginStep6').style.display='block';
+  document.getElementById('loginResetTokenError').style.display='none';
+  document.getElementById('resetToken').value='';
+  document.getElementById('resetNewPwd1').value='';
+  document.getElementById('resetNewPwd2').value='';
+  setTimeout(()=>document.getElementById('resetToken')?.focus(),50);
+  window._resetPendingEmail=email;
+}
+async function verifyAndResetPwd(){
+  const email=window._resetPendingEmail;
+  const token=document.getElementById('resetToken').value.trim();
+  const p1=document.getElementById('resetNewPwd1').value;
+  const p2=document.getElementById('resetNewPwd2').value;
+  const errEl=document.getElementById('loginResetTokenError');
+  const entry=window._resetTokenStore[email];
+  if(!entry||entry.token!==token||Date.now()>entry.expiry){
+    errEl.textContent='❌ Code falsch oder abgelaufen';errEl.style.display='block';return;
+  }
+  if(p1.length<6){errEl.textContent='❌ Mindestens 6 Zeichen';errEl.style.display='block';return;}
+  if(p1!==p2){errEl.textContent='❌ Passwörter stimmen nicht überein';errEl.style.display='block';return;}
+  const hash=await hashPwd(p1);
+  savePwd(entry.code,hash);
+  delete window._resetTokenStore[email];
+  delete window._resetPendingEmail;
+  showToast('✅ Passwort erfolgreich zurückgesetzt! Bitte jetzt einloggen.','success');
+  // Go back to step 1
+  document.getElementById('loginStep6').style.display='none';
+  document.getElementById('loginStep1').style.display='block';
+  document.getElementById('loginCode').value='';
+}
 function doLoginStep1(){
   let code=document.getElementById('loginCode').value.trim();
   if(code.includes('@')){
     const emailLower=code.toLowerCase();
     const memberByEmail=MEMBERS.find(m=>m.email&&m.email.toLowerCase()===emailLower);
+    const adminByEmail=ADMINS.find(a=>a.email&&a.email.toLowerCase()===emailLower);
+    const saByEmail=SUPERADMINS.find(s=>s.email&&s.email.toLowerCase()===emailLower);
+    const mainSaEmail=(CODES['SUPER-NEUSS']?.email||'').toLowerCase();
     if(memberByEmail) code=memberByEmail.code;
+    else if(adminByEmail) code=adminByEmail.code;
+    else if(saByEmail) code=saByEmail.code;
+    else if(emailLower===mainSaEmail) code='SUPER-NEUSS';
     else {
       const err=document.getElementById('loginError');err.style.display='block';
       setTimeout(()=>err.style.display='none',3000);return;
@@ -2459,6 +2635,19 @@ function finishLogin(code){
 
 function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new Date(_sessionStart).getTime())/1000)+'s'});
   flushTrackBuffer(true);
+  // Restore original data if exiting test mode
+  if(window._testMode || window._testModeActive){
+    window._testMode=false; window._testModeActive=false;
+    if(window._testModeOrigData) localStorage.setItem('5euro_tracker_v5',window._testModeOrigData);
+    else localStorage.removeItem('5euro_tracker_v5');
+    if(window._testModeOrigPwd) localStorage.setItem('5euro_passwords',window._testModeOrigPwd);
+    else localStorage.removeItem('5euro_passwords');
+    window._testModeOrigData=null; window._testModeOrigPwd=null;
+    _fbDataLoaded=false; // force fresh Firebase load on next login
+    const testBanner=document.getElementById('testModeBanner');if(testBanner) testBanner.remove();
+    // Reload real data immediately
+    loadData(); rebuildCodes();
+  }
   window._testMode=false;
   sessionStorage.removeItem('venturelab_session');
   state.currentUser=null;state.prevUser=null;
@@ -2662,15 +2851,29 @@ function renderDokumente(){
     +'<div class="form-group"><label class="form-label">PDF hinzufuegen (Mehrfachauswahl moeglich)</label>'
     +'<input type="file" class="form-control" id="gamePdfFile" accept=".pdf" multiple onchange="uploadGamePdf(\''+game.id+'\',this)"></div>'
     +'</div></div>'
+    +'<div class="section-header" style="margin-top:24px;"><div class="section-title admin-title">&#128506;&#65039; Canvas-Anleitungen</div></div>'
+    +'<div class="card"><div class="card-body">'
+    +'<p style="font-size:13px;color:var(--gray-mid);margin-bottom:12px;">Lade Pr&#228;sentationen oder Anleitungen f&#252;r den Business Model Canvas hoch (je max. 10 MB, PDF oder PPTX).</p>'
+    +(function(){if(!game.canvasDocs)game.canvasDocs=[];const docs=game.canvasDocs;return docs.length===0
+      ?'<div class="info-box blue" style="margin-bottom:12px;"><span class="info-box-icon">i</span>Noch keine Canvas-Dokumente.</div>'
+      :'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">'
+        +docs.map(function(d){return '<div style="display:flex;align-items:center;gap:10px;background:var(--bg-light);padding:8px 12px;border-radius:var(--radius);">'
+          +'<span style="font-size:20px;">'+(d.name&&d.name.endsWith('.pptx')?'&#128203;':'&#128196;')+'</span>'
+          +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+d.name+'</div>'
+          +(d.uploadedAt?'<div style="font-size:11px;color:var(--gray-mid);">'+new Date(d.uploadedAt).toLocaleDateString('de-DE')+'</div>':'')
+          +'</div>'
+          +'<button class="btn btn-outline btn-xs" onclick=\"openCanvasDoc(\''+game.id+'\',\''+d.id+'\')">&#128065;</button>'
+          +'<button class="btn btn-danger btn-xs" onclick=\"removeCanvasDocById(\''+game.id+'\',\''+d.id+'\')">&#10005;</button>'
+          +'</div>';}).join('')+'</div>';})()
+    +'<div class="form-group"><label class="form-label">Dokument hinzuf&#252;gen (PDF oder PPTX)</label>'
+    +'<input type="file" class="form-control" id="canvasDocFile" accept=".pdf,.pptx,.ppt" multiple onchange="uploadCanvasDoc(\''+game.id+'\',this)"></div>'
+    +'</div></div>'
     +'<div class="section-header" style="margin-top:24px;"><div class="section-title admin-title">Spiel-Einstellungen</div></div>'
     +'<div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label class="form-label">Dozenten-E-Mail</label>'
     +'<input class="form-control" id="gameAdminEmail" value="'+(game.adminEmail||'')+'" placeholder="dozent@hochschule.de"></div>'
     +'<div class="form-group"><label class="form-label">noreply-Domain</label>'
     +'<input class="form-control" id="gameNoreply" value="'+(game.noreplyDomain||'5euro-business.de')+'"></div>'
     +'</div>'
-    +'<div style="margin:12px 0;"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;">'
-    +'<input type="checkbox" id="gameIsLive" '+(game.isLive?'checked':'')+' style="width:18px;height:18px;">'
-    +'<span><strong>&#128994; Spiel ist LIVE / aktiv</strong> &mdash; Ticker zeigt gr&uuml;nes LIVE-Symbol</span></label></div>'
     +'<button class="btn btn-primary btn-sm" onclick=\"saveGameSettings(\''+game.id+'\')">Speichern</button>'
     +'&nbsp;&nbsp;<button class="btn btn-secondary btn-sm" onclick=\"closeGame(\''+game.id+'\') " style="background:var(--orange)!important;color:white!important;" title="Spiel abschließen – keine neuen Buchungen mehr möglich">🔒 Spiel abschließen</button>'
     +(game.status==='closed'?'<span class="tag" style="background:#fee2e2;color:#c00;margin-left:8px;">🔒 ABGESCHLOSSEN</span>':'')
@@ -2761,6 +2964,57 @@ function removeGamePdfById(gameId,pdfId){
   saveData();showToast((p?p.name:'PDF')+' entfernt','info');renderDokumente();
 }
 
+// --- Canvas Documents (admin upload for CMO instruction files) ---
+function uploadCanvasDoc(gameId,input){
+  const files=Array.from(input.files);
+  if(!files.length) return;
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game) return;
+  if(!game.canvasDocs) game.canvasDocs=[];
+  let done=0;
+  files.forEach(function(file){
+    if(file.size>10*1024*1024){showToast(file.name+' zu gross (max. 10 MB)','error');return;}
+    const reader=new FileReader();
+    reader.onload=function(e){
+      game.canvasDocs.push({id:'cdoc-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+        name:file.name,data:e.target.result.split(',')[1],mime:file.type||'application/octet-stream',uploadedAt:new Date().toISOString()});
+      done++;
+      if(done===files.length){saveData();showToast(done+' Dokument(e) gespeichert','success');logEvent('canvas_doc_upload',{gameId,count:done});renderDokumente();}
+    };
+    reader.onerror=function(){done++;showToast('Fehler beim Lesen: '+file.name,'error');};
+    reader.readAsDataURL(file);
+  });
+}
+function removeCanvasDocById(gameId,docId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game||!game.canvasDocs) return;
+  const d=game.canvasDocs.find(function(x){return x.id===docId;});
+  game.canvasDocs=game.canvasDocs.filter(function(x){return x.id!==docId;});
+  saveData();showToast((d?d.name:'Dokument')+' entfernt','info');renderDokumente();
+}
+function openCanvasDoc(gameId,docId){
+  const game=GAMES.find(g=>g.id===gameId);
+  if(!game||!game.canvasDocs) return;
+  const d=game.canvasDocs.find(function(x){return x.id===docId;});
+  if(!d){showToast('Dokument nicht gefunden','error');return;}
+  if(d.name&&d.name.toLowerCase().endsWith('.pdf')){
+    const frame=document.getElementById('pdfViewerFrame');
+    const title=document.getElementById('pdfViewerTitle');
+    const dl=document.getElementById('pdfViewerDownload');
+    if(title) title.textContent=d.name;
+    const src='data:application/pdf;base64,'+d.data;
+    if(frame) frame.src=src;
+    if(dl){dl.href=src;dl.download=d.name;}
+    openModal('modalPdfViewer');
+    logEvent('canvas_doc_view',{gameId,name:d.name});
+  } else {
+    // For PPTX and other types: trigger download
+    const a=document.createElement('a');
+    a.href='data:'+(d.mime||'application/octet-stream')+';base64,'+d.data;
+    a.download=d.name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+    logEvent('canvas_doc_download',{gameId,name:d.name});
+  }
+}
 function openPdfById(gameId,pdfId){
   const game=GAMES.find(g=>g.id===gameId);
   if(!game||!game.faqPdfs) return;
@@ -2833,12 +3087,10 @@ function saveGameSettings(gameId){
   if(!game) return;
   game.adminEmail=document.getElementById('gameAdminEmail').value.trim();
   game.noreplyDomain=document.getElementById('gameNoreply').value.trim();
-  const liveEl=document.getElementById('gameIsLive');
-  if(liveEl) game.isLive=liveEl.checked;
   saveData();
   updateLiveIndicator();
   showToast('Gespeichert','success');
-  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail,isLive:game.isLive});
+  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail});
 }
 
 
@@ -3538,6 +3790,13 @@ function renderProfile(){
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
         <input type="checkbox" id="mpNotifReflect" ${(m.notif&&m.notif.reflect!==false)?'checked':''} ${m.email?'':'disabled'}> ${state.lang==='en'?'Reflection reminder (Saturday)':'Reflexions-Erinnerung (Samstag)'}</label>
     </div>
+    <div style="margin:10px 0 4px;border-top:1px solid var(--border);padding-top:10px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="mpNotifEmailReminders" ${(m.notif?.emailReminders!==false)?'checked':''} ${m.email?'':'disabled'}>
+        <span>📧 ${state.lang==='en'?'Receive email reminders (reflection, report, bookings)':'E-Mail-Erinnerungen erhalten (Reflexion, Bericht, Buchungen)'}</span>
+      </label>
+      ${!m.email?`<div style="font-size:11px;color:var(--orange);margin-top:4px;">⚠️ ${state.lang==='en'?'Add email address to enable':'E-Mail-Adresse hinterlegen, um zu aktivieren'}</div>`:''}
+    </div>
     <div class="form-section-title" style="margin-top:18px;">${state.lang==='en'?'Security':'Sicherheit'}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="showChangePassword()">🔐 ${state.lang==='en'?'Change Password':'Passwort ändern'}</button>
@@ -3690,7 +3949,11 @@ function renderTeamsPage(){
 function renderBlogPage(){
   const u=state.currentUser;const teams=getVisibleTeams();
   const tSel=document.getElementById('blogTeamFilter');
-  if(tSel.options.length<=1) teams.forEach(t=>{const o=new Option(t.logo+' '+t.name,t.id);tSel.appendChild(o);});
+  // Always rebuild team filter to avoid stale options after data reload
+  const prevTf=tSel.value;
+  while(tSel.options.length>1) tSel.remove(1);
+  teams.forEach(t=>{const o=new Option(t.logo+' '+t.name,t.id);tSel.appendChild(o);});
+  if(prevTf&&prevTf!=='all'&&teams.some(t=>t.id===prevTf)) tSel.value=prevTf;
   const tf=document.getElementById('blogTeamFilter').value;
   const wf=document.getElementById('blogWeekFilter').value;
   let blogs=BLOGS.filter(b=>{
@@ -3950,7 +4213,26 @@ function renderKontaktPage(){
       </div>
     </div>`).join('');
 
+  // Build admin/lecturer contact card
+  const gameAdmins=myGameId
+    ? ADMINS.filter(a=>a.gameId===myGameId)
+    : [];
+  const adminCards=gameAdmins.map(a=>`<div class="card" style="padding:14px;text-align:center;border-top:4px solid #2E75B6;">
+    <div style="width:50px;height:50px;border-radius:50%;background:#2E75B6;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;margin:0 auto 10px;">${(a.name||'?').charAt(0).toUpperCase()}</div>
+    <div style="font-weight:700;font-size:14px;">${a.name||'Dozent/in'}</div>
+    <div style="font-size:11px;color:#2E75B6;margin:4px 0;font-weight:700;">⚙️ Spielleitung</div>
+    ${a.uni?`<div style="font-size:11px;color:var(--gray-mid);margin:2px 0;">🏫 ${a.uni}</div>`:''}
+    ${a.email?`<div style="font-size:11px;color:var(--gray-mid);margin:4px 0;">✉️ ${a.email}</div>`:''}
+    ${a.phone?`<div style="font-size:11px;color:var(--gray-mid);margin:2px 0;">📞 ${a.phone}</div>`:''}
+    ${a.office?`<div style="font-size:11px;color:var(--gray-mid);margin:2px 0;">🏢 ${a.office}</div>`:''}
+    ${a.email?`<button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="openMessageModal('${a.code}','${(a.name||'Dozent').replace(/'/g,"\\'")}')">💬 Nachricht</button>`:''}
+  </div>`).join('');
+
   document.getElementById('kontaktContent').innerHTML=`
+    ${adminCards?`<div style="margin-bottom:32px;">
+      <div class="section-header"><div class="section-title">🎓 Spielleitung / Dozent</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">${adminCards}</div>
+    </div>`:''}
     <div style="margin-bottom:32px;">
       <div class="section-header"><div class="section-title">👥 Team-Verzeichnis</div></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">${memberCards}</div>
@@ -4053,6 +4335,8 @@ function switchAdminTab(tabId){
   else if(tabId==='teamAward') renderTeamAwardPanel();
   else if(tabId==='log') renderActivityLog();
   else if(tabId==='papierkorb') renderPapierkorb();
+  else if(tabId==='berichte-admin') renderAdminBlogsPanel();
+  else if(tabId==='admin-profil') renderAdminProfilePanel();
   if(state.lang==='en') setTimeout(applyLang,200);
 }
 function renderApprovalQueue(){
@@ -4124,11 +4408,26 @@ function renderWeeksAdmin(){
 }
 function renderReflectionsAdmin(){
   const el=document.getElementById('reflectionsAdminPanel');
-  if(REFLECTIONS.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><h3>Keine Reflexionen</h3></div>';return;}
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const gameTeams_r=getVisibleTeams().filter(t=>t.gameId===effectiveGameId||!effectiveGameId);
+  // Populate team filter
+  const tSel=document.getElementById('adminRefTeamFilter');
+  if(tSel){
+    const prev=tSel.value;
+    while(tSel.options.length>1) tSel.remove(1);
+    gameTeams_r.forEach(t=>{const o=new Option(t.logo+' '+t.name,t.id);tSel.appendChild(o);});
+    if(prev&&prev!=='all'&&gameTeams_r.some(t=>t.id===prev)) tSel.value=prev;
+  }
+  const tfVal=document.getElementById('adminRefTeamFilter')?.value||'all';
+  const wfVal=document.getElementById('adminRefWeekFilter')?.value||'all';
+  const filteredTeams=tfVal==='all'?gameTeams_r:gameTeams_r.filter(t=>t.id===tfVal);
+  let allRefs=REFLECTIONS.filter(r=>filteredTeams.some(t=>t.id===r.teamId));
+  if(wfVal!=='all') allRefs=allRefs.filter(r=>r.week==wfVal);
+  if(allRefs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div><h3>Keine Reflexionen</h3></div>';return;}
   // Build missing reflections overview
-  const gameTeams_r=getVisibleTeams();
-  const weeks_r=[...new Set(REFLECTIONS.map(r=>r.week))].sort((a,b)=>a-b);
-  gameTeams_r.forEach(t=>{if(!weeks_r.includes(t.currentWeek))weeks_r.push(t.currentWeek);});
+  const weeks_r=[...new Set(allRefs.map(r=>r.week))].sort((a,b)=>a-b);
+  filteredTeams.forEach(t=>{if(!weeks_r.includes(t.currentWeek))weeks_r.push(t.currentWeek);});
   weeks_r.sort((a,b)=>a-b);
   const missingHtml=`<div class="card" style="margin-bottom:16px;">
   <div class="card-header"><h3>📋 Reflexions-Status</h3></div>
@@ -4144,7 +4443,7 @@ function renderReflectionsAdmin(){
             <span style="font-size:13px;width:120px;flex-shrink:0;">${team.logo} ${team.name}</span>
             ${members.map(m=>{
               const has=refsW.find(r=>r.memberId===m.id);
-              return '<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:default;background:'+(has?team.color+'22':'#F3F4F6')+';color:'+(has?team.color:'#9CA3AF')+';border:1px solid '+(has?team.color+'55':'#E5E7EB')+';white-space:nowrap;" title="'+(has?'Reflexion abgegeben':'Fehlt noch')+'">'+(m.name.split(' ')[0])+'</span>';
+              return '<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:'+(has?'pointer':'default')+';background:'+(has?team.color+'22':'#F3F4F6')+';color:'+(has?team.color:'#9CA3AF')+';border:1px solid '+(has?team.color+'55':'#E5E7EB')+';white-space:nowrap;" title="'+(has?'Klicken zum Springen':'Fehlt noch')+'"'+(has?' onclick="var el=document.getElementById(\'refcard-'+has.id+'\');el&&(el.scrollIntoView({behavior:\'smooth\',block:\'center\'}),el.style.outline=\'3px solid '+team.color+'\',setTimeout(function(){el.style.outline=\'\'},1800))"':'')+'>'+m.name.split(' ')[0]+'</span>';
             }).join('')}
           </div>`;
         }).join('')}
@@ -4158,7 +4457,7 @@ function renderReflectionsAdmin(){
   <div class="card-header"><h3>📊 Stimmungsbarometer</h3></div>
   <div class="card-body">
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px;" id="moodByWeek"></div>
-    <canvas id="moodChartAdmin" height="80"></canvas>
+    <div style="position:relative;max-height:220px;overflow:hidden;"><canvas id="moodChartAdmin" height="80"></canvas></div>
   </div>
 </div>`;
   const grouped={};
@@ -4170,7 +4469,7 @@ function renderReflectionsAdmin(){
       <div class="card-body">${refs.map(r=>{
         const m=MEMBERS.find(x=>x.id===r.memberId);
         const moodEmoji=['','😩','😟','😐','😊','🚀'][r.mood];
-        return `<div style="border-bottom:1px solid var(--border);padding:10px 0;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:7px;">
+        return `<div id="refcard-${r.id}" style="border-bottom:1px solid var(--border);padding:10px 0;transition:outline .2s;"><div style="display:flex;gap:8px;align-items:center;margin-bottom:7px;">
           <div style="width:28px;height:28px;border-radius:50%;background:${team?.color};color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${m?.name?.charAt(0)}</div>
           <strong>${m?.name}</strong><span style="color:var(--gray-mid);font-size:11px;">(${m?.role})</span>
           <span style="margin-left:auto;font-size:12px;">${moodEmoji} ${r.mood}/5 · W${r.week}${r.date?' · '+fmtDate(r.date):''}</span></div>
@@ -4299,8 +4598,17 @@ function renderCodesPanel(){
 function renderTeamAwardPanel(){
   const u=state.currentUser;
   const effectiveGameId=state.managingGameId||u.gameId;
+  const game=GAMES.find(g=>g.id===effectiveGameId);
   const gameTeams=getVisibleTeams();
   const currentWeek=gameTeams[0]?.currentWeek||1;
+  // Default weights (total must be 100)
+  const defaultW={rev:20,blog:20,ref:20,mood:20,tx:10,selfEval:10};
+  if(!game.gdwWeights) game.gdwWeights={...defaultW};
+  const W=game.gdwWeights;
+  // Ensure selfEval field exists
+  if(W.selfEval===undefined) W.selfEval=defaultW.selfEval;
+  if(!game.gdwSelfEvals) game.gdwSelfEvals={};
+  const totalW=(W.rev||0)+(W.blog||0)+(W.ref||0)+(W.mood||0)+(W.tx||0)+(W.selfEval||0);
   const scores=gameTeams.map(team=>{
     const members=MEMBERS.filter(m=>m.teamId===team.id);
     const revScore=Math.min(10,Math.round((team.revenue/(team.capital||5))*5));
@@ -4311,35 +4619,73 @@ function renderTeamAwardPanel(){
     const avgMood=refs.length>0?refs.reduce((s,r)=>s+(r.mood||3),0)/refs.length:0;
     const moodScore=Math.round((avgMood/5)*10);
     const txScore=Math.min(10,team.transactions||0);
-    const total=revScore+blogScore+refScore+moodScore+txScore;
-    return {team,revScore,blogScore,refScore,moodScore,txScore,total};
+    const selfEvalScore=parseFloat(game.gdwSelfEvals[team.id+'_w'+currentWeek]||0);
+    const total=Math.round((revScore*(W.rev||0)+blogScore*(W.blog||0)+refScore*(W.ref||0)+moodScore*(W.mood||0)+txScore*(W.tx||0)+selfEvalScore*(W.selfEval||0))/(totalW||100)*10)/10;
+    return {team,revScore,blogScore,refScore,moodScore,txScore,selfEvalScore,total};
   }).sort((a,b)=>b.total-a.total);
-  const awards=GAMES.find(g=>g.id===effectiveGameId)?.teamAwards||[];
+  const awards=game?.teamAwards||[];
   const el=document.getElementById('teamAwardPanel');
   if(!el) return;
+  const weightSumOk=totalW===100;
   el.innerHTML=`
+    <!-- Weight Config Card -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-header"><h3>🏅 Gruppe der Woche – Automatische Auswertung</h3></div>
+      <div class="card-header" style="cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <h3>⚙️ Gewichtung der Kriterien ${weightSumOk?'<span style=\"background:#dcfce7;color:#166534;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600;\">✓ 100%</span>':'<span style=\"background:#fee2e2;color:#c00;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600;\">⚠ Summe ≠ 100%</span>'} <span style="font-size:12px;color:var(--gray-mid);">▼</span></h3>
+      </div>
+      <div style="display:none;padding:14px;">
+        <div class="info-box blue" style="margin-bottom:12px;font-size:12px;"><span class="info-box-icon">ℹ️</span>Die Summe aller Gewichtungen muss 100% ergeben. Die Werte werden pro Spiel gespeichert.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px;">
+          <div class="form-group"><label class="form-label">💰 Umsatz (%)</label><input class="form-control" type="number" id="gdwW_rev" value="${W.rev||0}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">📖 Wochenbericht (%)</label><input class="form-control" type="number" id="gdwW_blog" value="${W.blog||0}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">📝 Reflexionen (%)</label><input class="form-control" type="number" id="gdwW_ref" value="${W.ref||0}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">😊 Stimmung (%)</label><input class="form-control" type="number" id="gdwW_mood" value="${W.mood||0}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">⚡ Aktivität (%)</label><input class="form-control" type="number" id="gdwW_tx" value="${W.tx||0}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">🌟 Eigene Einschätzung (%)</label><input class="form-control" type="number" id="gdwW_selfEval" value="${W.selfEval||0}" min="0" max="100"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveGdwWeights('${effectiveGameId}')">💾 Gewichtung speichern</button>
+      </div>
+    </div>
+    <!-- Scores Table + Chart -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3>🏅 Gruppe der Woche – Auswertung Woche ${currentWeek}</h3></div>
       <div class="card-body">
-        <div style="font-size:12px;color:var(--gray-mid);margin-bottom:12px;">Woche ${currentWeek} · Kriterien: Umsatz (20%), Wochenbericht (20%), Reflexionen (20%), Stimmung (20%), Aktivität (20%)</div>
+        <div style="font-size:12px;color:var(--gray-mid);margin-bottom:12px;">
+          Gewichtung: Umsatz ${W.rev}% · Bericht ${W.blog}% · Reflexionen ${W.ref}% · Stimmung ${W.mood}% · Aktivität ${W.tx}% · Eigene Einschätzung ${W.selfEval}%
+        </div>
+        <!-- Bar Chart -->
+        <div style="margin-bottom:16px;position:relative;max-height:260px;">
+          <canvas id="gdwBarChart"></canvas>
+        </div>
+        <!-- Self-Eval inputs -->
+        ${W.selfEval>0?`<div style="background:#F0FFF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#166534;">🌟 Eigene Einschätzung (0–10 pro Team, Woche ${currentWeek})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            ${gameTeams.map(t=>`<div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:13px;">${t.logo} ${t.name}</span>
+              <input type="number" class="form-control" style="width:65px;" min="0" max="10" step="0.5" value="${game.gdwSelfEvals[t.id+'_w'+currentWeek]||0}" onchange="saveGdwSelfEval('${effectiveGameId}','${t.id}',${currentWeek},this.value)">
+            </div>`).join('')}
+          </div>
+        </div>`:''}
         <table class="data-table" style="width:100%;">
-          <thead><tr><th>Platz</th><th>Team</th><th>Umsatz</th><th>Bericht</th><th>Reflexion</th><th>Stimmung</th><th>Aktivität</th><th>Gesamt</th></tr></thead>
+          <thead><tr><th>Platz</th><th>Team</th><th>Umsatz</th><th>Bericht</th><th>Reflexion</th><th>Stimmung</th><th>Aktivität</th>${W.selfEval>0?'<th>Eigene Einsch.</th>':''}<th>Gesamt</th></tr></thead>
           <tbody>${scores.map((s,i)=>`<tr style="${i===0?'background:#FFFBEB;font-weight:700;':''}">
             <td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'}</td>
             <td><span style="color:${s.team.color};">${s.team.logo}</span> ${s.team.name}</td>
-            <td><div style="width:${s.revScore*10}%;height:8px;background:${s.team.color};border-radius:4px;min-width:2px;"></div>${s.revScore}/10</td>
+            <td>${s.revScore}/10</td>
             <td>${s.blogScore}/10</td>
             <td>${s.refScore}/10</td>
             <td>${s.moodScore}/10</td>
             <td>${s.txScore}/10</td>
-            <td style="font-weight:700;color:${i===0?'var(--orange)':'var(--gray-dark)'};">${s.total}/50</td>
+            ${W.selfEval>0?`<td>${s.selfEvalScore}/10</td>`:''}
+            <td style="font-weight:700;color:${i===0?'var(--orange)':'var(--gray-dark)'};">${s.total}/10</td>
           </tr>`).join('')}</tbody>
         </table>
         <div style="margin-top:16px;padding:12px;background:var(--blue-xlt);border-radius:8px;">
-          <div style="font-weight:700;margin-bottom:8px;">✅ Gruppe der Woche ${currentWeek} manuell vergeben:</div>
+          <div style="font-weight:700;margin-bottom:8px;">✅ Gruppe der Woche ${currentWeek} manuell auszeichnen:</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <select class="form-control" id="awardTeamSelect" style="max-width:200px;">
-              ${scores.map((s,i)=>`<option value="${s.team.id}" ${i===0?'selected':''}>${s.team.logo} ${s.team.name} (${s.total}/50)</option>`).join('')}
+              ${scores.map((s,i)=>`<option value="${s.team.id}" ${i===0?'selected':''}>${s.team.logo} ${s.team.name} (${s.total}/10)</option>`).join('')}
             </select>
             <input class="form-control" id="awardReason" placeholder="Begründung (optional)..." style="flex:1;min-width:200px;">
             <button class="btn btn-primary btn-sm" onclick="saveTeamAward(${currentWeek})">🏅 Auszeichnen</button>
@@ -4356,6 +4702,50 @@ function renderTeamAwardPanel(){
       </div>`;}).join('')}</div>
     </div>`:''}
   `;
+  // Render bar chart
+  setTimeout(()=>{
+    const ctx=document.getElementById('gdwBarChart')?.getContext('2d');
+    if(!ctx) return;
+    if(state._gdwChart) state._gdwChart.destroy();
+    state._gdwChart=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:scores.map(s=>s.team.name),
+        datasets:[
+          {label:'Umsatz',data:scores.map(s=>+(s.revScore*(W.rev||0)/100).toFixed(2)),backgroundColor:'#2563EB',stack:'s'},
+          {label:'Bericht',data:scores.map(s=>+(s.blogScore*(W.blog||0)/100).toFixed(2)),backgroundColor:'#16A34A',stack:'s'},
+          {label:'Reflexion',data:scores.map(s=>+(s.refScore*(W.ref||0)/100).toFixed(2)),backgroundColor:'#EA580C',stack:'s'},
+          {label:'Stimmung',data:scores.map(s=>+(s.moodScore*(W.mood||0)/100).toFixed(2)),backgroundColor:'#D97706',stack:'s'},
+          {label:'Aktivität',data:scores.map(s=>+(s.txScore*(W.tx||0)/100).toFixed(2)),backgroundColor:'#7C3AED',stack:'s'},
+          ...(W.selfEval>0?[{label:'Eigene Einsch.',data:scores.map(s=>+(s.selfEvalScore*(W.selfEval||0)/100).toFixed(2)),backgroundColor:'#0891B2',stack:'s'}]:[]),
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,max:10,ticks:{stepSize:1}}}}
+    });
+  },50);
+}
+function saveGdwWeights(gameId){
+  const game=GAMES.find(g=>g.id===gameId);if(!game)return;
+  const vals={
+    rev:parseInt(document.getElementById('gdwW_rev')?.value||20),
+    blog:parseInt(document.getElementById('gdwW_blog')?.value||20),
+    ref:parseInt(document.getElementById('gdwW_ref')?.value||20),
+    mood:parseInt(document.getElementById('gdwW_mood')?.value||20),
+    tx:parseInt(document.getElementById('gdwW_tx')?.value||10),
+    selfEval:parseInt(document.getElementById('gdwW_selfEval')?.value||10)
+  };
+  const total=Object.values(vals).reduce((s,v)=>s+v,0);
+  if(total!==100){showToast('Summe muss 100% ergeben (aktuell: '+total+'%)','error');return;}
+  game.gdwWeights=vals;
+  saveData();
+  showToast('Gewichtung gespeichert','success');
+  renderTeamAwardPanel();
+}
+function saveGdwSelfEval(gameId,teamId,week,value){
+  const game=GAMES.find(g=>g.id===gameId);if(!game)return;
+  if(!game.gdwSelfEvals) game.gdwSelfEvals={};
+  game.gdwSelfEvals[teamId+'_w'+week]=Math.min(10,Math.max(0,parseFloat(value)||0));
+  saveData();
 }
 function saveTeamAward(week){
   const teamId=document.getElementById('awardTeamSelect')?.value;
@@ -4522,6 +4912,94 @@ function clearOldDeletedItems(){
   showToast('🧹 '+removed+' alte Einträge entfernt','info');
 }
 
+// ── ADMIN PROFILE PANEL ──────────────────────────────────────────────────────
+function renderAdminProfilePanel(){
+  const el=document.getElementById('adminProfilContent');
+  if(!el) return;
+  const u=state.currentUser;
+  if(!u) return;
+  // Get admin record
+  const adminRec=ADMINS.find(a=>a.id===u.adminId||a.code===u.code);
+  if(!adminRec){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><h3>Kein Admin-Profil gefunden</h3></div>';
+    return;
+  }
+  el.innerHTML=`
+    <div class="section-header"><div class="section-title admin-title">👤 Mein Profil bearbeiten</div></div>
+    <div class="card"><div class="card-body">
+      <div class="info-box blue" style="margin-bottom:16px;"><span class="info-box-icon">ℹ️</span>Dein Name, E-Mail und Telefonnummer werden im <strong>Kontakt-Verzeichnis</strong> für alle Teilnehmer sichtbar angezeigt.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-control" id="adminProfName" value="${adminRec.name||''}" placeholder="Dein Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-Mail</label>
+          <input class="form-control" type="email" id="adminProfEmail" value="${adminRec.email||''}" placeholder="dozent@hochschule.de">
+        </div>
+      </div>
+      <div class="form-group" style="max-width:300px;">
+        <label class="form-label">📞 Telefon / Mobil</label>
+        <input class="form-control" id="adminProfPhone" value="${adminRec.phone||''}" placeholder="+49 170 1234567">
+        <small style="color:var(--gray-mid);font-size:11px;">Wird im Kontakt-Verzeichnis angezeigt (optional)</small>
+      </div>
+      <div class="form-group" style="max-width:300px;">
+        <label class="form-label">Büro / Sprechstunde (optional)</label>
+        <input class="form-control" id="adminProfOffice" value="${adminRec.office||''}" placeholder="Raum A123, Di 10-12 Uhr">
+      </div>
+      <button class="btn btn-primary" onclick="saveAdminProfile('${adminRec.id}')">💾 Profil speichern</button>
+    </div></div>
+    <div class="card" style="margin-top:16px;"><div class="card-body">
+      <div class="section-header"><div class="section-title admin-title" style="font-size:14px;">🔑 Passwort ändern</div></div>
+      <div class="form-group" style="max-width:300px;">
+        <label class="form-label">Neues Passwort</label>
+        <input class="form-control" type="password" id="adminProfPwd1" placeholder="Neues Passwort">
+      </div>
+      <div class="form-group" style="max-width:300px;">
+        <label class="form-label">Passwort bestätigen</label>
+        <input class="form-control" type="password" id="adminProfPwd2" placeholder="Passwort wiederholen">
+      </div>
+      <button class="btn btn-secondary" onclick="saveAdminPassword('${adminRec.code}')">🔒 Passwort ändern</button>
+    </div></div>`;
+}
+async function saveAdminProfile(adminId){
+  const adminRec=ADMINS.find(a=>a.id===adminId);
+  if(!adminRec) return;
+  adminRec.name=document.getElementById('adminProfName').value.trim()||adminRec.name;
+  adminRec.email=document.getElementById('adminProfEmail').value.trim();
+  adminRec.phone=document.getElementById('adminProfPhone').value.trim();
+  adminRec.office=document.getElementById('adminProfOffice').value.trim();
+  // Update state
+  if(state.currentUser){
+    state.currentUser.name=adminRec.name;
+    state.currentUser.email=adminRec.email;
+  }
+  // Update CODES entry
+  if(adminRec.code && CODES[adminRec.code]){
+    CODES[adminRec.code].name=adminRec.name;
+    CODES[adminRec.code].email=adminRec.email;
+  }
+  saveData();
+  showToast('Profil gespeichert','success');
+  logEvent('admin_profile_update',{adminId,name:adminRec.name});
+}
+async function saveAdminPassword(adminCode){
+  const p1=document.getElementById('adminProfPwd1').value;
+  const p2=document.getElementById('adminProfPwd2').value;
+  if(!p1){showToast('Bitte Passwort eingeben','error');return;}
+  if(p1!==p2){showToast('Passwörter stimmen nicht überein','error');return;}
+  if(p1.length<4){showToast('Passwort muss mindestens 4 Zeichen haben','error');return;}
+  const hash=await sha256(p1);
+  const pwdData=JSON.parse(localStorage.getItem('5euro_passwords')||'{}');
+  pwdData[adminCode]=hash;
+  localStorage.setItem('5euro_passwords',JSON.stringify(pwdData));
+  saveData();
+  document.getElementById('adminProfPwd1').value='';
+  document.getElementById('adminProfPwd2').value='';
+  showToast('Passwort geändert','success');
+  logEvent('admin_password_change',{code:adminCode});
+}
+
 // Emoji Picker for Teams
 function openEmojiPickerForTeam(teamId){
   const team=TEAMS.find(t=>t.id===teamId);
@@ -4594,7 +5072,7 @@ function renderSuperPage(){
     <div style="display:flex;gap:3px;"><code style="font-size:10px;background:var(--blue-xlt);padding:2px 6px;border-radius:4px;font-weight:700;">${a.code}</code><button class="btn btn-outline btn-xs" onclick="copyCode('${a.code}')" title="Code kopieren">📋</button><button class="btn btn-secondary btn-xs" onclick="impersonateAdmin('${a.code}')" title="Als dieser Admin einloggen">&#128101; Login</button></div>
   </div>`;}).join('');
   // Universities
-  document.getElementById('uniList').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">${UNIVERSITIES.map(u=>`<div class="card"><div class="card-body"><div style="font-size:28px;margin-bottom:6px;">🏫</div><div style="font-size:14px;font-weight:700;color:var(--blue-dark);margin-bottom:3px;">${u.name}</div><div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px;">${u.city} · ${u.slug}</div><div style="display:flex;gap:8px;margin-bottom:10px;"><div class="game-stat" style="flex:1;"><div class="game-stat-val">${u.adminCount}</div><div class="game-stat-lbl">Admins</div></div><div class="game-stat" style="flex:1;"><div class="game-stat-val">${u.gameCount}</div><div class="game-stat-lbl">Spiele</div></div></div><button class="btn btn-primary btn-sm" onclick="openModal('modalNewAdmin')">+ Admin</button></div></div>`).join('')}</div>`;
+  document.getElementById('uniList').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">${UNIVERSITIES.map(u=>`<div class="card"><div class="card-body"><div style="font-size:28px;margin-bottom:6px;">🏫</div><div style="font-size:14px;font-weight:700;color:var(--blue-dark);margin-bottom:3px;">${u.name}</div><div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px;">${u.city||'—'} · ${u.slug}</div><div style="display:flex;gap:8px;margin-bottom:10px;"><div class="game-stat" style="flex:1;"><div class="game-stat-val">${u.adminCount||0}</div><div class="game-stat-lbl">Admins</div></div><div class="game-stat" style="flex:1;"><div class="game-stat-val">${u.gameCount||0}</div><div class="game-stat-lbl">Spiele</div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="openModal('modalNewAdmin')" title="Neuen Admin anlegen">+ Admin</button><button class="btn btn-outline btn-sm" onclick="editUniversity('${u.id}')" title="Hochschule bearbeiten">✏️</button>${u.id!=='uni-default'?`<button class="btn btn-danger btn-sm" onclick="deleteUniversity('${u.id}')" title="Hochschule löschen">🗑️</button>`:''}</div></div></div>`).join('')}</div>`;
   // Super reflections
   document.getElementById('superReflectionsPanel').innerHTML=REFLECTIONS.length===0?'<div class="empty-state"><div class="empty-icon">💬</div><h3>Keine Reflexionen</h3></div>':
     REFLECTIONS.map(r=>{const m=MEMBERS.find(x=>x.id===r.memberId);const team=TEAMS.find(t=>t.id===r.teamId);
@@ -4709,7 +5187,8 @@ function renderKonzept(){
           ['v0.7.5','Soft-Delete mit Undo: 10-Sekunden Rückgängig-Toast bei Löschen von Mitglied/Team/Buchung/Reflexion/Nachricht; Papierkorb-Tab im Admin-Panel mit Wiederherstellung und endgültigem Löschen'],
           ['v0.7.6','🔒 Kritischer Bugfix: Firebase-Timeout auf 10s erhöht; verhindert Datenverlust durch Überschreiben von Firebase bei langsamer Verbindung; Retry-Logik in Einladungscode-Prüfung; Realtime-Listener auch im Fehler-Pfad aktiv'],
           ['v0.7.7','🐛 Vollständiger Code-Audit (6 Bugs): copyRegCode()-Shadowing (Copy-Button defekt), showRegister()-Shadowing (alte Funktion überschrieb aktive), openAddMemberModal()-Crash (fehlende DOM-Elemente), addMemberToTeam()-fehlende Felder (firstName/lastName/email/mobile), Superadmin-Zugriffsgate, E-Mail-Feld im Mitglied-Modal'],
-          ['v0.8.0','🚀 6 neue Features: (a) Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht, (b) Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback, (c) Automatische In-App-Erinnerungen vor Abgabe-Deadlines, (d) CSV-Export für Reflexionen &amp; Buchungen, (e) Vollständiger Aktivitätslog aller Aktionen (alle Rollen), (f) Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel', true],
+          ['v0.8.0','🚀 6 neue Features: (a) Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht, (b) Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback, (c) Automatische In-App-Erinnerungen vor Abgabe-Deadlines, (d) CSV-Export für Reflexionen &amp; Buchungen, (e) Vollständiger Aktivitätslog aller Aktionen (alle Rollen), (f) Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel'],
+          ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -5191,11 +5670,13 @@ function saveMemberProfile(){
   if(!m.notif) m.notif={};
   const _newEmail=document.getElementById('mpEmail')?.value.trim()||'';
   // If email was just added and notif never explicitly set, auto-enable all
-  if(_newEmail&&!m.email){m.notif={blog:true,week:true,reflect:true};}
+  if(_newEmail&&!m.email){m.notif={blog:true,week:true,reflect:true,emailReminders:true};}
   else{
+    if(!m.notif) m.notif={};
     m.notif.blog=document.getElementById('mpNotifBlog')?.checked||false;
     m.notif.week=document.getElementById('mpNotifWeek')?.checked||false;
     m.notif.reflect=document.getElementById('mpNotifReflect')?.checked||false;
+    m.notif.emailReminders=document.getElementById('mpNotifEmailReminders')?.checked!==false;
   }
   saveData();
   showToast(state.lang==='en'?'Profile saved!':'Profil gespeichert!');
@@ -5789,6 +6270,8 @@ function openEditSuperProfile(){
   const el = n => document.getElementById(n);
   if(el('espName'))  el('espName').value  = u.name  || '';
   if(el('espEmail')) el('espEmail').value = u.email || '';
+  if(el('espPhone')) el('espPhone').value = u.phone || '';
+  if(el('espOffice')) el('espOffice').value = u.office || '';
   if(el('espCode'))  el('espCode').value  = u.code  || 'SUPER-NEUSS';
   openModal('modalEditSuperProfile');
 }
@@ -5796,6 +6279,8 @@ function openEditSuperProfile(){
 function saveSuperProfile(){
   const name    = document.getElementById('espName').value.trim();
   const email   = document.getElementById('espEmail').value.trim();
+  const phone   = document.getElementById('espPhone')?.value.trim()||'';
+  const office  = document.getElementById('espOffice')?.value.trim()||'';
   const newCode = document.getElementById('espCode').value.trim().toUpperCase()||'SUPER-NEUSS';
   if(!name){showToast('Bitte Name eingeben','error');return;}
   const oldCode = state.currentUser.code;
@@ -5807,9 +6292,14 @@ function saveSuperProfile(){
   }
   state.currentUser.name  = name;
   state.currentUser.email = email;
+  state.currentUser.phone = phone;
+  state.currentUser.office = office;
   state.currentUser.code  = newCode;
+  // Also update SUPERADMINS record if present
+  const saRec=SUPERADMINS.find(s=>s.code===oldCode||s.code===newCode);
+  if(saRec){saRec.name=name;saRec.email=email;saRec.phone=phone;saRec.office=office;saRec.code=newCode;}
   // Persist: localStorage (fallback) + PASSWORDS dict (→ Firebase sync)
-  localStorage.setItem('5euro_superprofile', JSON.stringify({name, email}));
+  localStorage.setItem('5euro_superprofile', JSON.stringify({name, email, phone, office}));
   PASSWORDS['__sp_name']  = name;
   PASSWORDS['__sp_email'] = email;
   saveData();
@@ -5855,6 +6345,39 @@ function removeSuperAdmin(id){
   rebuildCodes(); saveData();
   renderSuperPage();
   showToast('Superadmin entfernt');
+}
+
+function editUniversity(uniId){
+  const u=UNIVERSITIES.find(x=>x.id===uniId);if(!u)return;
+  const newName=prompt('Name der Hochschule:',u.name||'');
+  if(newName===null) return;
+  if(!newName.trim()){showToast('Name darf nicht leer sein','error');return;}
+  const newShort=prompt('Kürzel (z.B. HFP):',u.slug||u.short||'');
+  if(newShort===null) return;
+  const newCity=prompt('Stadt:',u.city||'');
+  if(newCity===null) return;
+  u.name=newName.trim();
+  u.slug=newShort.trim()||u.slug;
+  u.short=u.slug;
+  u.city=newCity.trim();
+  saveData();
+  renderSuperPage();
+  showToast('Hochschule aktualisiert','success');
+}
+function deleteUniversity(uniId){
+  const u=UNIVERSITIES.find(x=>x.id===uniId);if(!u)return;
+  const linkedAdmins=ADMINS.filter(a=>a.uni===u.name||a.uniId===uniId).length;
+  const linkedGames=GAMES.filter(g=>g.universityId===uniId||g.uni===u.slug).length;
+  if(linkedAdmins>0||linkedGames>0){
+    showToast('Hochschule kann nicht gelöscht werden: '+linkedAdmins+' Admin(s) / '+linkedGames+' Spiel(e) verknüpft','error');
+    return;
+  }
+  if(!confirm('Hochschule "'+u.name+'" wirklich löschen?')) return;
+  const idx=UNIVERSITIES.findIndex(x=>x.id===uniId);
+  if(idx>=0) UNIVERSITIES.splice(idx,1);
+  saveData();
+  renderSuperPage();
+  showToast('Hochschule gelöscht');
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
@@ -6576,96 +7099,224 @@ function checkAndSendReminders(gameId,force){
   if(!effectiveGameId){showToast('Kein Spiel ausgewählt','error');return;}
   const game=GAMES.find(g=>g.id===effectiveGameId);if(!game) return;
   const now=new Date().toISOString();
-  const cutoff=new Date(Date.now()-23*60*60*1000).toISOString(); // don't spam: 23h interval
+  const cutoff=new Date(Date.now()-23*60*60*1000).toISOString();
   const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending');
   let sent=0;
+  const emailJobs=[];
   gameTeams.forEach(team=>{
     const members=MEMBERS.filter(m=>m.teamId===team.id);
     const w=team.currentWeek;
-    // Check reflections
+    // ── Reflexion reminder ──
     members.forEach(m=>{
       const hasRef=REFLECTIONS.find(r=>r.memberId===m.id&&r.week===w);
       if(!hasRef){
-        // Check if we sent a reminder recently
-        const recentReminder=MESSAGES.find(msg=>msg.toId===m.id&&msg.type==='reminder'&&msg.week===w&&msg.sentAt>cutoff);
-        if(!recentReminder||force){
-          const msgId='msg-rem-'+Date.now()+'-'+Math.random().toString(36).substr(2,4);
+        const recent=MESSAGES.find(msg=>msg.toId===m.id&&msg.type==='reminder'&&msg.week===w&&msg.sentAt>cutoff);
+        if(!recent||force){
           MESSAGES.push({
-            id:msgId,type:'reminder',from:'System',fromId:'system',
+            id:'msg-rem-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+            type:'reminder',from:'System',fromId:'system',
             toId:m.id,toTeamId:team.id,gameId:effectiveGameId,
-            subject:'&#9201;&#65039; Erinnerung: Reflexion Woche '+w,
-            body:'Hallo '+m.name+',\n\nbitte reiche deine Reflexion f&#252;r Woche '+w+' noch ein. Deadline: Samstag 23:59 Uhr.\n\nViele Gr&#252;&#223;e,\ndein VentureLab-Team',
-            date:new Date().toISOString().split('T')[0],sentAt:now,
-            read:false,week:w
+            subject:'⏰ Erinnerung: Reflexion Woche '+w,
+            body:'Hallo '+m.name+',\n\nbitte reiche deine Reflexion für Woche '+w+' noch ein. Deadline: Samstag 23:59 Uhr.\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
+            date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
           });
           sent++;
+          // Email if opted in
+          if(m.email&&m.notif?.reflect!==false&&m.notif?.emailReminders!==false){
+            emailJobs.push({type:'reflect',teamId:team.id,member:m,week:w,game});
+          }
         }
       }
     });
-    // Check blog
+    // ── Blog reminder (CEO only) ──
     const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===w&&(b.status==='pending'||b.status==='approved'));
     if(!hasBlog){
       const ceo=members.find(m=>m.role==='CEO');
       if(ceo){
-        const recentBlogReminder=MESSAGES.find(msg=>msg.toId===ceo.id&&msg.type==='blog_reminder'&&msg.week===w&&msg.sentAt>cutoff);
-        if(!recentBlogReminder||force){
+        const recent=MESSAGES.find(msg=>msg.toId===ceo.id&&msg.type==='blog_reminder'&&msg.week===w&&msg.sentAt>cutoff);
+        if(!recent||force){
           MESSAGES.push({
             id:'msg-brem-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
             type:'blog_reminder',from:'System',fromId:'system',
             toId:ceo.id,toTeamId:team.id,gameId:effectiveGameId,
-            subject:'&#9201;&#65039; Erinnerung: Wochenbericht Woche '+w,
-            body:'Hallo '+ceo.name+',\n\nbitte reiche den Wochenbericht f&#252;r Woche '+w+' noch ein. Deadline: Sonntag 23:59 Uhr.\n\nViele Gr&#252;&#223;e,\ndein VentureLab-Team',
-            date:new Date().toISOString().split('T')[0],sentAt:now,
-            read:false,week:w
+            subject:'⏰ Erinnerung: Wochenbericht Woche '+w,
+            body:'Hallo '+ceo.name+',\n\nbitte reiche den Wochenbericht für Woche '+w+' noch ein. Deadline: Sonntag 23:59 Uhr.\n\nℹ️ E-Mail-Erinnerungen deaktivieren: Profil → Benachrichtigungen.\n\nViele Grüße,\ndein VentureLab-Team',
+            date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
           });
           sent++;
+          if(ceo.email&&ceo.notif?.reflect!==false&&ceo.notif?.emailReminders!==false){
+            emailJobs.push({type:'blog',teamId:team.id,member:ceo,week:w,game});
+          }
+        }
+      }
+    }
+    // ── Booking reminder (CFO – no transactions yet this week) ──
+    const cfo=members.find(m=>m.role==='CFO');
+    if(cfo&&team.transactions===0){
+      const recent=MESSAGES.find(msg=>msg.toId===cfo.id&&msg.type==='booking_reminder'&&msg.week===w&&msg.sentAt>cutoff);
+      if(!recent||force){
+        MESSAGES.push({
+          id:'msg-book-'+Date.now()+'-'+Math.random().toString(36).substr(2,4),
+          type:'booking_reminder',from:'System',fromId:'system',
+          toId:cfo.id,toTeamId:team.id,gameId:effectiveGameId,
+          subject:'⏰ Erinnerung: Buchungen Woche '+w,
+          body:'Hallo '+cfo.name+',\n\nfür Woche '+w+' wurden noch keine Buchungen erfasst. Bitte trage Einnahmen und Ausgaben im Kassenbuch ein.\n\nViele Grüße,\ndein VentureLab-Team',
+          date:new Date().toISOString().split('T')[0],sentAt:now,read:false,week:w
+        });
+        sent++;
+        if(cfo.email&&cfo.notif?.emailReminders!==false){
+          emailJobs.push({type:'booking',teamId:team.id,member:cfo,week:w,game});
         }
       }
     }
   });
   if(sent>0){
-    logEvent('reminder_sent',{gameId:effectiveGameId,count:sent});
+    logEvent('reminder_sent',{gameId:effectiveGameId,count:sent,emails:emailJobs.length});
     saveData();buildNavigation();
-    showToast('&#128276; '+sent+' Erinnerung(en) versendet','success');
+    showToast('🔔 '+sent+' In-App-Erinnerung(en)'+(emailJobs.length>0?' + '+emailJobs.length+' E-Mail(s)':'')+' versendet','success');
+    // Send emails async
+    emailJobs.forEach(job=>{
+      const subjectMap={
+        reflect:'⏰ Erinnerung: Reflexion Woche '+job.week,
+        blog:'⏰ Erinnerung: Wochenbericht Woche '+job.week+' (CEO)',
+        booking:'⏰ Erinnerung: Buchungen Woche '+job.week+' (CFO)'
+      };
+      const bodyMap={
+        reflect:`Hallo ${job.member.name},\n\nbitte reiche deine Reflexion für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Samstag 23:59).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
+        blog:`Hallo ${job.member.name},\n\nbitte reiche als CEO den Wochenbericht für ${job.game?.name||'das Spiel'} Woche ${job.week} noch ein (Deadline: Sonntag 23:59).\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`,
+        booking:`Hallo ${job.member.name},\n\nfür ${job.game?.name||'das Spiel'} Woche ${job.week} wurden noch keine Buchungen erfasst. Bitte Kassenbuch aktualisieren.\n\nZum Abmelden: In der App unter Profil → Benachrichtigungen.\n\nVentureLab`
+      };
+      fetch(CONFIG.FEEDBACK_ENDPOINT,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:'notification',to:job.member.email,subject:subjectMap[job.type],message:bodyMap[job.type],sender:'VentureLab System',team:TEAMS.find(t=>t.id===job.teamId)?.name||'',game:job.game?.name||''})
+      }).catch(()=>{});
+    });
   } else {
-    showToast('Alle Mitglieder haben bereits eingereicht &#10003;','info');
+    showToast('Alle Mitglieder haben bereits eingereicht ✓','info');
   }
 }
 
 // ════════════════════════════════════════════════════════════════════
 //  FEATURE (d): EXPORT / REPORTING
 // ════════════════════════════════════════════════════════════════════
+function renderAdminBlogsPanel(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId&&t.status!=='pending'&&t.name&&t.name.trim());
+  const tSel=document.getElementById('adminBlogTeamFilter');
+  if(tSel){
+    const prev=tSel.value;
+    while(tSel.options.length>1) tSel.remove(1);
+    gameTeams.forEach(t=>{const o=new Option(t.logo+' '+t.name,t.id);tSel.appendChild(o);});
+    if(prev&&prev!=='all'&&gameTeams.some(t=>t.id===prev)) tSel.value=prev;
+  }
+  const tf=document.getElementById('adminBlogTeamFilter')?.value||'all';
+  const wf=document.getElementById('adminBlogWeekFilter')?.value||'all';
+  let blogs=BLOGS.filter(b=>{
+    const teamOk=gameTeams.some(t=>t.id===b.teamId);
+    const fT=tf==='all'||b.teamId===tf;
+    const fW=wf==='all'||b.week==wf;
+    return teamOk&&fT&&fW;
+  }).sort((a,b)=>b.week-a.week||(a.teamId>b.teamId?1:-1));
+  const el=document.getElementById('adminBlogsPanel');
+  if(!el) return;
+  if(blogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📖</div><h3>Keine Berichte</h3><p>Noch keine Wochenberichte für dieses Spiel.</p></div>';return;}
+  const statusLabel=s=>s==='approved'?'<span class="tag" style="background:#dcfce7;color:#16a34a;">✅ Freigegeben</span>':s==='pending'?'<span class="tag" style="background:#fef9c3;color:#a16207;">⏳ Ausstehend</span>':'<span class="tag" style="background:#f1f5f9;color:#64748b;">📄 Entwurf</span>';
+  el.innerHTML=blogs.map(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    const moodEmoji=['','😩','😟','😐','😊','🚀'][b.mood]||'';
+    const refsForWeek=REFLECTIONS.filter(r=>r.teamId===b.teamId&&r.week===b.week);
+    const teamMembers=MEMBERS.filter(m=>m.teamId===b.teamId);
+    const refStatus=teamMembers.map(m=>{const r=refsForWeek.find(x=>x.memberId===m.id);return `<span class="tag" style="background:${r?'#dcfce7':'#fee2e2'};color:${r?'#15803d':'#b91c1c'};">${m.name.split(' ')[0]} ${r?'✓':'✗'}</span>`;}).join(' ');
+    return `<div class="card" style="margin-bottom:12px;">
+      <div class="card-header" style="flex-wrap:wrap;gap:6px;">
+        <div>
+          <span style="font-size:20px;margin-right:8px;">${team?.logo||'📋'}</span>
+          <strong>${team?.name||b.teamId}</strong> · Woche ${b.week} · ${fmtDate(b.date)}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">${statusLabel(b.status)} ${moodEmoji?`<span title="Stimmung">${moodEmoji} ${b.mood}/5</span>`:''}</div>
+      </div>
+      <div class="card-body">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">${b.title}</h3>
+        ${b.highlight?`<div style="background:var(--green-lt);color:var(--green);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:8px;">⭐ ${b.highlight}</div>`:''}
+        <p style="font-size:13px;color:var(--gray-dark);margin-bottom:8px;">${(b.body||'').substring(0,300)}${b.body&&b.body.length>300?'…':''}</p>
+        ${b.challenges?`<div style="font-size:12px;color:var(--orange);margin-bottom:4px;">⚠️ <strong>Herausforderungen:</strong> ${b.challenges}</div>`:''}
+        ${b.nextSteps?`<div style="font-size:12px;color:var(--blue);margin-bottom:8px;">▶️ <strong>Nächste Schritte:</strong> ${b.nextSteps}</div>`:''}
+        ${b.adminFeedback?`<div class="info-box blue" style="margin-top:8px;padding:8px 12px;font-size:12px;"><strong>💬 Feedback:</strong> ${b.adminFeedback}</div>`:''}
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+          <div style="font-size:11px;font-weight:600;color:var(--gray-mid);margin-bottom:4px;">📝 Reflexionen W${b.week}:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">${refStatus}</div>
+        </div>
+        ${b.status==='pending'?`<div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-success btn-sm" onclick="quickApprove('${b.id}');renderAdminBlogsPanel()">✅ Freigeben</button>
+          <button class="btn btn-outline btn-sm" onclick="rejectBlog('${b.id}');renderAdminBlogsPanel()">🔄 Überarbeitung</button>
+        </div>`:''}
+      </div>
+    </div>`;}).join('');
+}
+function exportBlogsCSV(){
+  const u=state.currentUser;
+  const effectiveGameId=state.managingGameId||u?.gameId;
+  const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
+  const tf=document.getElementById('adminBlogTeamFilter')?.value||'all';
+  const wf=document.getElementById('adminBlogWeekFilter')?.value||'all';
+  let blogs=BLOGS.filter(b=>{
+    const teamOk=gameTeams.some(t=>t.id===b.teamId);
+    const fT=tf==='all'||b.teamId===tf;
+    const fW=wf==='all'||b.week==wf;
+    return teamOk&&fT&&fW;
+  });
+  if(blogs.length===0){showToast('Keine Berichte vorhanden','info');return;}
+  const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
+  const header='Woche,Datum,Team,Titel,Status,Stimmung,Aktivitaeten,Highlight,Herausforderungen,Naechste Schritte,Feedback';
+  const rows=blogs.map(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    return [b.week,b.date,team?.name,b.title,b.status,b.mood,b.body,b.highlight,b.challenges,b.nextSteps,b.adminFeedback||''].map(esc).join(',');
+  }).join('\n');
+  _downloadCSV(header+'\n'+rows,'venturelab_berichte_'+new Date().toISOString().split('T')[0]+'.csv');
+  showToast('&#128229; Berichte exportiert','success');
+}
 function exportReflectionsCSV(){
   const u=state.currentUser;
   const effectiveGameId=state.managingGameId||u?.gameId;
   const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
-  const refs=REFLECTIONS.filter(r=>gameTeams.some(t=>t.id===r.teamId));
+  const tf=document.getElementById('adminRefTeamFilter')?.value||'all';
+  const wf=document.getElementById('adminRefWeekFilter')?.value||'all';
+  let refs=REFLECTIONS.filter(r=>{
+    const teamOk=gameTeams.some(t=>t.id===r.teamId);
+    const fT=tf==='all'||r.teamId===tf;
+    const fW=wf==='all'||r.week==wf;
+    return teamOk&&fT&&fW;
+  });
   if(refs.length===0){showToast('Keine Reflexionen vorhanden','info');return;}
   const header='Datum,Woche,Name,Rolle,Team,Stimmung,Erfahrungen,Was war gut,Verbesserungen,Eigene Rolle,MVP-Vote';
+  const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
   const rows=refs.map(r=>{
     const m=MEMBERS.find(x=>x.id===r.memberId);
     const team=TEAMS.find(t=>t.id===r.teamId);
-    const esc=v=>('"'+(v||'').replace(/"/g,"''").replace(/\n/g,' ')+'"');
     return [r.date,r.week,m?.name,m?.role,team?.name,r.mood,r.experience,r.liked,r.improved,r.role,MEMBERS.find(x=>x.id===r.mvpVote)?.name||''].map(esc).join(',');
   }).join('\n');
-  const csv=header+'\n'+rows;
-  _downloadCSV(csv,'venturelab_reflexionen_'+new Date().toISOString().split('T')[0]+'.csv');
+  _downloadCSV(header+'\n'+rows,'venturelab_reflexionen_'+new Date().toISOString().split('T')[0]+'.csv');
   showToast('&#128229; Reflexionen exportiert','success');
 }
 function exportTransactionsCSV(){
   const u=state.currentUser;
   const effectiveGameId=state.managingGameId||u?.gameId;
   const gameTeams=TEAMS.filter(t=>t.gameId===effectiveGameId);
-  const txs=TRANSACTIONS.filter(tx=>gameTeams.some(t=>t.id===tx.teamId));
+  const tf=document.getElementById('adminTxTeamFilter2')?.value||'all';
+  let txs=TRANSACTIONS.filter(tx=>{
+    const teamOk=gameTeams.some(t=>t.id===tx.teamId);
+    const fT=tf==='all'||tx.teamId===tf;
+    return teamOk&&fT;
+  });
   if(txs.length===0){showToast('Keine Buchungen vorhanden','info');return;}
+  const esc=v=>('"'+(v||'').replace(/"/g,"''")+'"');
   const header='Datum,Team,Beschreibung,Kategorie,Typ,Betrag';
   const rows=txs.map(tx=>{
     const team=TEAMS.find(t=>t.id===tx.teamId);
-    const esc=v=>('"'+(v||'').replace(/"/g,"''")+'"');
     return [tx.date,team?.name,tx.desc,tx.cat,tx.type,tx.amount].map(esc).join(',');
   }).join('\n');
-  const csv=header+'\n'+rows;
-  _downloadCSV(csv,'venturelab_buchungen_'+new Date().toISOString().split('T')[0]+'.csv');
+  _downloadCSV(header+'\n'+rows,'venturelab_buchungen_'+new Date().toISOString().split('T')[0]+'.csv');
   showToast('&#128229; Buchungen exportiert','success');
 }
 function _downloadCSV(csvContent,filename){
@@ -6741,6 +7392,19 @@ function renderCanvasPage(){
   const isCMO=me?.role==='CMO';
   const isCEO=me?.role==='CEO';
   const isAdmin=u.role==='admin'||u.role==='superadmin';
+  // Show canvas instruction docs if available
+  const game=GAMES.find(g=>g.id===(team.gameId));
+  const docsWrap=document.getElementById('canvasDocsWrap');
+  if(docsWrap){
+    const docs=game?.canvasDocs||[];
+    if(docs.length>0){
+      const docsHtml=docs.map(d=>`<button class="btn btn-outline btn-xs" style="margin:2px 4px 2px 0;" onclick="openCanvasDoc('${game.id}','${d.id}')">${(d.name.endsWith('.pptx')||d.name.endsWith('.ppt'))?'&#128203;':'&#128196;'} ${d.name}</button>`).join('');
+      docsWrap.style.display='block';
+      docsWrap.innerHTML='<div class="info-box" style="background:#EFF6FF;border-color:#BFDBFE;margin-bottom:0;"><span class="info-box-icon">&#128506;</span><strong>Canvas-Anleitungen:</strong> '+docsHtml+'</div>';
+    } else {
+      docsWrap.style.display='none';docsWrap.innerHTML='';
+    }
+  }
   // Find latest canvas for this team
   const canvas=CANVASES.filter(c=>c.teamId===team.id).sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0];
   const BMC_IDS=['partners','activities','resources','value','relations','channels','segments','costs','revenue'];
@@ -6875,10 +7539,11 @@ function logEvent(action, data){
   };
   _trackBuffer.push(evt);
   // Persist important events
-  const importantActions=['login','logout','blog_submit','blog_submit_draft','blog_approve','blog_reject','reflection_submit','reflection_update','reflection_delete','week_advance','week_rollback','admin_member_add','admin_member_delete','admin_team_delete','tx_add','tx_edit','tx_delete','canvas_submit','canvas_approve','canvas_feedback','profile_save','password_change','reminder_sent','custom_q_add','custom_q_delete','guest_admin_add','guest_admin_remove'];
-  if(importantActions.includes(action)){
+  // Log ALL user actions to LOGS (for research & audit), skip noisy page_load
+  const skipActions=['page_load','session_pause','lang_toggle'];
+  if(!skipActions.includes(action)){
     LOGS.push({...evt, id:'log'+Date.now()+Math.random().toString(36).substr(2,4)});
-    if(LOGS.length>500) LOGS.shift();
+    if(LOGS.length>2000) LOGS.splice(0,LOGS.length-2000); // keep last 2000 events
   }
   if(_trackBuffer.length >= TRACK_BATCH_SIZE) flushTrackBuffer();
 }
@@ -7065,6 +7730,10 @@ window.addEventListener('DOMContentLoaded', function(){
     <input class="form-control" id="espName" placeholder="z.B. Prof. Neusser"></div>
    <div class="form-group"><label class="form-label">E-Mail</label>
     <input type="email" class="form-control" id="espEmail" placeholder="ihre@email.de"></div>
+   <div class="form-group"><label class="form-label">📞 Telefon / Mobil</label>
+    <input class="form-control" id="espPhone" placeholder="+49 170 1234567"></div>
+   <div class="form-group"><label class="form-label">🏢 Büro / Sprechstunde</label>
+    <input class="form-control" id="espOffice" placeholder="Raum A123, Di 10-12 Uhr"></div>
    <div class="form-group"><label class="form-label">Zugangscode</label>
     <input class="form-control" id="espCode" placeholder="SUPER-XXXX" style="font-family:monospace;font-weight:700;letter-spacing:1px;"></div>
    <div class="info-box gold" style="font-size:11px;"><span class="info-box-icon">&#9888;</span>Notieren Sie Ihren neuen Code, bevor Sie speichern. Der alte Code wird sofort ungültig.</div>
