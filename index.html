@@ -264,7 +264,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
 .data-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
 .data-table tr:hover td{background:var(--blue-xlt);}
 .data-table-wrap{background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;}
-.notif-dot{display:inline-block;width:15px;height:15px;background:var(--red);color:white;border-radius:50%;font-size:8px;font-weight:800;text-align:center;line-height:15px;margin-left:4px;vertical-align:middle;}
+.notif-dot{display:inline-block;min-width:15px;height:15px;background:var(--red);color:white;border-radius:8px;font-size:8px;font-weight:800;text-align:center;line-height:15px;margin-left:4px;vertical-align:middle;padding:0 4px;box-sizing:border-box;}
 
 /* SUPERADMIN */
 .superadmin-hero{background:linear-gradient(135deg,#0d0d2b,#1a0a3c,var(--purple));border-radius:var(--radius-lg);padding:24px 28px;color:white;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;}
@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.2)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.2.1)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.2</div>
+ <div class="version-footer" id="versionFooter">v0.8.2.1</div>
 </div>
 
 <!-- APP -->
@@ -1045,6 +1045,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchSuperTab('admins')">&#128737;&#65039; Admins</button>
      <button class="admin-tab" onclick="switchSuperTab('universities')">&#127979; Hochschulen</button>
      <button class="admin-tab" onclick="switchSuperTab('reflections-super')">&#128172; Alle Reflexionen</button>
+     <button class="admin-tab" onclick="switchSuperTab('blogs-super')">&#128214; Alle Wochenberichte</button>
      <button class="admin-tab" onclick="switchSuperTab('guest-admins')">&#128737;&#65039; Gastadmins</button>
     </div>
     <div class="admin-panel active" id="superPanel-overview">
@@ -1082,6 +1083,17 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="section-header"><div class="section-title super-title">&#128172; Alle Reflexionen (Plattform)</div></div>
      <div class="info-box gold"><span class="info-box-icon">&#128274;</span>&#220;bersicht aller pers&#246;nlichen Reflexionen. Vertraulich behandeln.</div>
      <div id="superReflectionsPanel"></div>
+    </div>
+    <div class="admin-panel" id="superPanel-blogs-super">
+     <div class="section-header"><div class="section-title super-title">&#128214; Alle Wochenberichte (Plattform)</div>
+       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+         <select id="superBlogGameFilter" class="form-control" style="width:auto;font-size:12px;" onchange="renderSuperBlogsPanel()"><option value="all">Alle Spiele</option></select>
+         <button class="btn btn-secondary btn-sm" onclick="exportSuperBlogsCSV()">&#128190; CSV</button>
+         <button class="btn btn-secondary btn-sm" onclick="exportSuperBlogsPDF()">&#128196; PDF</button>
+       </div>
+     </div>
+     <div class="info-box gold"><span class="info-box-icon">&#128274;</span>&#220;bersicht aller Wochenberichte. Volltext. Vertraulich behandeln.</div>
+     <div id="superBlogsPanel"></div>
     </div>
     <div class="admin-panel" id="superPanel-guest-admins">
      <div class="section-header"><div class="section-title super-title">&#128737;&#65039; Gastadmins pro Spiel</div><button class="btn btn-purple btn-sm" onclick="openGuestAdminModal()">+ Gastadmin ernennen</button></div>
@@ -1573,11 +1585,20 @@ function saveData(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     // Firebase debounced write (max once per 800ms for faster persistence)
     if(_fbOK && _db){
+      // Block listener IMMEDIATELY (before debounce fires) to prevent remote
+      // snapshots from overwriting our freshly-updated local state during the
+      // 800ms debounce window (fixes approved-blog-disappearing race condition)
+      _fbWriting = true;
+      if(saveData._fbWriteReset) clearTimeout(saveData._fbWriteReset);
       if(_fbSaveTimer) clearTimeout(_fbSaveTimer);
       _fbSaveTimer = setTimeout(()=>{
         _fbSaveTimer = null;
-        _db.ref('5euro_tracker_v5').set(payload).catch(e=>console.warn('FB write error',e));
+        _db.ref('5euro_tracker_v5').set(payload)
+          .then(()=>{ _fbWriting = false; })
+          .catch(e=>{ console.warn('FB write error',e); _fbWriting = false; });
       }, 800);
+      // Safety reset: force _fbWriting=false after 10s in case write never resolves
+      saveData._fbWriteReset = setTimeout(()=>{ _fbWriting = false; }, 10000);
     }
   }catch(e){console.warn('saveData error',e);}
 }
@@ -4383,13 +4404,13 @@ function renderAdminPage(){
   // notification dots
   const pending=BLOGS.filter(b=>b.status==='pending').length;
   document.getElementById('approvalCount').textContent=pending;
-  // Show submitted/total for current (minimum) week
+  // Show submitted/total reflexions per team's own currentWeek (aggregated)
   const effectiveGameId_rc=state.managingGameId||u?.gameId;
   const gameTeams_rc=TEAMS.filter(t=>t.gameId===effectiveGameId_rc&&t.status!=='pending'&&t.name&&t.name.trim());
   if(gameTeams_rc.length>0){
-    const currentWeek_rc=Math.min(...gameTeams_rc.map(t=>t.currentWeek||1));
-    const totalMembers_rc=MEMBERS.filter(m=>gameTeams_rc.some(t=>t.id===m.teamId)).length;
-    const submitted_rc=REFLECTIONS.filter(r=>gameTeams_rc.some(t=>t.id===r.teamId)&&r.week===currentWeek_rc).length;
+    // Aggregate: for each team, count members who submitted reflexion for that team's currentWeek
+    const submitted_rc=gameTeams_rc.reduce((sum,t)=>sum+REFLECTIONS.filter(r=>r.teamId===t.id&&r.week===(t.currentWeek||1)).length,0);
+    const totalMembers_rc=gameTeams_rc.reduce((sum,t)=>sum+MEMBERS.filter(m=>m.teamId===t.id).length,0);
     const badge=document.getElementById('reflectionCount');
     if(badge){badge.textContent=submitted_rc+'/'+totalMembers_rc;badge.style.background=submitted_rc>=totalMembers_rc?'var(--green)':'var(--orange)';}
   } else {
@@ -4520,7 +4541,11 @@ function renderReflectionsAdmin(){
             <span style="font-size:13px;width:120px;flex-shrink:0;">${team.logo} ${team.name}</span>
             ${members.map(m=>{
               const has=refsW.find(r=>r.memberId===m.id);
-              return '<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:'+(has?'pointer':'default')+';background:'+(has?team.color+'22':'#F3F4F6')+';color:'+(has?team.color:'#9CA3AF')+';border:1px solid '+(has?team.color+'55':'#E5E7EB')+';white-space:nowrap;" title="'+(has?'Klicken zum Springen':'Fehlt noch')+'"'+(has?' onclick="var el=document.getElementById(\'refcard-'+has.id+'\');el&&(el.scrollIntoView({behavior:\'smooth\',block:\'center\'}),el.style.outline=\'3px solid '+team.color+'\',setTimeout(function(){el.style.outline=\'\'},1800))"':'')+'>'+m.name.split(' ')[0]+'</span>';
+              const _fn=m.name.split(' ')[0];
+              const _dup=members.filter(x=>x.name.split(' ')[0]===_fn).length>1;
+              const _lastInit=m.lastName?m.lastName[0]:(m.name.split(' ')[1]||'')[0]||'';
+              const _dn=_dup&&_lastInit?_fn+'\u00A0'+_lastInit+'.':_fn;
+              return '<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:'+(has?'pointer':'default')+';background:'+(has?team.color+'22':'#F3F4F6')+';color:'+(has?team.color:'#9CA3AF')+';border:1px solid '+(has?team.color+'55':'#E5E7EB')+';white-space:nowrap;" title="'+(has?'Klicken zum Springen':'Fehlt noch')+'"'+(has?' onclick="var el=document.getElementById(\'refcard-'+has.id+'\');el&&(el.scrollIntoView({behavior:\'smooth\',block:\'center\'}),el.style.outline=\'3px solid '+team.color+'\',setTimeout(function(){el.style.outline=\'\'},1800))"':'')+'>'+_dn+'</span>';
             }).join('')}
           </div>`;
         }).join('')}
@@ -5167,9 +5192,9 @@ function renderSuperPage(){
   document.getElementById('superReflectionsPanel').innerHTML=REFLECTIONS.length===0?'<div class="empty-state"><div class="empty-icon">💬</div><h3>Keine Reflexionen</h3></div>':
     REFLECTIONS.map(r=>{const m=MEMBERS.find(x=>x.id===r.memberId);const team=TEAMS.find(t=>t.id===r.teamId);
     return `<div class="card" style="margin-bottom:10px;"><div class="card-body"><div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><div style="width:28px;height:28px;border-radius:50%;background:${team?.color};color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${m?.name?.charAt(0)}</div><div><strong>${m?.name}</strong> <span style="color:var(--gray-mid);font-size:11px;">(${m?.role}) · ${team?.name}</span></div><span style="margin-left:auto;font-size:11px;color:var(--gray-mid);">Woche ${r.week} · ${'😩😟😐😊🚀'.charAt(r.mood-1)} ${r.mood}/5</span></div>
-      ${r.experience?`<div style="font-size:12px;color:var(--gray-dark);margin-bottom:3px;">${r.experience.substring(0,120)}…</div>`:''}
-      ${r.liked?`<div style="font-size:11px;color:var(--green);">👍 ${r.liked.substring(0,80)}</div>`:''}
-      ${r.improved?`<div style="font-size:11px;color:var(--orange);">💡 ${r.improved.substring(0,80)}</div>`:''}
+      ${r.experience?`<div style="font-size:12px;color:var(--gray-dark);margin-bottom:3px;">${r.experience}</div>`:''}
+      ${r.liked?`<div style="font-size:11px;color:var(--green);margin-bottom:2px;">👍 ${r.liked}</div>`:''}
+      ${r.improved?`<div style="font-size:11px;color:var(--orange);">💡 ${r.improved}</div>`:''}
     </div></div>`;}).join('');
 }
 function switchSuperTab(tabId){
@@ -5178,6 +5203,73 @@ function switchSuperTab(tabId){
   document.querySelectorAll('#page-superadmin .admin-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('superPanel-'+tabId)?.classList.add('active');
   if(tabId==='guest-admins') renderGuestAdminList();
+  if(tabId==='blogs-super') renderSuperBlogsPanel();
+}
+function renderSuperBlogsPanel(){
+  const gameFilter=document.getElementById('superBlogGameFilter');
+  if(gameFilter&&gameFilter.options.length<=1){
+    GAMES.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name||g.id;gameFilter.appendChild(o);});
+  }
+  const filterVal=gameFilter?.value||'all';
+  let blogs=BLOGS.slice();
+  if(filterVal!=='all') blogs=blogs.filter(b=>{const t=TEAMS.find(x=>x.id===b.teamId);return t&&t.gameId===filterVal;});
+  blogs.sort((a,b)=>(b.week||0)-(a.week||0)||(a.teamId||'').localeCompare(b.teamId||''));
+  const el=document.getElementById('superBlogsPanel');
+  if(!el) return;
+  if(blogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📖</div><h3>Keine Wochenberichte</h3></div>';return;}
+  el.innerHTML=blogs.map(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    const game=GAMES.find(g=>g.id===team?.gameId);
+    const statusLabel=b.status==='approved'?'<span class="tag" style="background:#dcfce7;color:#16a34a;">✅ Freigegeben</span>':b.status==='pending'?'<span class="tag" style="background:#fef9c3;color:#a16207;">⏳ Ausstehend</span>':'<span class="tag" style="background:#f1f5f9;color:#64748b;">📄 Entwurf</span>';
+    const moodEmoji=['','😩','😟','😐','😊','🚀'][b.mood]||'';
+    return `<div class="card" style="margin-bottom:12px;"><div class="card-body">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:20px;">${team?.logo||'📋'}</span>
+        <div><strong>${team?.name||b.teamId}</strong> <span style="color:var(--gray-mid);font-size:11px;">${game?.name||''}</span></div>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--gray-mid);">Woche ${b.week} ${moodEmoji}</span>
+          ${statusLabel}
+        </div>
+      </div>
+      ${b.summary?`<div style="font-size:13px;font-weight:600;margin-bottom:4px;">${b.summary}</div>`:''}
+      ${b.content?`<div style="font-size:12px;color:var(--gray-dark);margin-bottom:6px;white-space:pre-wrap;">${b.content}</div>`:''}
+      ${b.challenge?`<div style="font-size:11px;color:var(--orange);margin-bottom:2px;">⚡ Herausforderung: ${b.challenge}</div>`:''}
+      ${b.nextWeek?`<div style="font-size:11px;color:var(--blue-dark);">🎯 Nächste Woche: ${b.nextWeek}</div>`:''}
+    </div></div>`;
+  }).join('');
+}
+function exportSuperBlogsCSV(){
+  const filterVal=document.getElementById('superBlogGameFilter')?.value||'all';
+  let blogs=BLOGS.slice();
+  if(filterVal!=='all') blogs=blogs.filter(b=>{const t=TEAMS.find(x=>x.id===b.teamId);return t&&t.gameId===filterVal;});
+  blogs.sort((a,b)=>(b.week||0)-(a.week||0));
+  const rows=[['Spiel','Team','Woche','Status','Stimmung','Zusammenfassung','Inhalt','Herausforderung','Nächste Woche']];
+  blogs.forEach(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    const game=GAMES.find(g=>g.id===team?.gameId);
+    rows.push([game?.name||'',team?.name||b.teamId,b.week||'',b.status||'',b.mood||'',b.summary||'',b.content||'',b.challenge||'',b.nextWeek||'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('\uFEFF'+csv);a.download='wochenberichte_super.csv';a.click();
+}
+function exportSuperBlogsPDF(){
+  const filterVal=document.getElementById('superBlogGameFilter')?.value||'all';
+  let blogs=BLOGS.slice();
+  if(filterVal!=='all') blogs=blogs.filter(b=>{const t=TEAMS.find(x=>x.id===b.teamId);return t&&t.gameId===filterVal;});
+  blogs.sort((a,b)=>(b.week||0)-(a.week||0));
+  let html='<html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;font-size:12px;margin:20px;}h1{font-size:16px;}h2{font-size:13px;margin-top:16px;border-bottom:1px solid #ccc;padding-bottom:4px;}p{margin:4px 0;}.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;}</style></head><body><h1>📋 Alle Wochenberichte (Plattform-Export)</h1>';
+  blogs.forEach(b=>{
+    const team=TEAMS.find(t=>t.id===b.teamId);
+    const game=GAMES.find(g=>g.id===team?.gameId);
+    const statusLabel=b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ Ausstehend':'📄 Entwurf';
+    html+=`<h2>${team?.logo||''} ${team?.name||b.teamId} – Woche ${b.week} [${statusLabel}] <span style="color:#888;font-size:10px;">${game?.name||''}</span></h2>`;
+    if(b.summary) html+=`<p><strong>${b.summary}</strong></p>`;
+    if(b.content) html+=`<p>${(b.content||'').replace(/\n/g,'<br>')}</p>`;
+    if(b.challenge) html+=`<p>⚡ <strong>Herausforderung:</strong> ${b.challenge}</p>`;
+    if(b.nextWeek) html+=`<p>🎯 <strong>Nächste Woche:</strong> ${b.nextWeek}</p>`;
+  });
+  html+='</body></html>';
+  const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),400);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -5280,7 +5372,8 @@ function renderKonzept(){
           ['v0.8.0','🚀 6 neue Features: (a) Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht, (b) Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback, (c) Automatische In-App-Erinnerungen vor Abgabe-Deadlines, (d) CSV-Export für Reflexionen &amp; Buchungen, (e) Vollständiger Aktivitätslog aller Aktionen (alle Rollen), (f) Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel'],
           ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab'],
           ['v0.8.1.1','🐛 4 Bugfixes: (1) GdW Eigene Einschätzung: Expliziter Speichern-Button mit sofortiger Auswertungsaktualisierung; (2) Erinnerungssystem: 24h-Vorlauf – Reflexion freitags, Bericht+Buchungen samstags, auto-Trigger nach Login; (3) Reflexionen: Team-Filter jetzt auch für Karten aktiv (fix), CSV-Export robuster, PDF-Export hinzugefügt; (4) Berichte: Volltext-Leseansicht (Button + neues Fenster), CSV enthält alle Felder, PDF-Export hinzugefügt'],
-          ['v0.8.2','✨ 5 neue Features: (1) Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche; (2) Dashboard: Laufende Woche als prominente Stat-Karte; (3) Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger (Teams sehen nur sich selbst); (4) Stimmungsbarometer reagiert jetzt auf Team- und Wochenfilter; (5) Blog-Tab: b.tags-Crash behoben, informativere Leer-Zustand-Meldungen, Admin sieht alle Berichte inkl. ausstehende, Freigabe-Button direkt im Blog-Tab', true],
+          ['v0.8.2','✨ 5 neue Features: (1) Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche; (2) Dashboard: Laufende Woche als prominente Stat-Karte; (3) Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger (Teams sehen nur sich selbst); (4) Stimmungsbarometer reagiert jetzt auf Team- und Wochenfilter; (5) Blog-Tab: b.tags-Crash behoben, informativere Leer-Zustand-Meldungen, Admin sieht alle Berichte inkl. ausstehende, Freigabe-Button direkt im Blog-Tab'],
+          ['v0.8.2.1','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -5367,10 +5460,30 @@ function calcMvpWinner(teamId,week){
   const votesForWinner=refs.filter(r=>r.mvpVote===winnerId).length;
   return {memberId:winnerId,votes:votesForWinner,total:refs.length,reason:`${votesForWinner}/${refs.length} Stimmen`};
 }
+// Helper: returns true if member has reflexion OR a same-name duplicate has
+// (handles the case where a member was accidentally registered twice)
+function _isMemberRefCovered(m, refs, allMembers){
+  if(refs.find(r=>r.memberId===m.id)) return true;
+  return allMembers.filter(x=>x.id!==m.id&&x.name===m.name).some(x=>refs.find(r=>r.memberId===x.id));
+}
+// Helper: deduplicate members by name (keep the one with a reflexion, else first entry)
+function _deduplicateMembers(members, refs){
+  const seen=new Set();
+  return members.filter(m=>{
+    if(seen.has(m.name)) return false;
+    seen.add(m.name);
+    return true;
+  }).map(m=>{
+    // If this name has a duplicate that submitted, use that duplicate's id for coverage
+    return m;
+  });
+}
 function allReflectionsIn(team){
   const members=MEMBERS.filter(m=>m.teamId===team.id);
   const refs=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===team.currentWeek);
-  return members.every(m=>refs.find(r=>r.memberId===m.id));
+  // Deduplicate by name: a member is covered if they or any same-name member submitted
+  const unique=_deduplicateMembers(members, refs);
+  return unique.every(m=>_isMemberRefCovered(m, refs, members));
 }
 function isMyCeo(){
   const me=getMyMember();return me&&me.role==='CEO';
@@ -5382,14 +5495,15 @@ function updateBlogReflectionStatus(){
   const submitBtn=document.getElementById('blogSubmitBtn');
   const hintEl=document.getElementById('blogSubmitHint');
   if(!statusEl)return;
-  const members=MEMBERS.filter(m=>m.teamId===team.id);
+  const allMembers=MEMBERS.filter(m=>m.teamId===team.id);
+  const members=_deduplicateMembers(allMembers, []); // show deduplicated list
   const refs=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===team.currentWeek);
-  const allIn=members.every(m=>refs.find(r=>r.memberId===m.id));
+  const allIn=members.every(m=>_isMemberRefCovered(m, refs, allMembers));
   const moodAvg=allIn?calcTeamAvgMood(team.id,team.currentWeek):null;
   const moodEmoji=['','😩','😟','😐','😊','🚀'][moodAvg]||'';
-  // Build status table
+  // Build status table (deduplicated)
   const rows=members.map(m=>{
-    const hasRef=!!refs.find(r=>r.memberId===m.id);
+    const hasRef=_isMemberRefCovered(m, refs, allMembers);
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-bottom:1px solid var(--border);">
       <span style="font-size:12px;font-weight:600;">${m.name} <span style="font-weight:400;color:var(--gray-mid);">(${m.role})</span></span>
       <span style="font-size:12px;">${hasRef?'✅ Reflexion eingereicht':'⏳ Noch offen'}</span></div>`;
@@ -5529,10 +5643,11 @@ function submitBlog(){
   // CEO check: only member with role CEO (or team-login) may submit
   const me=getMyMember();
   if(me&&me.role!=='CEO'){showToast('Nur der CEO kann den Bericht einreichen!','error');return;}
-  // Reflection completeness check
+  // Reflection completeness check (deduplicated: same-name duplicate members count as covered)
   const teamMembers=MEMBERS.filter(m=>m.teamId===team.id);
   const refsThisWeek=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===team.currentWeek);
-  const missing=teamMembers.filter(m=>!refsThisWeek.find(r=>r.memberId===m.id));
+  const uniqueMembers=_deduplicateMembers(teamMembers, refsThisWeek);
+  const missing=uniqueMembers.filter(m=>!_isMemberRefCovered(m, refsThisWeek, teamMembers));
   if(missing.length>0){
     showToast('Noch nicht alle Reflexionen abgegeben: '+missing.map(m=>m.name).join(', '),'error');
     return;
@@ -5907,6 +6022,39 @@ function openMemberMgmt(teamId){
   renderMemberMgmtList();
   openModal('modalMemberMgmt');
 }
+function mergeDuplicateMember(keepId, deleteId){
+  const keep=MEMBERS.find(m=>m.id===keepId);
+  const del=MEMBERS.find(m=>m.id===deleteId);
+  if(!keep||!del) return showToast('Mitglied nicht gefunden','error');
+  // Migrate reflexions: reassign deleteId → keepId where keepId has none for that week
+  REFLECTIONS.forEach(r=>{
+    if(r.memberId===deleteId){
+      const alreadyHas=REFLECTIONS.find(x=>x.memberId===keepId&&x.week===r.week&&x.teamId===r.teamId);
+      if(!alreadyHas) r.memberId=keepId;
+    }
+    if(r.mvpVote===deleteId) r.mvpVote=keepId;
+  });
+  // Remove any remaining reflexions still pointing to deleteId (covered by keepId now)
+  const remaining=REFLECTIONS.filter(r=>r.memberId===deleteId);
+  remaining.forEach(r=>{const i=REFLECTIONS.indexOf(r);if(i>=0) REFLECTIONS.splice(i,1);});
+  // Deduplicate: if keepId now has two entries for same week, keep the newer one
+  const seen=new Set();
+  const toRemove=[];
+  REFLECTIONS.forEach((r,i)=>{ if(r.memberId===keepId){const k=r.teamId+'_'+r.week; if(seen.has(k)) toRemove.push(i); else seen.add(k); }});
+  for(let i=toRemove.length-1;i>=0;i--) REFLECTIONS.splice(toRemove[i],1);
+  // Migrate team MVP records
+  const team=TEAMS.find(t=>t.id===keep.teamId);
+  if(team&&team.mvps) team.mvps.forEach(mv=>{if(mv.memberId===deleteId) mv.memberId=keepId;});
+  if(team&&team.mvpOverride) Object.keys(team.mvpOverride).forEach(w=>{if(team.mvpOverride[w]===deleteId) team.mvpOverride[w]=keepId;});
+  // Remove duplicate member
+  const idx=MEMBERS.findIndex(m=>m.id===deleteId);
+  if(idx>=0) MEMBERS.splice(idx,1);
+  rebuildCodes(); saveData();
+  renderMemberMgmtList();
+  if(state.currentPage==='admin') renderAdminTeamsTable();
+  showToast('✅ Zusammengeführt: '+del.name+' (Duplikat entfernt, Daten übertragen)','success');
+  logEvent('🔀 Mitglied-Duplikat zusammengeführt: '+del.name+' ('+deleteId+') → '+keepId);
+}
 function renderMemberMgmtList(){
   const teamId = state.managingTeamId;
   const members = MEMBERS.filter(m=>m.teamId===teamId);
@@ -5916,8 +6064,28 @@ function renderMemberMgmtList(){
     el.innerHTML='<div class="empty-state" style="padding:20px;"><div class="empty-icon">👤</div><h3>Noch keine Mitglieder</h3><p style="color:var(--red);font-weight:600;">⚠️ Bitte CEO zuerst hinzufügen!</p></div>';
     return;
   }
+  // Detect duplicate names
+  const dupeNames=members.filter(m=>members.filter(x=>x.name===m.name).length>1).map(m=>m.name);
+  const uniqueDupeNames=[...new Set(dupeNames)];
+  const dupeWarning=uniqueDupeNames.length>0?uniqueDupeNames.map(name=>{
+    const pair=members.filter(m=>m.name===name);
+    // Prefer to keep the one with more reflexions; else prefer the one with login data
+    const refCounts=pair.map(m=>REFLECTIONS.filter(r=>r.memberId===m.id).length);
+    const keepIdx=refCounts[0]>=refCounts[1]?0:1;
+    const deleteIdx=keepIdx===0?1:0;
+    const keepM=pair[keepIdx]; const delM=pair[deleteIdx];
+    return `<div class="info-box" style="background:#FFF3CD;border-left:3px solid var(--orange);margin-bottom:8px;">
+      <span class="info-box-icon">⚠️</span>
+      <div>
+        <strong>Duplikat erkannt: ${name}</strong> – zwei Einträge mit gleichem Namen.<br>
+        <span style="font-size:11px;color:var(--gray-dark);">Behalten: <strong>${keepM.name}</strong> (${keepM.role} · Code: ${keepM.code} · ${refCounts[keepIdx]} Reflexionen) &nbsp;|&nbsp; Löschen: ${delM.name} (${delM.role} · Code: ${delM.code} · ${refCounts[deleteIdx]} Reflexionen)</span><br>
+        <button class="btn btn-warning btn-sm" style="margin-top:6px;" onclick="if(confirm('Duplikat zusammenführen? ${delM.name} (${delM.code}) wird gelöscht, Daten auf ${keepM.code} übertragen.')) mergeDuplicateMember('${keepM.id}','${delM.id}')">🔀 Duplikat zusammenführen</button>
+      </div>
+    </div>`;
+  }).join(''):'';
   const usedRoles=members.map(m=>m.role);
   el.innerHTML=`
+    ${dupeWarning}
     ${!hasCeo?'<div class="info-box" style="background:#FFF3CD;border-left:3px solid var(--orange);margin-bottom:10px;"><span class="info-box-icon">⚠️</span>Kein CEO definiert! Bitte einen CEO zuweisen.</div>':''}
     <table class="data-table" style="width:100%;margin-bottom:16px;">
     <thead><tr><th>Name</th><th>Rolle</th><th>Code</th><th style="text-align:right;">Aktion</th></tr></thead>
@@ -7359,13 +7527,35 @@ function renderAdminBlogsPanel(){
   if(!el) return;
   if(blogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📖</div><h3>Keine Berichte</h3><p>Noch keine Wochenberichte für dieses Spiel.</p></div>';return;}
   const statusLabel=s=>s==='approved'?'<span class="tag" style="background:#dcfce7;color:#16a34a;">✅ Freigegeben</span>':s==='pending'?'<span class="tag" style="background:#fef9c3;color:#a16207;">⏳ Ausstehend</span>':'<span class="tag" style="background:#f1f5f9;color:#64748b;">📄 Entwurf</span>';
-  el.innerHTML=blogs.map(b=>{
+  // Build blog status grid
+  const allBlogWeeks=[...new Set(BLOGS.filter(b=>gameTeams.some(t=>t.id===b.teamId)).map(b=>b.week))].sort((a,b)=>a-b);
+  const blogStatusGrid=allBlogWeeks.length===0?'':
+    `<div class="card" style="margin-bottom:16px;"><div class="card-header"><h3>📊 Abgabe-Status Wochenberichte</h3></div><div class="card-body" style="padding:12px;">
+      ${allBlogWeeks.map(w=>`
+        <div style="margin-bottom:10px;">
+          <div style="font-weight:700;font-size:12px;color:var(--gray-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Woche ${w}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${gameTeams.map(team=>{
+              const blog=BLOGS.find(b=>b.teamId===team.id&&b.week===w);
+              const bg=blog?blog.status==='approved'?team.color+'22':'#fef9c3':blog===undefined&&w<=(team.currentWeek||1)?'#fee2e2':'#F3F4F6';
+              const col=blog?blog.status==='approved'?team.color:blog.status==='pending'?'#a16207':'#64748b':w<=(team.currentWeek||1)?'#b91c1c':'#9CA3AF';
+              const border=blog?blog.status==='approved'?team.color+'55':blog.status==='pending'?'#fbbf24':'#cbd5e1':'#E5E7EB';
+              const lbl=blog?blog.status==='approved'?'✅':blog.status==='pending'?'⏳':'📄':'✗';
+              const cursor=blog?'pointer':'default';
+              const onclick=blog?`onclick="var el=document.getElementById('blogcard-${blog.id}');el&&(el.scrollIntoView({behavior:'smooth',block:'center'}),el.style.outline='3px solid ${team.color}',setTimeout(function(){el.style.outline=''},1800))"` :'';
+              return `<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;cursor:${cursor};background:${bg};color:${col};border:1px solid ${border};white-space:nowrap;" title="${blog?blog.status==='approved'?'Freigegeben':blog.status==='pending'?'Ausstehend':'Entwurf':'Kein Bericht'}" ${onclick}>${team.logo} ${team.name} ${lbl}</span>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div></div>`;
+  el.innerHTML=blogStatusGrid+blogs.map(b=>{
     const team=TEAMS.find(t=>t.id===b.teamId);
     const moodEmoji=['','😩','😟','😐','😊','🚀'][b.mood]||'';
     const refsForWeek=REFLECTIONS.filter(r=>r.teamId===b.teamId&&r.week===b.week);
     const teamMembers=MEMBERS.filter(m=>m.teamId===b.teamId);
-    const refStatus=teamMembers.map(m=>{const r=refsForWeek.find(x=>x.memberId===m.id);return `<span class="tag" style="background:${r?'#dcfce7':'#fee2e2'};color:${r?'#15803d':'#b91c1c'};">${m.name.split(' ')[0]} ${r?'✓':'✗'}</span>`;}).join(' ');
-    return `<div class="card" style="margin-bottom:12px;">
+    const refStatus=teamMembers.map(m=>{const r=refsForWeek.find(x=>x.memberId===m.id);const _fn=m.name.split(' ')[0];const _dup=teamMembers.filter(x=>x.name.split(' ')[0]===_fn).length>1;const _li=m.lastName?m.lastName[0]:(m.name.split(' ')[1]||'')[0]||'';const _dn=_dup&&_li?_fn+'\u00A0'+_li+'.':_fn;return `<span class="tag" style="background:${r?'#dcfce7':'#fee2e2'};color:${r?'#15803d':'#b91c1c'};">${_dn} ${r?'✓':'✗'}</span>`;}).join(' ');
+    return `<div class="card" id="blogcard-${b.id}" style="margin-bottom:12px;">
       <div class="card-header" style="flex-wrap:wrap;gap:6px;">
         <div>
           <span style="font-size:20px;margin-right:8px;">${team?.logo||'📋'}</span>
