@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.2.1)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.2.2)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.2.1</div>
+ <div class="version-footer" id="versionFooter">v0.8.2.2</div>
 </div>
 
 <!-- APP -->
@@ -4594,26 +4594,7 @@ function renderAdminTeamsTable(){
   const pending=allTeams.filter(t=>t.status==='pending');
   const active=allTeams.filter(t=>t.status!=='pending');
   let html='';
-  // Pending team slots — show setup codes prominently
-  if(pending.length>0){
-    html+='<div class="info-box" style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:12px 16px;margin-bottom:16px;">'
-      +'<strong>⏳ '+pending.length+' Team-Slot(s) warten auf Setup</strong>'
-      +'<p style="font-size:12px;margin:6px 0 10px;">Gib jedem Teamleiter seinen Setup-Code. Er öffnet die App → „Neues Spiel" → gibt den Code ein → richtet sein Team ein.</p>'
-      +'<table class="data-table" style="width:100%;margin:0;">'
-      +'<thead><tr><th>Slot</th><th>Setup-Code (für Teamleiter)</th><th>Status</th><th></th></tr></thead>'
-      +'<tbody>'
-      +pending.map((t,i)=>'<tr>'
-        +'<td style="font-weight:700;color:var(--blue-dark);">Team-Slot '+(i+1)+'</td>'
-        +'<td><code style="font-size:14px;background:var(--blue-xlt);padding:3px 10px;border-radius:6px;font-weight:900;letter-spacing:2px;color:var(--blue-dark);">'+t.setupCode+'</code></td>'
-        +'<td><span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Ausstehend</span></td>'
-        +'<td style="display:flex;gap:4px;">'
-        +'<button class="btn btn-outline btn-xs" onclick="copyCode(this.dataset.code)" data-code="'+t.setupCode+'">📋 Kopieren</button>'
-        +'<button class="btn btn-danger btn-xs" onclick="deletePendingSlot(this.dataset.id)" data-id="'+t.id+'" title="Slot löschen">🗑️</button>'
-        +'</td>'
-        +'</tr>').join('')
-      +'</tbody></table></div>';
-  }
-  // Active teams
+  // Active teams first
   if(active.length>0){
     html+='<table class="data-table" style="width:100%">'
       +'<thead><tr><th>Team</th><th>Idee</th><th>Mitglieder</th><th>Umsatz</th><th>Gewinn</th><th>Einladungscode</th><th>Aktionen</th></tr></thead>'
@@ -4634,6 +4615,26 @@ function renderAdminTeamsTable(){
           +'<button class="btn btn-danger btn-xs" onclick="deleteTeam(this.dataset.id)" data-id="'+team.id+'" title="Team löschen">🗑️</button>'
           +'</div></td></tr>';}).join('')
       +'</tbody></table>';
+  }
+  // Pending team slots — show below active teams; hide once game has moved past KW1
+  const pastKW1=active.length>0&&active.every(t=>(t.currentWeek||1)>1);
+  if(pending.length>0&&!pastKW1){
+    html+='<div class="info-box" style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:12px 16px;margin-top:16px;">'
+      +'<strong>⏳ '+pending.length+' Team-Slot(s) warten auf Setup</strong>'
+      +'<p style="font-size:12px;margin:6px 0 10px;">Gib jedem Teamleiter seinen Setup-Code. Er öffnet die App → „Neues Spiel" → gibt den Code ein → richtet sein Team ein.</p>'
+      +'<table class="data-table" style="width:100%;margin:0;">'
+      +'<thead><tr><th>Slot</th><th>Setup-Code (für Teamleiter)</th><th>Status</th><th></th></tr></thead>'
+      +'<tbody>'
+      +pending.map((t,i)=>'<tr>'
+        +'<td style="font-weight:700;color:var(--blue-dark);">Team-Slot '+(i+1)+'</td>'
+        +'<td><code style="font-size:14px;background:var(--blue-xlt);padding:3px 10px;border-radius:6px;font-weight:900;letter-spacing:2px;color:var(--blue-dark);">'+t.setupCode+'</code></td>'
+        +'<td><span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Ausstehend</span></td>'
+        +'<td style="display:flex;gap:4px;">'
+        +'<button class="btn btn-outline btn-xs" onclick="copyCode(this.dataset.code)" data-code="'+t.setupCode+'">📋 Kopieren</button>'
+        +'<button class="btn btn-danger btn-xs" onclick="deletePendingSlot(this.dataset.id)" data-id="'+t.id+'" title="Slot löschen">🗑️</button>'
+        +'</td>'
+        +'</tr>').join('')
+      +'</tbody></table></div>';
   }
   if(!active.length&&!pending.length){
     html='<div class="empty-state"><div class="empty-icon">👥</div><h3>Noch keine Teams</h3><p>Lege ein neues Spiel mit Team-Slots an.</p></div>';
@@ -4704,6 +4705,8 @@ function renderTeamAwardPanel(){
   const game=GAMES.find(g=>g.id===effectiveGameId);
   const gameTeams=getVisibleTeams();
   const currentWeek=gameTeams[0]?.currentWeek||1;
+  const allScoringWeeks=[...new Set([currentWeek,...BLOGS.filter(b=>gameTeams.some(t=>t.id===b.teamId)).map(b=>b.week)])].sort((a,b)=>a-b);
+  const selectedWeek=(state.gdwSelectedWeek&&allScoringWeeks.includes(state.gdwSelectedWeek))?state.gdwSelectedWeek:currentWeek;
   // Default weights (total must be 100)
   const defaultW={rev:20,blog:20,ref:20,mood:20,tx:10,selfEval:10};
   if(!game.gdwWeights) game.gdwWeights={...defaultW};
@@ -4715,14 +4718,14 @@ function renderTeamAwardPanel(){
   const scores=gameTeams.map(team=>{
     const members=MEMBERS.filter(m=>m.teamId===team.id);
     const revScore=Math.min(10,Math.round((team.revenue/(team.capital||5))*5));
-    const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===currentWeek&&b.status!=='draft');
+    const hasBlog=BLOGS.find(b=>b.teamId===team.id&&b.week===selectedWeek&&b.status!=='draft');
     const blogScore=hasBlog?10:0;
-    const refs=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===currentWeek);
+    const refs=REFLECTIONS.filter(r=>r.teamId===team.id&&r.week===selectedWeek);
     const refScore=Math.round((refs.length/Math.max(members.length,1))*10);
     const avgMood=refs.length>0?refs.reduce((s,r)=>s+(r.mood||3),0)/refs.length:0;
     const moodScore=Math.round((avgMood/5)*10);
     const txScore=Math.min(10,team.transactions||0);
-    const selfEvalScore=parseFloat(game.gdwSelfEvals[team.id+'_w'+currentWeek]||0);
+    const selfEvalScore=parseFloat(game.gdwSelfEvals[team.id+'_w'+selectedWeek]||0);
     const total=Math.round((revScore*(W.rev||0)+blogScore*(W.blog||0)+refScore*(W.ref||0)+moodScore*(W.mood||0)+txScore*(W.tx||0)+selfEvalScore*(W.selfEval||0))/(totalW||100)*10)/10;
     return {team,revScore,blogScore,refScore,moodScore,txScore,selfEvalScore,total};
   }).sort((a,b)=>b.total-a.total);
@@ -4731,6 +4734,14 @@ function renderTeamAwardPanel(){
   if(!el) return;
   const weightSumOk=totalW===100;
   el.innerHTML=`
+    <!-- Week Selector -->
+    ${allScoringWeeks.length>1?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--blue-xlt);border-radius:8px;padding:10px 14px;">
+      <span style="font-weight:700;font-size:13px;">📅 Woche:</span>
+      <select class="form-control" style="max-width:130px;" onchange="state.gdwSelectedWeek=+this.value;renderTeamAwardPanel();">
+        ${allScoringWeeks.map(w=>`<option value="${w}" ${w===selectedWeek?'selected':''}>Woche ${w}${w===currentWeek?' (aktuell)':''}</option>`).join('')}
+      </select>
+      ${selectedWeek<currentWeek?'<span style="font-size:11px;color:var(--gray-mid);">Nachträgliche Bewertung für Woche '+selectedWeek+'</span>':''}
+    </div>`:''}
     <!-- Weight Config Card -->
     <div class="card" style="margin-bottom:16px;">
       <div class="card-header" style="cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
@@ -4751,7 +4762,7 @@ function renderTeamAwardPanel(){
     </div>
     <!-- Scores Table + Chart -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-header"><h3>🏅 Gruppe der Woche – Auswertung Woche ${currentWeek}</h3></div>
+      <div class="card-header"><h3>🏅 Gruppe der Woche – Auswertung Woche ${selectedWeek}</h3></div>
       <div class="card-body">
         <div style="font-size:12px;color:var(--gray-mid);margin-bottom:12px;">
           Gewichtung: Umsatz ${W.rev}% · Bericht ${W.blog}% · Reflexionen ${W.ref}% · Stimmung ${W.mood}% · Aktivität ${W.tx}% · Eigene Einschätzung ${W.selfEval}%
@@ -4762,14 +4773,14 @@ function renderTeamAwardPanel(){
         </div>
         <!-- Self-Eval inputs -->
         ${W.selfEval>0?`<div style="background:#F0FFF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;margin-bottom:14px;">
-          <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#166534;">🌟 Eigene Einschätzung (0–10 pro Team, Woche ${currentWeek})</div>
+          <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:#166534;">🌟 Eigene Einschätzung (0–10 pro Team, Woche ${selectedWeek})</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
             ${gameTeams.map(t=>`<div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:13px;">${t.logo} ${t.name}</span>
-              <input type="number" id="selfEval_${t.id}" class="form-control" style="width:65px;" min="0" max="10" step="0.5" value="${game.gdwSelfEvals[t.id+'_w'+currentWeek]||0}">
+              <input type="number" id="selfEval_${t.id}" class="form-control" style="width:65px;" min="0" max="10" step="0.5" value="${game.gdwSelfEvals[t.id+'_w'+selectedWeek]||0}">
             </div>`).join('')}
           </div>
-          <button class="btn btn-success btn-sm" onclick="saveAllGdwSelfEvals('${effectiveGameId}',${currentWeek})">💾 Speichern &amp; Auswertung aktualisieren</button>
+          <button class="btn btn-success btn-sm" onclick="saveAllGdwSelfEvals('${effectiveGameId}',${selectedWeek})">💾 Speichern &amp; Auswertung aktualisieren</button>
         </div>`:''}
         <table class="data-table" style="width:100%;">
           <thead><tr><th>Platz</th><th>Team</th><th>Umsatz</th><th>Bericht</th><th>Reflexion</th><th>Stimmung</th><th>Aktivität</th>${W.selfEval>0?'<th>Eigene Einsch.</th>':''}<th>Gesamt</th></tr></thead>
@@ -4786,13 +4797,13 @@ function renderTeamAwardPanel(){
           </tr>`).join('')}</tbody>
         </table>
         <div style="margin-top:16px;padding:12px;background:var(--blue-xlt);border-radius:8px;">
-          <div style="font-weight:700;margin-bottom:8px;">✅ Gruppe der Woche ${currentWeek} manuell auszeichnen:</div>
+          <div style="font-weight:700;margin-bottom:8px;">✅ Gruppe der Woche ${selectedWeek} manuell auszeichnen:</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <select class="form-control" id="awardTeamSelect" style="max-width:200px;">
               ${scores.map((s,i)=>`<option value="${s.team.id}" ${i===0?'selected':''}>${s.team.logo} ${s.team.name} (${s.total}/10)</option>`).join('')}
             </select>
             <input class="form-control" id="awardReason" placeholder="Begründung (optional)..." style="flex:1;min-width:200px;">
-            <button class="btn btn-primary btn-sm" onclick="saveTeamAward(${currentWeek})">🏅 Auszeichnen</button>
+            <button class="btn btn-primary btn-sm" onclick="saveTeamAward(${selectedWeek})">🏅 Auszeichnen</button>
           </div>
         </div>
       </div>
@@ -5374,7 +5385,8 @@ function renderKonzept(){
           ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab'],
           ['v0.8.1.1','🐛 4 Bugfixes: (1) GdW Eigene Einschätzung: Expliziter Speichern-Button mit sofortiger Auswertungsaktualisierung; (2) Erinnerungssystem: 24h-Vorlauf – Reflexion freitags, Bericht+Buchungen samstags, auto-Trigger nach Login; (3) Reflexionen: Team-Filter jetzt auch für Karten aktiv (fix), CSV-Export robuster, PDF-Export hinzugefügt; (4) Berichte: Volltext-Leseansicht (Button + neues Fenster), CSV enthält alle Felder, PDF-Export hinzugefügt'],
           ['v0.8.2','✨ 5 neue Features: (1) Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche; (2) Dashboard: Laufende Woche als prominente Stat-Karte; (3) Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger (Teams sehen nur sich selbst); (4) Stimmungsbarometer reagiert jetzt auf Team- und Wochenfilter; (5) Blog-Tab: b.tags-Crash behoben, informativere Leer-Zustand-Meldungen, Admin sieht alle Berichte inkl. ausstehende, Freigabe-Button direkt im Blog-Tab'],
-          ['v0.8.2.1','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe', true],
+          ['v0.8.2.2','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe'],
+          ['v0.8.2.2','🛠️ 2 Verbesserungen: (1) Team-Verwaltung: Aktive Teams werden jetzt oben angezeigt, freie Slots darunter – und nach Abschluss von KW1 werden leere Slots automatisch ausgeblendet; (2) Gruppe der Woche: Wochenauswahl-Dropdown ermöglicht nachträgliche Bewertung vergangener Wochen (Woche auswählen → Scoring + Auszeichnung für beliebige Woche)', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
