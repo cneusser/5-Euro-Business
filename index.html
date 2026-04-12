@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.2.2)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.3)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.2.2</div>
+ <div class="version-footer" id="versionFooter">v0.8.3</div>
 </div>
 
 <!-- APP -->
@@ -843,6 +843,10 @@ textarea.form-control{resize:vertical;min-height:70px;}
       <button class="btn btn-outline btn-sm" id="btnSubmitBlog" onclick="openModal('modalBlog')">+ Bericht einreichen</button>
      </div>
      <div id="myBlogList"></div>
+     <div style="margin-top:28px;">
+      <div class="section-header"><div class="section-title">&#128172; Meine Reflexionen</div></div>
+      <div id="myBlogsReflectionsList"></div>
+     </div>
     </div>
    </div>
   </div>
@@ -3537,8 +3541,8 @@ function renderMyTeamOverview(team){
     <div class="kpi-card"><div class="kpi-label">Umsatz</div><div class="kpi-value">${fmtEur(team.revenue)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='income'&&t.cat!=='Kapital').length} Einnahmen</div></div>
     <div class="kpi-card"><div class="kpi-label">Ausgaben</div><div class="kpi-value neg">${fmtEur(team.expenses)}</div><div class="kpi-trend">${myTx.filter(t=>t.type==='expense'&&t.cat!=='Kapital').length} Ausgaben</div></div>
     <div class="kpi-card"><div class="kpi-label">Gewinn</div><div class="kpi-value ${profit>=0?'pos':'neg'}">${profit>=0?'+':''}${fmtEur(profit)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">ROI</div><div class="kpi-value pos">${((profit/5)*100).toFixed(0)}%</div><div class="kpi-trend">auf 5€ Start</div></div>
-    ${team.capital?`<div class="kpi-card" style="border-left:3px solid var(--blue-mid);"><div class="kpi-label">Startkapital</div><div class="kpi-value" style="color:var(--blue-mid);">${fmtEur(team.capital)}</div><div class="kpi-trend">nicht im ROI</div></div>`:''}`;
+    <div class="kpi-card"><div class="kpi-label">ROI</div><div class="kpi-value ${profit>=0?'pos':'neg'}">${((profit/(team.capital||5))*100).toFixed(0)}%</div><div class="kpi-trend">auf ${fmtEur(team.capital||5)} Start</div></div>
+    ${team.capital?`<div class="kpi-card" style="border-left:3px solid var(--blue-mid);"><div class="kpi-label">Startkapital</div><div class="kpi-value" style="color:var(--blue-mid);">${fmtEur(team.capital)}</div><div class="kpi-trend">Basis für ROI</div></div>`:''}`;
   // MVP section
   const mvpEl=document.getElementById('myTeamMvpSection');
   const mvps=team.mvps||[];
@@ -3798,23 +3802,67 @@ function openAdminKassenbuch(teamId){
 }
 
 function renderMyBlogs(team){
-  const myBlogs=BLOGS.filter(b=>b.teamId===team.id);
+  const me=getMyMember();
+  const isCeo=me&&me.role==='CEO';
+  // All blogs: approved/pending visible to all; drafts only to CEO
+  const myBlogs=BLOGS.filter(b=>b.teamId===team.id&&(b.status!=='draft'||isCeo));
   const el=document.getElementById('myBlogList');
-  // Disable submit button if week already submitted
+  // Disable submit button if week already submitted or user is not CEO
   const submitBtn=document.getElementById('btnSubmitBlog');
-  if(submitBtn) submitBtn.disabled=team.weekStatus==='submitted';
-  if(myBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';return;}
-  el.innerHTML=myBlogs.sort((a,b)=>b.week-a.week).map(b=>`<div class="card" style="margin-bottom:10px;">
-    <div class="card-body" style="padding:12px 16px;">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;">
-        <div><div style="font-size:10px;font-weight:700;color:var(--blue-mid);text-transform:uppercase;margin-bottom:1px;">Woche ${b.week}</div>
-          <div style="font-size:13px;font-weight:700;color:var(--blue-dark);">${b.title}</div></div>
-        <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
-      </div>
-      <p style="font-size:12px;color:var(--gray-mid);">${(b.body||'').substring(0,90)}${(b.body||'').length>90?'...':''}</p>
-      ${b.status==='draft'?'<button class="btn btn-outline btn-xs" onclick=\"openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
-    </div>
-  </div>`).join('');
+  if(submitBtn){
+    submitBtn.disabled=team.weekStatus==='submitted';
+    submitBtn.style.display=isCeo?'':'none';
+  }
+  if(myBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';}
+  else{
+    el.innerHTML=myBlogs.sort((a,b)=>b.week-a.week).map(b=>{
+      const uid='blog-expand-'+b.id;
+      const hasBody=(b.body||'').trim().length>0;
+      const sections=[
+        b.highlight?`<div style="margin-top:10px;background:#FFFBEB;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#92400E;text-transform:uppercase;">⭐ Highlight</span><div style="font-size:13px;margin-top:3px;">${b.highlight}</div></div>`:'',
+        b.challenge?`<div style="margin-top:8px;background:#FFF7ED;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#C2410C;text-transform:uppercase;">⚠️ Herausforderung</span><div style="font-size:13px;margin-top:3px;">${b.challenge}</div></div>`:'',
+        b.nextSteps?`<div style="margin-top:8px;background:#F0FFF4;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;">▶️ Nächste Schritte</span><div style="font-size:13px;margin-top:3px;">${b.nextSteps}</div></div>`:'',
+        hasBody?`<div style="margin-top:8px;"><span style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;">Aktivitäten</span><div style="font-size:13px;margin-top:3px;color:var(--gray-dark);white-space:pre-wrap;">${b.body}</div></div>`:''
+      ].filter(Boolean).join('');
+      return `<div class="card" style="margin-bottom:12px;">
+        <div class="card-body" style="padding:12px 16px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;">
+            <div><div style="font-size:10px;font-weight:700;color:var(--blue-mid);text-transform:uppercase;margin-bottom:1px;">Woche ${b.week} · ${b.date||''}</div>
+              <div style="font-size:14px;font-weight:700;color:var(--blue-dark);">${b.title}</div></div>
+            <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
+          </div>
+          ${sections?`<div id="${uid}" style="display:none;">${sections}</div>
+          <button class="btn btn-outline btn-xs" style="margin-top:8px;" onclick="const d=document.getElementById('${uid}');const open=d.style.display==='block';d.style.display=open?'none':'block';this.textContent=open?'📖 Volltext lesen':'🔼 Einklappen';">📖 Volltext lesen</button>`:''}
+          ${b.status==='draft'&&isCeo?'<button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // Reflections for current member only
+  const refEl=document.getElementById('myBlogsReflectionsList');
+  if(refEl&&me){
+    const myRefs=REFLECTIONS.filter(r=>r.memberId===me.id).sort((a,b)=>b.week-a.week);
+    if(myRefs.length===0){refEl.innerHTML='<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">💬</div><p style="color:var(--gray-mid);">Noch keine Reflexionen eingereicht.</p></div>';}
+    else{
+      refEl.innerHTML=myRefs.map(r=>{
+        const moodEmoji=['','😩','😟','😐','😊','🚀'][r.mood||0];
+        const uid2='ref-expand-'+r.id;
+        const body=[
+          r.experience?`<div class="reflection-section"><div class="reflection-section-label">Erfahrungen</div><div class="reflection-text">${r.experience}</div></div>`:'',
+          r.liked?`<div class="reflection-section"><div class="reflection-section-label">👍 Was war gut</div><div class="reflection-text">${r.liked}</div></div>`:'',
+          r.improved?`<div class="reflection-section"><div class="reflection-section-label">💡 Was ich anders machen würde</div><div class="reflection-text">${r.improved}</div></div>`:'',
+          r.role?`<div class="reflection-section"><div class="reflection-section-label">🤝 Meine Rolle</div><div class="reflection-text">${r.role}</div></div>`:''
+        ].filter(Boolean).join('');
+        return `<div class="reflection-card" style="margin-bottom:10px;">
+          <div class="reflection-header" style="cursor:pointer;" onclick="const d=document.getElementById('${uid2}');const open=d.style.display!=='none';d.style.display=open?'none':'block';">
+            <div><strong>Woche ${r.week}</strong> · ${fmtDate(r.date)}</div>
+            <div style="display:flex;align-items:center;gap:6px;">${moodEmoji} <span style="font-size:13px;font-weight:700;">${r.mood||0}/5</span><span style="font-size:11px;color:var(--gray-mid);">▼</span></div>
+          </div>
+          <div id="${uid2}" class="reflection-body" style="display:none;">${body||'<em style="color:var(--gray-mid);font-size:12px;">Keine weiteren Inhalte.</em>'}</div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3991,7 +4039,7 @@ function renderTeamsPage(){
   const u=state.currentUser;const myTeam=getMyTeam();
   document.getElementById('teamsGrid').innerHTML=sorted.map((team,i)=>{
     const profit=team.revenue-team.expenses;
-    const roi=((profit/5)*100).toFixed(0);
+    const roi=((profit/(team.capital||5))*100).toFixed(0);
     const progress=Math.min((team.revenue/team.weekGoal)*100,100).toFixed(0);
     const rankCls=i===0?'top1':i===1?'top2':i===2?'top3':'';
     const isMe=myTeam&&team.id===myTeam.id;
@@ -5385,8 +5433,9 @@ function renderKonzept(){
           ['v0.8.1','🛠️ 14 Bugfixes &amp; Features: (1) CSV-Export mit Team/Wochen-Filtern; (2) Admin-Berichte-Tab mit Filtern; (3) Testmodus-Datentrennung fix; (4) Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung; (5) Aktivitätslog trackt alle Aktionen; (6) Blog-Dropdown-Fix; (7) Passwort-Reset-Flow + Login via E-Mail; (8) E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out; (9) Firebase Write-Nonce (Nachrichten-Fix); (10) Reflexions-Status-Badges klickbar; (11) Hochschulen bearbeiten/löschen; (12) Telefon/Büro im Dozenten-Profil; (13) Papierkorb-Wiederherstellung; (14) Live-Checkbox entfernt, Admin-Profil-Tab'],
           ['v0.8.1.1','🐛 4 Bugfixes: (1) GdW Eigene Einschätzung: Expliziter Speichern-Button mit sofortiger Auswertungsaktualisierung; (2) Erinnerungssystem: 24h-Vorlauf – Reflexion freitags, Bericht+Buchungen samstags, auto-Trigger nach Login; (3) Reflexionen: Team-Filter jetzt auch für Karten aktiv (fix), CSV-Export robuster, PDF-Export hinzugefügt; (4) Berichte: Volltext-Leseansicht (Button + neues Fenster), CSV enthält alle Felder, PDF-Export hinzugefügt'],
           ['v0.8.2','✨ 5 neue Features: (1) Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche; (2) Dashboard: Laufende Woche als prominente Stat-Karte; (3) Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger (Teams sehen nur sich selbst); (4) Stimmungsbarometer reagiert jetzt auf Team- und Wochenfilter; (5) Blog-Tab: b.tags-Crash behoben, informativere Leer-Zustand-Meldungen, Admin sieht alle Berichte inkl. ausstehende, Freigabe-Button direkt im Blog-Tab'],
-          ['v0.8.2.2','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe'],
-          ['v0.8.2.2','🛠️ 2 Verbesserungen: (1) Team-Verwaltung: Aktive Teams werden jetzt oben angezeigt, freie Slots darunter – und nach Abschluss von KW1 werden leere Slots automatisch ausgeblendet; (2) Gruppe der Woche: Wochenauswahl-Dropdown ermöglicht nachträgliche Bewertung vergangener Wochen (Woche auswählen → Scoring + Auszeichnung für beliebige Woche)', true],
+          ['v0.8.3','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe'],
+          ['v0.8.2.2','🛠️ 2 Verbesserungen: (1) Team-Verwaltung: Aktive Teams werden jetzt oben angezeigt, freie Slots darunter – und nach Abschluss von KW1 werden leere Slots automatisch ausgeblendet; (2) Gruppe der Woche: Wochenauswahl-Dropdown ermöglicht nachträgliche Bewertung vergangener Wochen (Woche auswählen → Scoring + Auszeichnung für beliebige Woche)'],
+          ['v0.8.3','✨ 3 Features &amp; Bugfixes: (1) Berichte-Tab: Volltext-Anzeige aller Wochenberichte mit Aufklapp-Funktion, CEO-Button nur für CEO sichtbar; (2) Berichte-Tab: Neue Sektion „Meine Reflexionen" mit allen eigenen vergangenen Reflexionen (nur für den jeweiligen User einsehbar); (3) ROI-Berechnung nutzt jetzt das tatsächliche Startkapital statt hartkodierter 5€; (4) Bugfix: mergeDuplicateMember überträgt E-Mail und Passwort-Hash auf kept-Member – behebt Login-Probleme nach Duplikat-Zusammenführung', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -6060,6 +6109,15 @@ function mergeDuplicateMember(keepId, deleteId){
   if(team&&team.mvps) team.mvps.forEach(mv=>{if(mv.memberId===deleteId) mv.memberId=keepId;});
   if(team&&team.mvpOverride) Object.keys(team.mvpOverride).forEach(w=>{if(team.mvpOverride[w]===deleteId) team.mvpOverride[w]=keepId;});
   // Remove duplicate member
+  // Migrate email: copy from deleted to kept if kept has none
+  if(!keep.email && del.email) keep.email = del.email;
+  // Migrate password hash: copy from deleted code to kept code if kept has no password
+  if(del.code && keep.code && PASSWORDS){
+    if(!PASSWORDS[keep.code] && PASSWORDS[del.code]){
+      PASSWORDS[keep.code] = PASSWORDS[del.code];
+    }
+    delete PASSWORDS[del.code]; // Remove orphaned password entry
+  }
   const idx=MEMBERS.findIndex(m=>m.id===deleteId);
   if(idx>=0) MEMBERS.splice(idx,1);
   rebuildCodes(); saveData();
