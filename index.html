@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.3)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.4)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,11 +747,16 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.3</div>
+ <div class="version-footer" id="versionFooter">v0.8.4</div>
 </div>
 
 <!-- APP -->
 <div id="appShell">
+ <!-- IMPERSONATION BANNER -->
+ <div id="impersonationBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#1D4ED8;color:white;padding:8px 16px;font-size:13px;font-weight:600;align-items:center;justify-content:space-between;gap:12px;">
+   <span>👁️ Admin-Vorschau als: <strong id="impersonationName"></strong></span>
+   <button onclick="exitMemberImpersonation()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:white;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">✕ Vorschau beenden</button>
+ </div>
  <div class="topbar">
   <div class="topbar-brand">
    <div class="logo">5&#8364;</div>
@@ -840,7 +845,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="profile-panel" id="myteamPanel-blogs">
      <div class="section-header">
       <div class="section-title">&#128221; Wochenberichte</div>
-      <button class="btn btn-outline btn-sm" id="btnSubmitBlog" onclick="openModal('modalBlog')">+ Bericht einreichen</button>
+      <button class="btn btn-outline btn-sm" id="btnSubmitBlog" onclick="openBlogModal()">+ Bericht einreichen</button>
      </div>
      <div id="myBlogList"></div>
      <div style="margin-top:28px;">
@@ -966,6 +971,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <button class="admin-tab" onclick="switchAdminTab('messaging')">&#9993;&#65039; Nachrichten</button>
      <button class="admin-tab" onclick="switchAdminTab('papierkorb')" id="adminTabPapierkorb">&#128465;&#65039; Papierkorb <span class="notif-dot" id="pkorCount" style="background:#888;display:none;">0</span></button>
      <button class="admin-tab" onclick="switchAdminTab('admin-profil')">&#128100; Mein Profil</button>
+     <button class="admin-tab" onclick="switchAdminTab('user-view');renderUserViewPanel()">&#128065;&#65039; User-Ansicht</button>
     </div>
     <div class="admin-panel active" id="adminPanel-approval">
      <div class="section-header"><div class="section-title admin-title">Blog-Berichte zur Freigabe</div><button class="btn btn-success btn-sm" onclick="approveAll()">&#9989; Alle freigeben</button></div>
@@ -1033,6 +1039,17 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="admin-panel" id="adminPanel-messaging"><div id="messagingContent"></div></div>
     <div class="admin-panel" id="adminPanel-papierkorb"><div id="pkorContent"></div></div>
     <div class="admin-panel" id="adminPanel-admin-profil"><div id="adminProfilContent"></div></div>
+    <div class="admin-panel" id="adminPanel-user-view">
+      <div class="section-header"><div class="section-title admin-title">&#128065;&#65039; User-Ansicht (Admin-Vorschau)</div></div>
+      <div class="info-box blue" style="margin-bottom:16px;">Als Admin kannst Du hier die App aus Sicht eines bestimmten Mitglieds erleben. Du siehst genau das, was das Mitglied sieht — inklusive aller Wochenberichte und Feedback.</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <select id="impersonateSelect" style="flex:1;min-width:200px;padding:8px 12px;border:1.5px solid #CBD5E1;border-radius:8px;font-size:14px;background:white;">
+          <option value="">— Mitglied auswählen —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="startMemberImpersonation()">&#128065;&#65039; Als dieses Mitglied anmelden</button>
+      </div>
+      <div id="userViewInfo" style="color:#64748B;font-size:13px;"></div>
+    </div>
    </div>
   </div>
 
@@ -1638,7 +1655,7 @@ function _setupRealtimeListener(){
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
       // Re-render current view if app is running - use renderCurrentView (no saveData)
       if(state && state.currentPage && state.currentUser){
-        try{ renderCurrentView(); }catch(e){}
+        try{ renderCurrentView(); }catch(e){console.warn('[VentureLab] renderCurrentView error after remote update:',e);}
       }
       _setFbStatus('online','Online');
       showToast('🔄 Daten von anderem Gerät aktualisiert','info',2500);
@@ -1888,6 +1905,7 @@ function ensureDefaultSetupCodes(){
 // ════════════════════════════════════════════════════════════════════
 let state = {
   currentUser: null,
+  prevUser: null,       // v0.8.4: holds prior user during impersonation
   managingGameId: null, // superadmin managing a specific game
   lang: 'de',
   currentPage: 'dashboard',
@@ -2392,7 +2410,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.4)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -2402,7 +2420,7 @@ function setLoginLang(lang){
     document.getElementById('lt_back').textContent='Back';
     document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.1)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.4)</span>';
     document.getElementById('lt_noCode').textContent='Noch kein Code?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
     document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
@@ -2679,6 +2697,7 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
   window._testMode=false;
   sessionStorage.removeItem('venturelab_session');
   state.currentUser=null;state.prevUser=null;
+  const _ib=document.getElementById('impersonationBanner');if(_ib)_ib.style.display='none';
   document.getElementById('appShell').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   const vf=document.getElementById('versionFooter');if(vf)vf.style.display='block';
@@ -3804,14 +3823,15 @@ function openAdminKassenbuch(teamId){
 function renderMyBlogs(team){
   const me=getMyMember();
   const isCeo=me&&me.role==='CEO';
-  // All blogs: approved/pending visible to all; drafts only to CEO
-  const myBlogs=BLOGS.filter(b=>b.teamId===team.id&&(b.status!=='draft'||isCeo));
+  // v0.8.4: all statuses (incl. drafts) visible to all team members
+  const myBlogs=BLOGS.filter(b=>b.teamId===team.id);
   const el=document.getElementById('myBlogList');
-  // Disable submit button if week already submitted or user is not CEO
+  // v0.8.4: button visible to all; label differs by role; submit gated in submitBlog()
   const submitBtn=document.getElementById('btnSubmitBlog');
   if(submitBtn){
     submitBtn.disabled=team.weekStatus==='submitted';
-    submitBtn.style.display=isCeo?'':'none';
+    submitBtn.style.display='';
+    submitBtn.textContent=isCeo?'+ Bericht einreichen':'📝 Bericht bearbeiten';
   }
   if(myBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';}
   else{
@@ -3820,10 +3840,12 @@ function renderMyBlogs(team){
       const hasBody=(b.body||'').trim().length>0;
       const sections=[
         b.highlight?`<div style="margin-top:10px;background:#FFFBEB;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#92400E;text-transform:uppercase;">⭐ Highlight</span><div style="font-size:13px;margin-top:3px;">${b.highlight}</div></div>`:'',
-        b.challenge?`<div style="margin-top:8px;background:#FFF7ED;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#C2410C;text-transform:uppercase;">⚠️ Herausforderung</span><div style="font-size:13px;margin-top:3px;">${b.challenge}</div></div>`:'',
+        b.challenges?`<div style="margin-top:8px;background:#FFF7ED;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#C2410C;text-transform:uppercase;">⚠️ Herausforderungen</span><div style="font-size:13px;margin-top:3px;">${b.challenges}</div></div>`:'',
         b.nextSteps?`<div style="margin-top:8px;background:#F0FFF4;border-radius:6px;padding:8px 12px;"><span style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;">▶️ Nächste Schritte</span><div style="font-size:13px;margin-top:3px;">${b.nextSteps}</div></div>`:'',
         hasBody?`<div style="margin-top:8px;"><span style="font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;">Aktivitäten</span><div style="font-size:13px;margin-top:3px;color:var(--gray-dark);white-space:pre-wrap;">${b.body}</div></div>`:''
       ].filter(Boolean).join('');
+      // v0.8.4: adminFeedback always visible (not inside collapsible)
+      const feedbackHtml=b.adminFeedback?`<div style="margin-top:10px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:6px;padding:8px 12px;"><div style="font-size:10px;font-weight:700;color:#1D4ED8;text-transform:uppercase;margin-bottom:3px;">💬 Feedback vom Betreuer</div><div style="font-size:13px;color:#1E3A8A;white-space:pre-wrap;">${b.adminFeedback}</div></div>`:'';
       return `<div class="card" style="margin-bottom:12px;">
         <div class="card-body" style="padding:12px 16px;">
           <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;">
@@ -3831,9 +3853,10 @@ function renderMyBlogs(team){
               <div style="font-size:14px;font-weight:700;color:var(--blue-dark);">${b.title}</div></div>
             <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
           </div>
+          ${feedbackHtml}
           ${sections?`<div id="${uid}" style="display:none;">${sections}</div>
           <button class="btn btn-outline btn-xs" style="margin-top:8px;" onclick="const d=document.getElementById('${uid}');const open=d.style.display==='block';d.style.display=open?'none':'block';this.textContent=open?'📖 Volltext lesen':'🔼 Einklappen';">📖 Volltext lesen</button>`:''}
-          ${b.status==='draft'&&isCeo?'<button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="openDraftForEdit(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
+          ${b.status==='draft'?'<button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="openBlogModal(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
         </div>
       </div>`;
     }).join('');
@@ -4226,11 +4249,24 @@ function openDraftForEdit(blogId){
   setTimeout(function(){
     if(document.getElementById('blogTitle')) document.getElementById('blogTitle').value=b.title||'';
     if(document.getElementById('blogWeek')) document.getElementById('blogWeek').value='Woche '+b.week;
-    // body is stored as pipe-joined string - pre-fill activities field
     if(document.getElementById('blogActivities')) document.getElementById('blogActivities').value=b.body||'';
+    if(document.getElementById('blogHighlight')) document.getElementById('blogHighlight').value=b.highlight||'';
+    if(document.getElementById('blogChallenges')) document.getElementById('blogChallenges').value=b.challenges||'';
+    if(document.getElementById('blogNextSteps')) document.getElementById('blogNextSteps').value=b.nextSteps||'';
     if(document.getElementById('blogTags')) document.getElementById('blogTags').value=(b.tags||[]).join(', ');
     updateBlogReflectionStatus();
   },100);
+}
+// v0.8.4: unified blog modal opener for all team members
+function openBlogModal(blogId){
+  if(blogId) openDraftForEdit(blogId);
+  else openModal('modalBlog');
+  setTimeout(function(){
+    const me=getMyMember();
+    const isCeo=me&&me.role==='CEO';
+    const sbtn=document.getElementById('blogSubmitBtn');
+    if(sbtn) sbtn.style.display=isCeo?'':'none';
+  },80);
 }
 function updateLiveIndicator(){
   return;
@@ -5435,7 +5471,8 @@ function renderKonzept(){
           ['v0.8.2','✨ 5 neue Features: (1) Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche; (2) Dashboard: Laufende Woche als prominente Stat-Karte; (3) Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger (Teams sehen nur sich selbst); (4) Stimmungsbarometer reagiert jetzt auf Team- und Wochenfilter; (5) Blog-Tab: b.tags-Crash behoben, informativere Leer-Zustand-Meldungen, Admin sieht alle Berichte inkl. ausstehende, Freigabe-Button direkt im Blog-Tab'],
           ['v0.8.3','🐛 6 Fixes &amp; Features: (1) Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung (z.B. "Florian K." vs. "Florian M."); (2) Reflexionen-Badge: Pill-Form statt Kreis (passt jetzt "19/20"), Zähllogik pro-Team statt globalem Min; (3) Superadmin: neuer Tab "Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export; (4) Superadmin Reflexionen: Volltextanzeige ohne Kürzung; (5) Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges; (6) Firebase-Sync-Bugfix: _fbWriting=true sofort bei saveData() gesetzt – verhindert Race Condition bei Blog-Freigabe'],
           ['v0.8.2.2','🛠️ 2 Verbesserungen: (1) Team-Verwaltung: Aktive Teams werden jetzt oben angezeigt, freie Slots darunter – und nach Abschluss von KW1 werden leere Slots automatisch ausgeblendet; (2) Gruppe der Woche: Wochenauswahl-Dropdown ermöglicht nachträgliche Bewertung vergangener Wochen (Woche auswählen → Scoring + Auszeichnung für beliebige Woche)'],
-          ['v0.8.3','✨ 3 Features &amp; Bugfixes: (1) Berichte-Tab: Volltext-Anzeige aller Wochenberichte mit Aufklapp-Funktion, CEO-Button nur für CEO sichtbar; (2) Berichte-Tab: Neue Sektion „Meine Reflexionen" mit allen eigenen vergangenen Reflexionen (nur für den jeweiligen User einsehbar); (3) ROI-Berechnung nutzt jetzt das tatsächliche Startkapital statt hartkodierter 5€; (4) Bugfix: mergeDuplicateMember überträgt E-Mail und Passwort-Hash auf kept-Member – behebt Login-Probleme nach Duplikat-Zusammenführung', true],
+          ['v0.8.3','✨ 3 Features &amp; Bugfixes: (1) Berichte-Tab: Volltext-Anzeige aller Wochenberichte mit Aufklapp-Funktion, CEO-Button nur für CEO sichtbar; (2) Berichte-Tab: Neue Sektion „Meine Reflexionen" mit allen eigenen vergangenen Reflexionen (nur für den jeweiligen User einsehbar); (3) ROI-Berechnung nutzt jetzt das tatsächliche Startkapital statt hartkodierter 5€; (4) Bugfix: mergeDuplicateMember überträgt E-Mail und Passwort-Hash auf kept-Member – behebt Login-Probleme nach Duplikat-Zusammenführung'],
+          ['v0.8.4','🔍 3 Features &amp; 5 Bugfixes: (1) Wochenberichte vollständig für alle Teammitglieder sichtbar inkl. Admin-Feedback (blauer Kasten); (2) Bericht bearbeitbar für alle Mitglieder – Einreichen weiterhin nur CEO; (3) Admin-Vorschau als User (Impersonation): neuer Tab mit Mitglieder-Auswahl, blauer Vorschau-Banner, Schreibschutz während Vorschau; (4) Fix: b.challenge→b.challenges (Herausforderungen wurden nie angezeigt); (5) Fix: openDraftForEdit befüllt jetzt alle Felder (Highlight, Herausforderungen, Nächste Schritte); (6) Fix: isCeo-Logik in openBlogModal korrigiert; (7) Fix: gameId-Vererbung bei Impersonation; (8) Vollständiger Code-Audit: 8 Bugs gefunden und behoben', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
@@ -5669,6 +5706,7 @@ function handleReceiptUpload(e){
   reader.readAsDataURL(file);
 }
 function submitBooking(){
+  if(state.currentUser?._impersonating){showToast('⛔ Schreiben nicht möglich im Vorschau-Modus','error');return;}
   const desc=document.getElementById('bDesc').value.trim();
   const amt=parseFloat(document.getElementById('bAmount').value);
   if(!desc||!amt){showToast('Pflichtfelder fehlen','error');return;}
@@ -5699,6 +5737,7 @@ function submitBooking(){
 }
 
 function submitBlog(){
+  if(state.currentUser?._impersonating){showToast('⛔ Schreiben nicht möglich im Vorschau-Modus','error');return;}
   const title=document.getElementById('blogTitle').value.trim();
   if(!title){showToast('Bitte Titel angeben','error');return;}
   const team=getMyTeam();if(!team)return;
@@ -5739,6 +5778,7 @@ function submitBlog(){
   if(state.currentPage==='myteam'){renderWeekSteps(team);renderMyTeamPanel(state.currentMyTeamTab);}
 }
 function saveBlogDraft(){
+  if(state.currentUser?._impersonating){showToast('⛔ Schreiben nicht möglich im Vorschau-Modus','error');return;}
   const team=getMyTeam();if(!team) return;
   const title=document.getElementById('blogTitle').value.trim()||'(Entwurf)';
   const w=parseInt((document.getElementById('blogWeek').value||'Woche 1').replace('Woche ',''))||team.currentWeek||1;
@@ -5761,6 +5801,7 @@ function saveBlogDraft(){
 }
 
 function submitReflection(){
+  if(state.currentUser?._impersonating){showToast('⛔ Schreiben nicht möglich im Vorschau-Modus','error');return;}
   const m=getMyMember();if(!m){showToast('Nur für Mitglieder','error');return;}
   const exp=document.getElementById('refExperience').value.trim();
   const liked=document.getElementById('refLiked').value.trim();
@@ -6590,6 +6631,62 @@ function returnToSuperAdminFromImpersonation(){
     navigateTo('superadmin');
     showToast('Zurueck als Superadmin','success');
   }
+}
+// v0.8.4: Member impersonation for admin
+function renderUserViewPanel(){
+  const sel=document.getElementById('impersonateSelect');
+  if(!sel) return;
+  const currentVal=sel.value;
+  sel.innerHTML='<option value="">— Mitglied auswählen —</option>';
+  MEMBERS.filter(m=>m.gameId===state.currentUser.gameId).forEach(m=>{
+    const team=TEAMS.find(t=>t.id===m.teamId);
+    const opt=document.createElement('option');
+    opt.value=m.id;
+    opt.textContent=(m.name||m.id)+' ('+(team?team.name:'kein Team')+', '+(m.role||'member')+')';
+    sel.appendChild(opt);
+  });
+  if(currentVal) sel.value=currentVal;
+  const info=document.getElementById('userViewInfo');
+  if(info) info.textContent=MEMBERS.filter(m=>m.gameId===state.currentUser.gameId).length+' Mitglieder geladen.';
+}
+function startMemberImpersonation(){
+  const sel=document.getElementById('impersonateSelect');
+  if(!sel||!sel.value){showToast('Bitte ein Mitglied auswählen','error');return;}
+  const member=MEMBERS.find(m=>m.id===sel.value);
+  if(!member){showToast('Mitglied nicht gefunden','error');return;}
+  state.prevUser=state.currentUser;
+  // Derive the member's gameId from their team, fallback to admin's gameId
+  const memberTeam=TEAMS.find(t=>t.id===member.teamId);
+  const memberGameId=memberTeam?.gameId||member.gameId||state.currentUser.gameId;
+  // Build a minimal user object that looks like a logged-in member
+  state.currentUser={
+    ...state.currentUser,
+    name: member.name||member.id,
+    memberId: member.id,
+    role: 'member',
+    teamId: member.teamId,
+    gameId: memberGameId,
+    _impersonating: true,
+    _impersonatingName: member.name||member.id,
+  };
+  // Show impersonation banner
+  const banner=document.getElementById('impersonationBanner');
+  const nameEl=document.getElementById('impersonationName');
+  if(banner){banner.style.display='flex';}
+  if(nameEl){nameEl.textContent=(member.name||member.id);}
+  buildNavigation();updateTopbar();
+  navigateTo('myteam');
+  showToast('👁️ Vorschau als '+( member.name||member.id)+'  — "Vorschau beenden" zum Zurückkehren','info');
+}
+function exitMemberImpersonation(){
+  if(!state.prevUser) return;
+  state.currentUser=state.prevUser;
+  state.prevUser=null;
+  const banner=document.getElementById('impersonationBanner');
+  if(banner) banner.style.display='none';
+  buildNavigation();updateTopbar();
+  navigateTo('admin');
+  showToast('Admin-Ansicht wiederhergestellt','success');
 }
 function backToSuperAdmin(){
   state.managingGameId = null;
