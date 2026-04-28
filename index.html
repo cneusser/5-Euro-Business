@@ -2942,6 +2942,8 @@ function renderDokumente(){
     +'<input class="form-control" id="gameAdminEmail" value="'+(game.adminEmail||'')+'" placeholder="dozent@hochschule.de"></div>'
     +'<div class="form-group"><label class="form-label">noreply-Domain</label>'
     +'<input class="form-control" id="gameNoreply" value="'+(game.noreplyDomain||'5euro-business.de')+'"></div>'
+    +'<div class="form-group"><label class="form-label">Anzahl Runden</label>'
+    +'<input class="form-control" id="gameMaxWeeks" type="number" min="1" max="12" value="'+(game.maxWeeks||6)+'" style="max-width:80px;" title="Wie viele Wochen läuft das Spiel?"></div>'
     +'</div>'
     +'<button class="btn btn-primary btn-sm" onclick=\"saveGameSettings(\''+game.id+'\')">Speichern</button>'
     +'&nbsp;&nbsp;<button class="btn btn-secondary btn-sm" onclick=\"closeGame(\''+game.id+'\') " style="background:var(--orange)!important;color:white!important;" title="Spiel abschließen – keine neuen Buchungen mehr möglich">🔒 Spiel abschließen</button>'
@@ -3156,10 +3158,12 @@ function saveGameSettings(gameId){
   if(!game) return;
   game.adminEmail=document.getElementById('gameAdminEmail').value.trim();
   game.noreplyDomain=document.getElementById('gameNoreply').value.trim();
+  const mw=parseInt(document.getElementById('gameMaxWeeks')?.value);
+  if(mw&&mw>=1&&mw<=12) game.maxWeeks=mw;
   saveData();
   updateLiveIndicator();
   showToast('Gespeichert','success');
-  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail});
+  logEvent('game_settings_save',{gameId,adminEmail:game.adminEmail,maxWeeks:game.maxWeeks});
 }
 
 
@@ -3540,7 +3544,8 @@ function renderMyTeam(){
 }
 
 function renderWeekSteps(team){
-  const totalWeeks=6;
+  const _wsGame=GAMES.find(g=>g.id===team.gameId);
+  const totalWeeks=_wsGame?.maxWeeks||6;
   const el=document.getElementById('weekSteps');
   el.innerHTML=Array.from({length:totalWeeks},(_,i)=>{
     const w=i+1;
@@ -3589,10 +3594,13 @@ function renderMyTeamOverview(team){
       <div class="member-avatar" style="background:${team.color};width:44px;height:44px;">${m?.avatarDataUrl?`<img src="${m.avatarDataUrl}">`:(m?.name?.charAt(0)||'?')}</div>
       <div><div style="font-weight:700;font-size:14px;">${m?.name||'—'}</div><div style="font-size:12px;color:var(--gray-mid);">${mv.reason}</div></div>
       <span class="mvp-badge" style="margin-left:auto;">🏆 MVP W${mv.week}</span></div></div>`;}).join('');
-  // Blog status
+  // Blog status – v0.8.6: use game.maxWeeks, pick best status when duplicate entries exist
+  const _bsGame=GAMES.find(g=>g.id===team.gameId);
+  const _bsMax=_bsGame?.maxWeeks||6;
   document.getElementById('myTeamBlogStatus').innerHTML=`<div class="section-header"><div class="section-title">📋 Berichtsstatus</div></div>`+
-    [1,2,3,4,5,6].map(w=>{
-      const blog=BLOGS.find(b=>b.teamId===team.id&&b.week===w);
+    Array.from({length:_bsMax},(_,i)=>i+1).map(w=>{
+      const _bws=BLOGS.filter(b=>b.teamId===team.id&&b.week===w);
+      const blog=_bws.find(b=>b.status==='approved')||_bws.find(b=>b.status==='pending')||_bws.find(b=>b.status==='submitted')||_bws[0];
       const s=blog?blog.status:'missing';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:white;border-radius:8px;margin-bottom:6px;box-shadow:var(--shadow);">
         <span style="font-size:13px;font-weight:600;">Woche ${w}</span>
@@ -3841,8 +3849,10 @@ function openAdminKassenbuch(teamId){
 function renderMyBlogs(team){
   const me=getMyMember();
   const isCeo=me&&me.role==='CEO';
-  // v0.8.5: all statuses (incl. drafts) visible to all team members
+  // v0.8.6: hide drafts for weeks where a submitted/approved version already exists
   const myBlogs=BLOGS.filter(b=>b.teamId===team.id);
+  const nonDraftWeeks=new Set(myBlogs.filter(b=>b.status!=='draft').map(b=>b.week));
+  const displayBlogs=myBlogs.filter(b=>!(b.status==='draft'&&nonDraftWeeks.has(b.week)));
   const el=document.getElementById('myBlogList');
   // v0.8.5: button visible to all; label differs by role; submit gated in submitBlog()
   const submitBtn=document.getElementById('btnSubmitBlog');
@@ -3851,9 +3861,9 @@ function renderMyBlogs(team){
     submitBtn.style.display='';
     submitBtn.textContent=isCeo?'+ Bericht einreichen':'📝 Bericht bearbeiten';
   }
-  if(myBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';}
+  if(displayBlogs.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div><h3>Noch keine Berichte</h3><p>Reiche deinen ersten Wochenbericht ein!</p></div>';}
   else{
-    el.innerHTML=myBlogs.sort((a,b)=>b.week-a.week).map(b=>{
+    el.innerHTML=displayBlogs.sort((a,b)=>b.week-a.week).map(b=>{
       const uid='blog-expand-'+b.id;
       const hasBody=(b.body||'').trim().length>0;
       const sections=[
@@ -6152,6 +6162,11 @@ window.openModal=function(id){
   if(id==='modalBlog'){
     const team=getMyTeam();
     const w=team?.currentWeek||1;
+    // v0.8.6: populate week select from game.maxWeeks
+    const _bgGame=team?GAMES.find(g=>g.id===team.gameId):null;
+    const _bgMax=_bgGame?.maxWeeks||6;
+    const _bwSel=document.getElementById('blogWeek');
+    if(_bwSel){_bwSel.innerHTML=Array.from({length:_bgMax},(_,i)=>`<option>Woche ${i+1}</option>`).join('');}
     setTimeout(()=>populateCustomQuestionsModal('blog',w),30);
     document.getElementById('blogWeek').value='Woche '+w;
     // Reset fields
@@ -6161,6 +6176,11 @@ window.openModal=function(id){
   }
   if(id==='modalReflection'){
     const me=getMyMember();const team=getMyTeam();const w=team?.currentWeek||1;
+    // v0.8.6: populate week select from game.maxWeeks
+    const _rfGame=team?GAMES.find(g=>g.id===team.gameId):null;
+    const _rfMax=_rfGame?.maxWeeks||6;
+    const _rfSel=document.getElementById('refWeek');
+    if(_rfSel){_rfSel.innerHTML=Array.from({length:_rfMax},(_,i)=>`<option>Woche ${i+1}</option>`).join('');}
     setTimeout(()=>populateCustomQuestionsModal('reflection',w),30);
     if(document.getElementById('refWeek')) document.getElementById('refWeek').value='Woche '+w;
     // ALWAYS clear text fields first (prevents showing another member's data)
