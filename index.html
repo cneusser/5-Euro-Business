@@ -472,7 +472,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.5)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.6)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:8px;">
@@ -747,7 +747,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.5</div>
+ <div class="version-footer" id="versionFooter">v0.8.6</div>
 </div>
 
 <!-- APP -->
@@ -2428,7 +2428,7 @@ function setLoginLang(lang){
   document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
   document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.5)</span>';
+    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.6)</span>';
     document.getElementById('lt_noCode').textContent='No code yet?';
     document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
     document.getElementById('lt_pwdFor').textContent='Password for:';
@@ -3872,10 +3872,10 @@ function renderMyBlogs(team){
             <span class="blog-status status-${b.status}">${b.status==='approved'?'✅ Freigegeben':b.status==='pending'?'⏳ In Prüfung':b.status==='rejected'?'❌ Abgelehnt':'📄 Entwurf'}</span>
           </div>
           ${feedbackHtml}
-          ${sections?`<div id="${uid}" style="display:none;">${sections}</div>
-          <button class="btn btn-outline btn-xs" style="margin-top:8px;" onclick="const d=document.getElementById('${uid}');const open=d.style.display==='block';d.style.display=open?'none':'block';this.textContent=open?'📖 Volltext lesen':'🔼 Einklappen';">📖 Volltext lesen</button>`:''}
+          ${sections?`<div id="${uid}" style="display:${b.status==='approved'?'block':'none'};">${sections}</div>
+          <button class="btn btn-outline btn-xs" style="margin-top:8px;" onclick="const d=document.getElementById('${uid}');const open=d.style.display==='block';d.style.display=open?'none':'block';this.textContent=open?'📖 Volltext lesen':'🔼 Einklappen';">${b.status==='approved'?'🔼 Einklappen':'📖 Volltext lesen'}</button>`:''}
           ${b.attachments&&b.attachments.length?_renderAttachmentLinks(b.attachments):''}
-          ${b.status==='draft'?'<button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="openBlogModal(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
+          ${b.status==='draft'&&b.week===team.currentWeek?'<button class="btn btn-outline btn-xs" style="margin-top:6px;" onclick="openBlogModal(\''+b.id+'\')">✏️ Weiterschreiben</button>':''}
         </div>
       </div>`;
     }).join('');
@@ -6164,7 +6164,7 @@ window.openModal=function(id){
     setTimeout(()=>populateCustomQuestionsModal('reflection',w),30);
     if(document.getElementById('refWeek')) document.getElementById('refWeek').value='Woche '+w;
     // ALWAYS clear text fields first (prevents showing another member's data)
-    ['refExperience','refWell','refImproved','refRole'].forEach(fid=>{
+    ['refExperience','refLiked','refImproved','refRole'].forEach(fid=>{
       const el=document.getElementById(fid);if(el) el.value='';
     });
     // reset mood buttons to neutral
@@ -6175,7 +6175,7 @@ window.openModal=function(id){
       const existing=REFLECTIONS.find(r=>r.memberId===me.id&&r.week===w);
       if(existing){
         if(document.getElementById('refExperience')) document.getElementById('refExperience').value=existing.experience||'';
-        if(document.getElementById('refWell')) document.getElementById('refWell').value=existing.well||'';
+        if(document.getElementById('refLiked')) document.getElementById('refLiked').value=existing.liked||'';
         if(document.getElementById('refImproved')) document.getElementById('refImproved').value=existing.improved||'';
         if(document.getElementById('refRole')) document.getElementById('refRole').value=existing.role||'';
         // set mood from existing
