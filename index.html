@@ -486,7 +486,10 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <span style="font-size:20px;">&#128273;</span>
      <span style="text-align:left;"><strong style="display:block;font-size:13px;" id="lt_codeBtn">Zugangscode</strong><small style="font-size:11px;opacity:.75;" id="lt_codeSub">Code + Passwort</small></span>
     </button>
-    <button onclick="showTestMode()" id="lt_testModeBtn" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;text-decoration:underline;width:100%;margin-bottom:8px;">&#129514; Demo / Testmodus</button>
+    <button class="login-btn" onclick="showTestMode()" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:13px 16px;background:linear-gradient(135deg,#b45309,#92400e);">
+     <span style="font-size:20px;">&#129514;</span>
+     <span style="text-align:left;"><strong style="display:block;font-size:13px;" id="lt_testModeBtn">Demo / Testmodus</strong><small style="font-size:11px;opacity:.75;" id="lt_testModeSub">Demo-Daten, kein Login n&#246;tig</small></span>
+    </button>
     <a href="https://www.buymeacoffee.com/cneusser" target="_blank" rel="noopener"
        style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;text-decoration:none;background:linear-gradient(135deg,#4A60CC,#5F7FFF);color:white;font-family:inherit;transition:opacity .2s;"
        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
@@ -2537,7 +2540,8 @@ function setLoginLang(lang){
     _t('lt_magicLinkSub','Passwordless &amp; secure');
     _t('lt_codeBtn','Access Code');
     _t('lt_codeSub','Code + Password');
-    _t('lt_testModeBtn','&#129514; Demo / Test mode');
+    _t('lt_testModeBtn','Demo / Test mode');
+    _t('lt_testModeSub','Demo data, no login needed');
     _t('lt_coffeeTitle','Support VentureLab');
     _t('lt_coffeeSub','Support this project \u2013 Buy Me a Coffee');
     // Magic Link flow
@@ -2574,7 +2578,8 @@ function setLoginLang(lang){
     _t('lt_magicLinkSub','Passwortlos &amp; sicher');
     _t('lt_codeBtn','Zugangscode');
     _t('lt_codeSub','Code + Passwort');
-    _t('lt_testModeBtn','&#129514; Demo / Testmodus');
+    _t('lt_testModeBtn','Demo / Testmodus');
+    _t('lt_testModeSub','Demo-Daten, kein Login nötig');
     _t('lt_coffeeTitle','Support VentureLab');
     _t('lt_coffeeSub','Dieses Projekt unterst\u00fctzen \u2013 Buy Me a Coffee');
     // Magic Link flow
