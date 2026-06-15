@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "5euro_tracker_v5": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

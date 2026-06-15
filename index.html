@@ -11,6 +11,7 @@
 <!-- Firebase SDK (Realtime Database) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -463,291 +464,63 @@ textarea.form-control{resize:vertical;min-height:70px;}
 <div id="loginScreen">
  <div class="login-card" id="loginCard">
 
-  <!-- ── LOGIN MODE ──────────────────────────────────── -->
+  <!-- Language toggle -->
   <div class="lang-toggle">
    <button class="lang-btn active" id="langBtnDE" onclick="setLoginLang('de')">DE</button>
    <button class="lang-btn" id="langBtnEN" onclick="setLoginLang('en')">EN</button>
   </div>
 
+  <!-- ── MAGIC LINK LOGIN ─────────────────────────────── -->
   <div id="loginMode">
    <div class="login-logo">🚀</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.8.6)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span></p>
 
-   <!-- ── MODE SELECT ──────────────────────────────────── -->
-   <div id="loginModeSelect" style="margin-top:8px;">
-    <div style="display:grid;gap:10px;">
-     <button onclick="showLoginStep1()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;">
-      <span style="font-size:24px;">🔑</span>
-      <span><strong id="lt_modeExisting">Vorhandenes Spiel</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeExistingSub">Ich habe bereits einen Zugangscode oder E-Mail</small></span>
-     </button>
-     <button onclick="showRegisterMode()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1a5c2a,#2d8a44);">
-      <span style="font-size:24px;">🆕</span>
-      <span><strong id="lt_modeNew">Neues Spiel</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeNewSub">Ich habe einen Team-Einladungscode (erster Login)</small></span>
-     </button>
-     <button onclick="showTestMode()" class="login-btn" style="padding:14px;text-align:left;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#7B3F00,#B35A00);">
-      <span style="font-size:24px;">🧪</span>
-      <span><strong id="lt_modeTest">Testumgebung</strong><br><small style="opacity:.75;font-size:11px;" id="lt_modeTestSub">Demo-Modus &#8211; alle Rollen ausprobieren</small></span>
-     </button>
-     <a href="https://www.buymeacoffee.com/cneusser" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;text-decoration:none;background:linear-gradient(135deg,#4A60CC,#5F7FFF);border:none;cursor:pointer;color:white;font-family:inherit;transition:opacity .2s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-      <span style="font-size:24px;">☕</span>
-      <span><strong style="font-size:14px;font-weight:700;">Support VentureLab</strong><br><small style="opacity:.8;font-size:11px;">Dieses Projekt unterstützen – Buy Me a Coffee</small></span>
-      <span style="margin-left:auto;font-size:11px;opacity:.75;">↗</span>
-     </a>
-    </div>
-   </div>
-
-   <!-- Step 1: Code (hidden initially, shown after clicking "Vorhandenes Spiel") -->
-   <div id="loginStep1" style="display:none;">
-    <div class="login-input-wrap">
-     <input type="text" id="loginCode" placeholder="ZUGANGSCODE ODER E-MAIL" maxlength="80"
-      oninput="this.value=this.value.toUpperCase().replace(/@/g,s=>s.toLowerCase());showLoginRolePreview(this.value)" onkeypress="if(event.key==='Enter')doLoginStep1()">
-    </div>
-    <div id="loginRolePreview" style="display:none;text-align:center;margin:-4px 0 8px;padding:6px 12px;background:rgba(255,255,255,.12);border-radius:6px;font-size:12px;color:rgba(255,255,255,.9);"></div>
-    <div class="login-error" id="loginError">&#10060; <span id="lt_errCode">Ung&#252;ltiger Code / E-Mail</span></div>
-    <button class="login-btn" onclick="doLoginStep1()">&#128273; Einloggen / Sign In</button>
-    <div style="text-align:center;margin-top:8px;">
-     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zur&#252;ck</button>
-    </div>
-   </div>
-   <!-- Step 2: Password entry -->
-   <div id="loginStep2" style="display:none;">
-    <div style="text-align:center;margin-bottom:6px;font-size:12px;color:#888;" id="lt_pwdFor">Passwort f&#252;r:</div>
-    <div style="text-align:center;font-weight:700;color:var(--blue-dark);margin-bottom:12px;" id="lt_pwdUser"></div>
-    <div class="login-input-wrap">
-     <input type="password" id="loginPwd" placeholder="PASSWORT / PASSWORD" maxlength="64"
-      onkeypress="if(event.key==='Enter')doLoginStep2()">
-    </div>
-    <div class="login-error" id="loginPwdError">&#10060; <span id="lt_errPwd">Falsches Passwort</span></div>
-    <button class="login-btn" onclick="doLoginStep2()" id="lt_pwdBtn">&#128274; Weiter / Continue</button>
-    <div style="text-align:center;margin-top:8px;display:flex;justify-content:center;gap:16px;">
-     <button onclick="loginBack()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; <span id="lt_back">Zur&#252;ck / Back</span></button>
-     <button onclick="showPwdResetRequest()" style="background:none;border:none;color:#6BA3FF;font-size:12px;cursor:pointer;text-decoration:underline;">🔑 Passwort vergessen?</button>
-    </div>
-   </div>
-   <!-- Step 5: Password reset – request -->
-   <div id="loginStep5" style="display:none;">
-    <div style="text-align:center;margin-bottom:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,.9);">🔑 Passwort zurücksetzen</div>
-    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
-     <span class="info-box-icon">ℹ️</span>Gib deine hinterlegte E-Mail-Adresse ein. Du erhältst einen 6-stelligen Reset-Code.
-    </div>
-    <div class="login-input-wrap">
-     <input type="email" id="resetEmail" placeholder="DEINE E-MAIL" maxlength="80" style="text-transform:none!important;"
-      onkeypress="if(event.key==='Enter')sendPwdResetToken()">
-    </div>
-    <div class="login-error" id="loginResetError">&#10060; E-Mail nicht gefunden</div>
-    <button class="login-btn" onclick="sendPwdResetToken()">📧 Reset-Code senden</button>
-    <div style="text-align:center;margin-top:8px;">
-     <button onclick="showLoginStep2()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zurück</button>
-    </div>
-   </div>
-   <!-- Step 6: Password reset – enter token + new password -->
-   <div id="loginStep6" style="display:none;">
-    <div style="text-align:center;margin-bottom:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,.9);">✅ Reset-Code eingeben</div>
-    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
-     <span class="info-box-icon">📧</span>Wir haben dir einen 6-stelligen Code geschickt. Gib ihn unten ein, dann kannst du ein neues Passwort setzen.
-    </div>
-    <div class="login-input-wrap" style="margin-bottom:8px;">
-     <input type="text" id="resetToken" placeholder="RESET-CODE (6 STELLEN)" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:18px;font-weight:700;">
-    </div>
-    <div class="login-input-wrap" style="margin-bottom:8px;">
-     <input type="password" id="resetNewPwd1" placeholder="NEUES PASSWORT" maxlength="64">
-    </div>
-    <div class="login-input-wrap">
-     <input type="password" id="resetNewPwd2" placeholder="PASSWORT BESTÄTIGEN" maxlength="64"
-      onkeypress="if(event.key==='Enter')verifyAndResetPwd()">
-    </div>
-    <div class="login-error" id="loginResetTokenError">&#10060; Code falsch oder abgelaufen</div>
-    <button class="login-btn" onclick="verifyAndResetPwd()">🔒 Passwort neu setzen</button>
-    <div style="text-align:center;margin-top:8px;">
-     <button onclick="showLoginStep5()" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">&#8592; Zurück</button>
-    </div>
-   </div>
-   <!-- Step 3: First-time password setup -->
-   <div id="loginStep3" style="display:none;">
-    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
-     <span class="info-box-icon">&#128274;</span><span id="lt_pwdSetDesc">Willkommen! Lege ein pers&#246;nliches Passwort fest.<br><em>Welcome! Please set a personal password.</em></span>
-    </div>
-    <div class="login-input-wrap" style="margin-bottom:8px;">
-     <input type="password" id="loginNewPwd" placeholder="NEUES PASSWORT / NEW PASSWORD" maxlength="64">
-    </div>
-    <div class="login-input-wrap">
-     <input type="password" id="loginNewPwd2" placeholder="BEST&#196;TIGEN / CONFIRM" maxlength="64"
-      onkeypress="if(event.key==='Enter')doSetFirstPassword()">
-    </div>
-    <div class="login-error" id="loginPwdSetError">&#10060; <span id="lt_errPwdSet">Passw&#246;rter stimmen nicht &#252;berein</span></div>
-    <button class="login-btn" onclick="doSetFirstPassword()" id="lt_setPwdBtn">&#128274; Passwort setzen / Set Password</button>
-    <div style="text-align:center;margin-top:8px;">
-     <button onclick="skipPassword()" style="background:none;border:none;color:#aaa;font-size:11px;cursor:pointer;" id="lt_skipPwd">&#9888; &#220;berspringen (unsicher) / Skip (insecure)</button>
-    </div>
-   </div>
-   <!-- Step 4: Profile completion (for members without profile data) -->
-   <div id="loginStep4" style="display:none;">
-    <div class="info-box blue" style="font-size:11px;margin-bottom:12px;text-align:left;">
-     <span class="info-box-icon">&#128100;</span><span>Bitte vervollst&#228;ndige dein Profil.</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-     <div><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">VORNAME</label>
-      <input type="text" id="profileFirstName" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="Max"></div>
-     <div><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">NACHNAME</label>
-      <input type="text" id="profileLastName" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="Mustermann"></div>
-    </div>
-    <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">E-MAIL</label>
-     <input type="email" id="profileEmail" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="max@dhbw.de"
-      oninput="this.value=this.value.toLowerCase()"></div>
-    <div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">MOBIL (optional)</label>
-     <input type="tel" id="profileMobile" class="form-control" style="border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="+49 160 ..."></div>
-    <button class="login-btn" onclick="saveProfileAndLogin()">&#10003; Profil speichern &amp; einloggen</button>
-    <div style="text-align:center;margin-top:8px;">
-     <button onclick="saveProfileAndLogin()" style="background:none;border:none;color:#aaa;font-size:11px;cursor:pointer;">&#220;berspringen</button>
-    </div>
-   </div>
-  </div>
-
-  <!-- ── REGISTRATION MODE ────────────────────────────── -->
-  <div id="registerMode" style="display:none;">
-   <div class="login-logo" style="font-size:20px;">🆕</div>
-   <h2 class="login-title">Registrierung</h2>
-   <p class="login-sub">Mit Einladungscode dem Team beitreten</p>
-
-   <!-- Step 1: Invite Code -->
-   <div id="regInviteStep">
-    <div style="margin-bottom:12px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:6px;letter-spacing:1px;">TEAM-EINLADUNGSCODE *</label>
-     <input type="text" id="regInviteCode" placeholder="Setup-Code (SETUP-...) oder Einladungscode (TEAM-...)"
-      style="width:100%;padding:11px 14px;border:2px solid #E0E7F0;border-radius:10px;font-size:14px;outline:none;font-family:monospace;font-weight:700;letter-spacing:2px;box-sizing:border-box;"
-      oninput="this.value=this.value.toUpperCase()" onkeypress="if(event.key==='Enter')checkInviteCode()">
-    </div>
-    <div id="regInvitePreview" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;"></div>
-    <div id="regInviteError" style="display:none;color:#C00000;font-size:12px;margin-bottom:8px;"></div>
-    <button onclick="checkInviteCode()" class="login-btn" style="margin-bottom:10px;">Weiter →</button>
-    <div style="text-align:center;">
-     <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück zum Login</button>
-    </div>
-   </div>
-
-   <!-- Step 2: Team Setup (only for setup codes) -->
-   <div id="regSetupStep" style="display:none;">
-    <div id="regSetupBadge" style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;font-weight:700;color:#92400E;text-align:center;"></div>
-    <div style="margin-bottom:8px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">TEAM-NAME *</label>
-     <input type="text" id="setupTeamName" placeholder="z.B. Die Ideenschmiede"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:8px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">UNTERNEHMENSIDEE *</label>
-     <input type="text" id="setupTeamBiz" placeholder="z.B. Fahrrad-Reparatur am Campus"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:8px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">HERANGEHENSWEISE</label>
-     <input type="text" id="setupTeamApproach" placeholder="z.B. Direktvertrieb, Social Media, ..."
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:10px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">STRATEGIE</label>
-     <input type="text" id="setupTeamStrategy" placeholder="z.B. Kostenführerschaft, Nischenmarkt, ..."
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:14px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:6px;">TEAM-EMOJI</label>
-     <div id="setupEmojiPicker" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    </div>
-    <div id="regSetupError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
-    <button onclick="submitTeamSetup()" class="login-btn" style="margin-bottom:10px;">Weiter → Mein Account</button>
-    <div style="text-align:center;">
-     <button onclick="showRegisterMode()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
-    </div>
-   </div>
-
-   <!-- Step 2b: Role + Profile -->
-   <div id="regProfileStep" style="display:none;">
-    <div id="regTeamBadge" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;font-weight:700;color:#1e3a5f;text-align:center;"></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;" id="regRoleGrid"></div>
-    <div id="regRoleError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-     <div>
-      <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">VORNAME *</label>
-      <input type="text" id="regFirstName" placeholder="Max"
-       style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+   <!-- Step 1: Email input -->
+   <div id="loginStep1">
+    <div style="margin-bottom:16px;">
+     <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px;" id="lt_emailLabel">E-Mail-Adresse</label>
+     <div class="login-input-wrap">
+      <input type="email" id="loginEmail" placeholder="deine@email.de"
+       style="letter-spacing:0;text-transform:none!important;"
+       oninput="document.getElementById('loginEmailError').style.display='none'"
+       onkeypress="if(event.key==='Enter')sendMagicLink()">
      </div>
-     <div>
-      <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">NACHNAME *</label>
-      <input type="text" id="regLastName" placeholder="Mustermann"
-       style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-     </div>
+     <div class="login-error" id="loginEmailError" style="display:none;">Bitte gib eine g&#252;ltige E-Mail-Adresse ein.</div>
     </div>
-    <div style="margin-bottom:8px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">E-MAIL-ADRESSE *</label>
-     <input type="email" id="regEmail" placeholder="max.mustermann@dhbw.de"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;"
-      oninput="this.value=this.value.toLowerCase()">
+    <button class="login-btn" id="loginSendBtn" onclick="sendMagicLink()">&#128233; Magic Link senden</button>
+    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-top:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;">&#128274; Passwortlos &amp; sicher</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;">Du bekommst einen Einmal-Link per E-Mail &#8211; kein Passwort n&#246;tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.</div>
     </div>
-    <div style="margin-bottom:10px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">MOBIL</label>
-     <input type="tel" id="regMobile" placeholder="+49 160 1234567"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div id="regProfileError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
-    <button onclick="submitRegProfile()" class="login-btn" style="margin-bottom:10px;">Weiter → Passwort festlegen</button>
-    <div style="text-align:center;">
-     <button onclick="showRegisterMode()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
+    <div style="text-align:center;margin-top:14px;">
+     <button onclick="showTestMode()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;text-decoration:underline;">&#129514; Demo / Testmodus</button>
     </div>
    </div>
 
-   <!-- Step 3: Password -->
-   <div id="regPasswordStep" style="display:none;">
-    <div id="regPwdBadge" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;text-align:center;color:#1e3a5f;"></div>
-    <div style="margin-bottom:8px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">PASSWORT *</label>
-     <input type="password" id="regPwd1" placeholder="Mindestens 6 Zeichen"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:10px;">
-     <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:4px;">PASSWORT BESTÄTIGEN *</label>
-     <input type="password" id="regPwd2" placeholder="Wiederholen"
-      style="width:100%;padding:10px 12px;border:2px solid #E0E7F0;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;"
-      onkeypress="if(event.key==='Enter')submitRegPassword()">
-    </div>
-    <div id="regPwdError" style="display:none;color:#C00000;font-size:12px;margin-bottom:6px;"></div>
-    <button onclick="submitRegPassword()" class="login-btn" style="margin-bottom:10px;">✅ Registrierung abschließen</button>
-    <div style="text-align:center;">
-     <button onclick="document.getElementById('regProfileStep').style.display='block';document.getElementById('regPasswordStep').style.display='none';" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
-    </div>
+   <!-- Step 2: Link sent confirmation -->
+   <div id="loginStep2" style="display:none;text-align:center;padding:10px 0;">
+    <div style="font-size:52px;margin-bottom:12px;">&#128236;</div>
+    <h3 style="font-size:17px;font-weight:800;color:rgba(255,255,255,.95);margin-bottom:8px;">Link unterwegs!</h3>
+    <p style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.6;">Wir haben einen Magic Link an<br><strong id="loginSentEmail" style="color:white;"></strong><br>gesendet. Klick auf den Link &#8211; fertig.</p>
+    <p style="font-size:11px;color:rgba(255,255,255,.45);margin-top:16px;">Kein Link? Pr&#252;f den Spam-Ordner oder <a href="#" onclick="event.preventDefault();document.getElementById('loginStep2').style.display='none';document.getElementById('loginStep1').style.display='block';" style="color:rgba(255,255,255,.65);">erneut senden</a>.</p>
    </div>
 
-   <!-- Step 4: Success -->
-   <div id="regSuccessStep" style="display:none;text-align:center;">
-    <div style="font-size:48px;margin-bottom:8px;">🎉</div>
-    <h3 style="color:#1a5c2a;font-size:17px;font-weight:800;margin-bottom:6px;">Willkommen im Team!</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;">Dein persönlicher Zugangscode:</p>
-    <div id="regSuccessCode"
-     style="font-family:'Courier New',monospace;font-size:20px;font-weight:900;letter-spacing:3px;
-            background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;
-            border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;"
-     onclick="copyRegCode()">—</div>
-    <p style="font-size:11px;color:#C55A11;font-weight:700;margin-bottom:4px;">⚠️ Speichere diesen Code! Er ist dein persönlicher Zugang.</p>
-    <p style="font-size:11px;color:#888;margin-bottom:14px;">Klicke zum Kopieren. Du kannst dich auch mit deiner E-Mail anmelden.</p>
-    <div id="regSuccessInfo" style="font-size:12px;color:#444;background:#F2F6FC;border-radius:8px;padding:10px;margin-bottom:14px;text-align:left;"></div>
-    <button class="login-btn" onclick="loginWithNewCode()">🔑 Jetzt einloggen</button>
-   </div>
   </div>
 
   <!-- ── TEST MODE ─────────────────────────────────────── -->
   <div id="testModePanel" style="display:none;">
-   <div class="login-logo" style="font-size:20px;">🧪</div>
+   <div class="login-logo" style="font-size:20px;">&#129514;</div>
    <h2 class="login-title" style="color:#B35A00;">Testumgebung</h2>
-   <p class="login-sub" style="color:#c47020;">Demo-Modus – keine echten Daten</p>
+   <p class="login-sub" style="color:#c47020;">Demo-Modus &#8211; keine echten Daten</p>
    <div id="testAccountList" style="margin:12px 0;display:grid;gap:8px;"></div>
    <div style="text-align:center;margin-top:10px;">
-    <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">← Zurück</button>
+    <button onclick="showLogin()" style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;">&#8592; Zur&#252;ck</button>
    </div>
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.8.6</div>
+ <div class="version-footer" id="versionFooter">v0.9.0</div>
 </div>
 
 <!-- APP -->
@@ -1706,20 +1479,178 @@ function _setLoadingMsg(msg){
   if(el) el.textContent = msg;
 }
 
+// ════════════════════════════════════════════════════════════════════
+//  FIREBASE AUTH – MAGIC LINK (v0.9.0)
+// ════════════════════════════════════════════════════════════════════
+
+// Hardcoded superadmin emails (not exposed in DB or client code)
+const SUPERADMIN_EMAILS = [
+  'christian.neusser@googlemail.com',
+  'christian.neusser@me.com'
+];
+
+function showLoginScreen(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+  const vf=document.getElementById('versionFooter'); if(vf) vf.style.display='block';
+  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='block';
+  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='none';
+  const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='block';
+  const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='none';
+  const le=document.getElementById('loginEmail'); if(le) le.value='';
+  const ee=document.getElementById('loginEmailError'); if(ee) ee.style.display='none';
+  const sb=document.getElementById('loginSendBtn'); if(sb){ sb.disabled=false; sb.textContent='📩 Magic Link senden'; }
+}
+
+async function sendMagicLink(){
+  const emailEl=document.getElementById('loginEmail');
+  const errEl=document.getElementById('loginEmailError');
+  const btn=document.getElementById('loginSendBtn');
+  const email=(emailEl ? emailEl.value : '').trim().toLowerCase();
+  if(!email || !email.includes('@') || !email.includes('.')){
+    if(errEl){ errEl.textContent='Bitte gib eine gültige E-Mail-Adresse ein.'; errEl.style.display='block'; }
+    return;
+  }
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Sende…'; }
+  try{
+    await firebase.auth().sendSignInLinkToEmail(email,{
+      url: window.location.origin + window.location.pathname,
+      handleCodeInApp: true
+    });
+    localStorage.setItem('vlEmailForSignIn', email);
+    const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='none';
+    const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='block';
+    const se=document.getElementById('loginSentEmail'); if(se) se.textContent=email;
+  }catch(e){
+    console.error('sendMagicLink error:',e);
+    if(errEl){
+      if(e.code==='auth/invalid-email') errEl.textContent='Ungültige E-Mail-Adresse.';
+      else if(e.code==='auth/unauthorized-domain') errEl.textContent='Domain nicht freigegeben – Firebase-Console prüfen.';
+      else errEl.textContent=(e.message||'Fehler – bitte erneut versuchen.');
+      errEl.style.display='block';
+    }
+    if(btn){ btn.disabled=false; btn.textContent='📩 Magic Link senden'; }
+  }
+}
+
+async function _completeMagicLink(){
+  _setLoadingMsg('Bestätige E-Mail-Link…');
+  let email=localStorage.getItem('vlEmailForSignIn');
+  if(!email){
+    email=prompt('Zur Bestätigung: Gib bitte nochmals deine E-Mail ein:');
+    if(!email){ _hideLoadingOverlay(); showLoginScreen(); return; }
+    email=email.trim().toLowerCase();
+  }
+  try{
+    await firebase.auth().signInWithEmailLink(email, window.location.href);
+    localStorage.removeItem('vlEmailForSignIn');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // onAuthStateChanged will fire next with the signed-in user
+  }catch(e){
+    console.error('_completeMagicLink error:',e);
+    _hideLoadingOverlay();
+    alert('Der Link ist abgelaufen oder ungültig. Bitte fordere einen neuen Link an.\n\n(' + (e.message||e.code) + ')');
+    showLoginScreen();
+  }
+}
+
+async function _onAuthUser(firebaseUser){
+  _setLoadingMsg('Lade Daten…');
+  _setFbStatus('online','Online');
+
+  if(_db){
+    try{
+      const fbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
+      const snap=await Promise.race([_db.ref(STORAGE_KEY).once('value'), fbTimeout]);
+      const d=snap.val();
+      if(d){
+        _fbDataLoaded=true;
+        _replaceArrays(d); _postLoadCalc();
+        try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(_buildPayload())); }catch(e){}
+        console.log('✅ Loaded from Firebase');
+      } else {
+        _fbDataConfirmedEmpty=true;
+        loadData();
+        if(GAMES.length||TEAMS.length){
+          _db.ref(STORAGE_KEY).set(_buildPayload()).catch(e=>console.warn('Initial push failed',e));
+          console.log('📤 Pushed local data to Firebase');
+        }
+      }
+    }catch(e){
+      console.warn('Firebase data load error:',e);
+      loadData();
+      _setFbStatus('offline','Offline – lokale Daten');
+    }
+  } else {
+    loadData();
+  }
+
+  rebuildCodes();
+  _finishStartup();
+  _setupRealtimeListener();
+
+  const email=(firebaseUser.email||'').toLowerCase();
+  const user=_resolveRoleFromEmail(email, firebaseUser);
+
+  if(!user){
+    console.warn('E-Mail nicht im System registriert:', email);
+    firebase.auth().signOut().catch(()=>{});
+    _hideLoadingOverlay();
+    showLoginScreen();
+    const errEl=document.getElementById('loginEmailError');
+    if(errEl){
+      errEl.textContent='E-Mail (' + email + ') ist nicht im System registriert. Bitte wende dich an den Dozenten.';
+      errEl.style.display='block';
+    }
+    return;
+  }
+
+  state.currentUser=user;
+  if(!state.lang) state.lang='de';
+  logEvent('login',{role:user.role, email});
+  _hideLoadingOverlay();
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  initApp();
+  if(state.lang==='en') setTimeout(applyLang,150);
+}
+
+function _resolveRoleFromEmail(email, firebaseUser){
+  const uid = firebaseUser ? firebaseUser.uid : null;
+  // 1. Hardcoded superadmin emails
+  if(SUPERADMIN_EMAILS.includes(email)){
+    return { role:'superadmin', name:'Dr. Christian Neusser', email, uid, label:'Superadmin' };
+  }
+  // 2. SUPERADMINS array (from Firebase data)
+  const sa=SUPERADMINS.find(s=>s.email && s.email.toLowerCase()===email);
+  if(sa) return { ...sa, role:'superadmin', uid, label:'Superadmin' };
+  // 3. ADMINS array
+  const admin=ADMINS.find(a=>a.email && a.email.toLowerCase()===email);
+  if(admin) return { ...admin, role:'admin', uid };
+  // 4. MEMBERS array
+  const member=MEMBERS.find(m=>m.email && m.email.toLowerCase()===email);
+  if(member){
+    const team=TEAMS.find(t=>t.id===member.teamId);
+    return { ...member, role:'member', teamId:member.teamId, gameId:(team&&team.gameId)||'', uid };
+  }
+  return null;
+}
+
 function initDataAndStart(){
   if(!_fbConfigured()){
-    // No Firebase config → use localStorage only
+    // No Firebase configured → localStorage only, show login (test mode still available)
     _setLoadingMsg('Lade lokale Daten…');
     setTimeout(()=>{
-      loadData();
+      loadData(); rebuildCodes();
       _hideLoadingOverlay();
       _setFbStatus('offline','Nur lokal (kein Firebase)');
       _finishStartup();
+      showLoginScreen();
     }, 300);
     return;
   }
 
-  // Init Firebase
+  // Init Firebase (app + database + auth)
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     _db = firebase.database();
@@ -1727,70 +1658,27 @@ function initDataAndStart(){
   }catch(e){
     console.warn('Firebase init failed:', e);
     _setLoadingMsg('Firebase Fehler – lade lokal…');
-    setTimeout(()=>{ loadData(); _hideLoadingOverlay(); _finishStartup(); }, 800);
+    setTimeout(()=>{ loadData(); rebuildCodes(); _hideLoadingOverlay(); _finishStartup(); showLoginScreen(); }, 800);
     return;
   }
 
-  _setLoadingMsg('Lade Daten aus Firebase…');
+  _setLoadingMsg('Prüfe Anmeldung…');
 
-  // Set timeout fallback (10 seconds – longer for mobile networks)
-  const fbTimeout = setTimeout(()=>{
-    console.warn('Firebase load timeout – falling back to localStorage');
-    _setLoadingMsg('Timeout – lade lokale Daten…');
-    loadData(); // localStorage fallback (may be empty on first visit)
-    _hideLoadingOverlay();
-    _setFbStatus('offline','Offline – lokale Daten');
-    // Still try to set up realtime listener – Firebase may connect after timeout
-    _setupRealtimeListener();
-    _finishStartup();
-    // Try once more after 5 more seconds in case Firebase connects late
-    setTimeout(()=>{
-      if(!_fbDataLoaded && _fbOK && _db){
-        _setLoadingMsg('');
-        _db.ref('5euro_tracker_v5').once('value').then(snap=>{
-          const d=snap.val();
-          if(d){ _fbDataLoaded=true; _replaceArrays(d); _postLoadCalc(); rebuildCodes(); if(state.currentUser) renderCurrentView(); showToast('🔄 Daten nachgeladen','info'); }
-        }).catch(()=>{});
-      }
-    }, 5000);
-  }, 10000);
+  // If URL contains a magic link → complete sign-in
+  if(firebase.auth().isSignInWithEmailLink(window.location.href)){
+    _completeMagicLink();
+    return;
+  }
 
-  _db.ref('5euro_tracker_v5').once('value')
-    .then(snapshot => {
-      clearTimeout(fbTimeout);
-      _fbDataLoaded = true;
-      const d = snapshot.val();
-      if(d){
-        _replaceArrays(d);
-        _postLoadCalc();
-        // Cache locally
-        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
-        console.log('✅ Loaded from Firebase');
-      } else {
-        // Firebase confirmed empty → safe to push local/default data
-        _fbDataConfirmedEmpty = true;
-        _setLoadingMsg('Synchronisiere lokale Daten…');
-        loadData();
-        if(GAMES.length || TEAMS.length){
-          const p = _buildPayload();
-          _db.ref('5euro_tracker_v5').set(p).catch(e=>console.warn('Initial push failed',e));
-          console.log('📤 Pushed local data to Firebase');
-        }
-      }
+  // Watch auth state (fires immediately with current user or null on every page load)
+  firebase.auth().onAuthStateChanged(async function(user){
+    if(user){
+      await _onAuthUser(user);
+    } else {
       _hideLoadingOverlay();
-      _setFbStatus('online','Online');
-      _setupRealtimeListener();
-      _finishStartup();
-    })
-    .catch(err => {
-      clearTimeout(fbTimeout);
-      console.warn('Firebase load error:', err);
-      loadData(); // localStorage fallback
-      _hideLoadingOverlay();
-      _setFbStatus('offline','Offline – lokale Daten');
-      _setupRealtimeListener(); // still try to listen for data
-      _finishStartup();
-    });
+      showLoginScreen();
+    }
+  });
 }
 
 function _finishStartup(){
@@ -1799,38 +1687,15 @@ function _finishStartup(){
   const after = JSON.stringify({t:TEAMS.length, g:GAMES.length});
   if(before !== after){
     // CRITICAL: Only push to Firebase if we are SURE Firebase is empty (not just timed out).
-    // If Firebase timed out or errored, writing now could overwrite real data on the server.
     if(_fbDataConfirmedEmpty || !_fbOK){
-      saveData(); // Safe: Firebase confirmed empty, or no Firebase (localStorage-only mode)
+      saveData();
     } else {
-      // Firebase is configured but we don't know its state (timeout/error path).
-      // Save to localStorage only – do NOT push to Firebase.
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(_buildPayload())); }catch(e){}
       console.warn('_finishStartup: skipped Firebase write (data not confirmed empty)');
     }
   }
-  // Restore session from sessionStorage (auto-login on page refresh)
-  if(!state.currentUser && !window._testMode){
-    try{
-      const saved = sessionStorage.getItem('venturelab_session');
-      if(saved){
-        const sess = JSON.parse(saved);
-        const code = sess.code;
-        if(code && CODES[code]){
-          state.currentUser={...CODES[code], code};
-          if(sess.lang) state.lang=sess.lang;
-          if(sess.managingGameId) state.managingGameId=sess.managingGameId;
-          document.getElementById('loginScreen').style.display='none';
-          document.getElementById('appShell').style.display='block';
-          initApp();
-          if(state.lang==='en') setTimeout(applyLang,150);
-          return;
-        } else {
-          sessionStorage.removeItem('venturelab_session');
-        }
-      }
-    }catch(e){ sessionStorage.removeItem('venturelab_session'); }
-  }
+  // v0.9.0: Firebase Auth onAuthStateChanged handles session restore automatically.
+  // CODES-based session restore removed for security.
 }
 function resetToDemo(){
   if(!confirm('Demo-Daten wiederherstellen? Alle eigenen Daten gehen verloren.')) return;
@@ -2198,17 +2063,18 @@ function testLogin(code){
   if(banner) document.body.appendChild(banner);
 }
 function showTestMode(){
-  document.getElementById('loginMode').style.display='none';
-  document.getElementById('registerMode').style.display='none';
-  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='block';
+  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='none';
+  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='block';
   loadTestData();
 }
 
 function showLogin(){
-  document.getElementById('loginMode').style.display='block';
-  document.getElementById('registerMode').style.display='none';
-  const tp=document.getElementById('testModePanel');if(tp) tp.style.display='none';
-  showLoginModeSelect();
+  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='block';
+  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='none';
+  const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='block';
+  const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='none';
+  const banner=document.getElementById('testModeBanner'); if(banner) banner.remove();
+  if(window._testModeActive){ window._testModeActive=false; }
 }
 function showLoginModeSelect(){
   ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){
@@ -2425,28 +2291,22 @@ let _loginLang='de';
 let _loginTempCode='';
 function setLoginLang(lang){
   _loginLang=lang;
-  document.getElementById('langBtnDE').classList.toggle('active',lang==='de');
-  document.getElementById('langBtnEN').classList.toggle('active',lang==='en');
+  const _t=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
+  _t('langBtnDE','DE'); _t('langBtnEN','EN');
+  const de=document.getElementById('langBtnDE'); if(de) de.classList.toggle('active',lang==='de');
+  const en=document.getElementById('langBtnEN'); if(en) en.classList.toggle('active',lang==='en');
   if(lang==='en'){
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.8.6)</span>';
-    document.getElementById('lt_noCode').textContent='No code yet?';
-    document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Register now \u2192';
-    document.getElementById('lt_pwdFor').textContent='Password for:';
-    document.getElementById('lt_errCode').textContent='Invalid code';
-    document.getElementById('lt_errPwd').textContent='Wrong password';
-    document.getElementById('lt_errPwdSet').textContent='Passwords do not match';
-    document.getElementById('lt_back').textContent='Back';
-    document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f Skip (insecure)';
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
+    _t('lt_emailLabel','Email address');
+    _t('lt_linkSentTitle','Link on the way!');
+    _t('loginSendBtn','&#128233; Send Magic Link');
+    _t('lt_testModeBtn','&#129514; Demo / Test mode');
   } else {
-    document.getElementById('lt_sub').innerHTML='Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.8.5)</span>';
-    document.getElementById('lt_noCode').textContent='Noch kein Code?';
-    document.getElementById('lt_regBtn').innerHTML='\ud83d\udc64 Jetzt registrieren \u2192';
-    document.getElementById('lt_pwdFor').textContent='Passwort f\u00fcr:';
-    document.getElementById('lt_errCode').textContent='Ung\u00fcltiger Code';
-    document.getElementById('lt_errPwd').textContent='Falsches Passwort';
-    document.getElementById('lt_errPwdSet').textContent='Passw\u00f6rter stimmen nicht \u00fcberein';
-    document.getElementById('lt_back').textContent='Zur\u00fcck';
-    document.getElementById('lt_skipPwd').innerHTML='\u26a0\ufe0f \u00dcberspringen (unsicher)';
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
+    _t('lt_emailLabel','E-Mail-Adresse');
+    _t('lt_linkSentTitle','Link unterwegs!');
+    _t('loginSendBtn','&#128233; Magic Link senden');
+    _t('lt_testModeBtn','&#129514; Demo / Testmodus');
   }
 }
 function doLogin(){doLoginStep1();}
@@ -2672,14 +2532,20 @@ function finishLogin(code){
   if(user.role==='member'||user.memberId){
     const mem=MEMBERS.find(m=>m.id===user.memberId||m.code===code);
     if(mem&&(!mem.email||!mem.firstName)){
+      // Profile completion step (test mode only in v0.9.0 – elements may not exist)
       _profileLoginCode=code;
-      document.getElementById('loginStep2').style.display='none';
-      document.getElementById('loginStep3').style.display='none';
-      document.getElementById('loginStep4').style.display='block';
-      if(mem.firstName) document.getElementById('profileFirstName').value=mem.firstName;
-      if(mem.lastName) document.getElementById('profileLastName').value=mem.lastName;
-      if(mem.email) document.getElementById('profileEmail').value=mem.email;
-      if(mem.mobile) document.getElementById('profileMobile').value=mem.mobile;
+      const _s2=document.getElementById('loginStep2'); if(_s2) _s2.style.display='none';
+      const _s3=document.getElementById('loginStep3'); if(_s3) _s3.style.display='none';
+      const _s4=document.getElementById('loginStep4'); if(_s4) _s4.style.display='block';
+      if(mem.firstName){ const f=document.getElementById('profileFirstName'); if(f) f.value=mem.firstName; }
+      if(mem.lastName){ const f=document.getElementById('profileLastName'); if(f) f.value=mem.lastName; }
+      if(mem.email){ const f=document.getElementById('profileEmail'); if(f) f.value=mem.email; }
+      if(mem.mobile){ const f=document.getElementById('profileMobile'); if(f) f.value=mem.mobile; }
+      if(!document.getElementById('loginStep4')){ // Elements removed → skip profile step
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('appShell').style.display='block';
+        initApp();
+      }
       return;
     }
   }
@@ -2697,7 +2563,8 @@ function finishLogin(code){
   if(state.lang==='en') setTimeout(applyLang,150);
 }
 
-function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new Date(_sessionStart).getTime())/1000)+'s'});
+function doLogout(){
+  logEvent('logout', {duration: Math.round((Date.now() - new Date(_sessionStart).getTime())/1000)+'s'});
   flushTrackBuffer(true);
   // Restore original data if exiting test mode
   if(window._testMode || window._testModeActive){
@@ -2707,29 +2574,21 @@ function doLogout(){  logEvent('logout', {duration: Math.round((Date.now() - new
     if(window._testModeOrigPwd) localStorage.setItem('5euro_passwords',window._testModeOrigPwd);
     else localStorage.removeItem('5euro_passwords');
     window._testModeOrigData=null; window._testModeOrigPwd=null;
-    _fbDataLoaded=false; // force fresh Firebase load on next login
-    const testBanner=document.getElementById('testModeBanner');if(testBanner) testBanner.remove();
-    // Reload real data immediately
+    _fbDataLoaded=false;
+    const testBanner=document.getElementById('testModeBanner'); if(testBanner) testBanner.remove();
     loadData(); rebuildCodes();
   }
   window._testMode=false;
-  sessionStorage.removeItem('venturelab_session');
-  state.currentUser=null;state.prevUser=null;
-  const _ib=document.getElementById('impersonationBanner');if(_ib)_ib.style.display='none';
-  document.getElementById('appShell').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-  const vf=document.getElementById('versionFooter');if(vf)vf.style.display='block';
-  document.getElementById('loginCode').value='';
-  // Reset to step 1 (code entry), hide password/setup steps
-  ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){const el=document.getElementById(id);if(el)el.style.display='none';});
-  const step1=document.getElementById('loginStep1');if(step1) step1.style.display='none';
-  const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='block';
-  const loginPwd=document.getElementById('loginPwd');if(loginPwd) loginPwd.value='';
-  const loginNewPwd=document.getElementById('loginNewPwd');if(loginNewPwd) loginNewPwd.value='';
-  const loginNewPwd2=document.getElementById('loginNewPwd2');if(loginNewPwd2) loginNewPwd2.value='';
-  const loginPwdErr=document.getElementById('loginPwdError');if(loginPwdErr) loginPwdErr.style.display='none';
-  const loginPreview=document.getElementById('loginRolePreview');if(loginPreview) loginPreview.style.display='none';
+  state.currentUser=null; state.prevUser=null;
+  const _ib=document.getElementById('impersonationBanner'); if(_ib) _ib.style.display='none';
   ['revenueChart','superChart'].forEach(k=>{if(state[k]){state[k].destroy();state[k]=null;}});
+  // Sign out from Firebase Auth (session persistence cleared; onAuthStateChanged fires null → showLoginScreen)
+  if(typeof firebase!=='undefined' && firebase.apps && firebase.apps.length){
+    firebase.auth().signOut().catch(()=>{});
+    // onAuthStateChanged will call showLoginScreen() after signOut completes
+  } else {
+    showLoginScreen();
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
