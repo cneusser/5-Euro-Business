@@ -474,7 +474,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">&#x1F680;</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.91)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.92)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:4px;">
@@ -512,23 +512,23 @@ textarea.form-control{resize:vertical;min-height:70px;}
      <div class="login-error" id="loginEmailError" style="display:none;"></div>
     </div>
     <button class="login-btn" id="loginSendBtn" onclick="sendMagicLink()">&#128233; Magic Link senden</button>
-    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-top:14px;text-align:left;">
-     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;">&#128274; Passwortlos &amp; sicher</div>
-     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_magicInfo">Du bekommst einen Einmal-Link per E-Mail &#8211; kein Passwort n&#246;tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.</div>
+    <div style="background:#EFF6FF;border:1px solid #DBEAFE;border-radius:10px;padding:12px 14px;margin-top:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px;">&#128274; Passwortlos &amp; sicher</div>
+     <div style="font-size:11px;color:#6b7280;line-height:1.55;" id="lt_magicInfo">Du bekommst einen Einmal-Link per E-Mail &#8211; kein Passwort n&#246;tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.</div>
     </div>
     <div style="text-align:center;margin-top:14px;">
-     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_backToSelect">&#8592; Zur&#252;ck</button>
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;" id="lt_backToSelect">&#8592; Zur&#252;ck</button>
     </div>
    </div>
 
    <!-- ── MAGIC LINK: Best&#228;tigung ──────────────────────── -->
    <div id="magicLinkSentStep" style="display:none;text-align:center;padding:10px 0;">
     <div style="font-size:52px;margin-bottom:12px;">&#128236;</div>
-    <h3 style="font-size:17px;font-weight:800;color:rgba(255,255,255,.95);margin-bottom:8px;" id="lt_linkSentTitle">Link unterwegs!</h3>
-    <p style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.6;">Wir haben einen Magic Link an<br><strong id="loginSentEmail" style="color:white;"></strong><br>gesendet. Klick auf den Link &#8211; fertig.</p>
-    <p style="font-size:11px;color:rgba(255,255,255,.45);margin-top:16px;">Kein Link? Pr&#252;f den Spam-Ordner oder <a href="#" onclick="event.preventDefault();document.getElementById('magicLinkSentStep').style.display='none';document.getElementById('magicLinkFlow').style.display='block';" style="color:rgba(255,255,255,.65);">erneut senden</a>.</p>
+    <h3 style="font-size:17px;font-weight:800;color:#1F3864;margin-bottom:8px;" id="lt_linkSentTitle">Link unterwegs!</h3>
+    <p style="font-size:13px;color:#4b5563;line-height:1.6;">Wir haben einen Magic Link an<br><strong id="loginSentEmail" style="color:#1F3864;"></strong><br>gesendet. Klick auf den Link &#8211; fertig.</p>
+    <p style="font-size:11px;color:#94a3b8;margin-top:16px;">Kein Link? Pr&#252;f den Spam-Ordner oder <a href="#" onclick="event.preventDefault();document.getElementById('magicLinkSentStep').style.display='none';document.getElementById('magicLinkFlow').style.display='block';" style="color:#2563eb;">erneut senden</a>.</p>
     <div style="margin-top:12px;">
-     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
     </div>
    </div>
 
@@ -543,16 +543,17 @@ textarea.form-control{resize:vertical;min-height:70px;}
      </div>
      <div class="login-error" id="loginError" style="display:none;">Ung&#252;ltiger Code &#8211; bitte pr&#252;fen.</div>
     </div>
-    <div id="loginRolePreview" style="display:none;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.85);"></div>
+    <div id="loginRolePreview" style="display:none;background:#f1f5f9;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#475569;"></div>
     <button class="login-btn" onclick="doLoginStep1()" id="lt_codeLoginBtn">Einloggen &#8594;</button>
-    <div style="text-align:center;margin-top:14px;">
-     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_back">&#8592; Zur&#252;ck</button>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;">
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;" id="lt_back">&#8592; Zur&#252;ck</button>
+     <button onclick="showPwdResetFromCode()" style="background:none;border:none;color:#2563eb;font-size:11px;cursor:pointer;text-decoration:underline;" id="lt_forgotPwdStep1">Passwort vergessen?</button>
     </div>
    </div>
 
    <!-- ── CODE: Schritt 2 – Passwort ──────────────────── -->
    <div id="loginStep2" style="display:none;">
-    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:14px;" id="lt_pwdFor">Passwort f&#252;r: <strong id="lt_pwdUser" style="color:white;"></strong></p>
+    <p style="font-size:13px;color:#4b5563;margin-bottom:14px;" id="lt_pwdFor">Passwort f&#252;r: <strong id="lt_pwdUser" style="color:#1F3864;"></strong></p>
     <div class="login-input-wrap" style="margin-bottom:8px;">
      <input type="password" id="loginPwd" placeholder="Passwort" autocomplete="current-password"
       oninput="document.getElementById('loginPwdError').style.display='none'"
@@ -560,17 +561,17 @@ textarea.form-control{resize:vertical;min-height:70px;}
     </div>
     <div class="login-error" id="loginPwdError" style="display:none;">Falsches Passwort.</div>
     <button class="login-btn" onclick="doLoginStep2()" id="lt_loginBtn2">Weiter &#8594;</button>
-    <div style="display:flex;justify-content:space-between;margin-top:12px;">
-     <button onclick="loginBack()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_back2">&#8592; Zur&#252;ck</button>
-     <button onclick="showPwdResetRequest()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_forgotPwd">Passwort vergessen?</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+     <button onclick="loginBack()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;" id="lt_back2">&#8592; Zur&#252;ck</button>
+     <button onclick="showPwdResetRequest()" style="background:none;border:none;color:#2563eb;font-size:11px;cursor:pointer;text-decoration:underline;font-weight:600;" id="lt_forgotPwd">&#128273; Passwort vergessen?</button>
     </div>
    </div>
 
    <!-- ── CODE: Schritt 3 – Erstpasswort setzen ───────── -->
    <div id="loginStep3" style="display:none;">
-    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
-     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;" id="lt_pwdSetTitle">&#128272; Passwort festlegen</div>
-     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_pwdSetInfo">Lege ein pers&#246;nliches Passwort f&#252;r zuk&#252;nftige Anmeldungen fest.</div>
+    <div style="background:#EFF6FF;border:1px solid #DBEAFE;border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px;" id="lt_pwdSetTitle">&#128272; Passwort festlegen</div>
+     <div style="font-size:11px;color:#6b7280;line-height:1.55;" id="lt_pwdSetInfo">Lege ein pers&#246;nliches Passwort f&#252;r zuk&#252;nftige Anmeldungen fest.</div>
     </div>
     <div class="login-input-wrap" style="margin-bottom:8px;">
      <input type="password" id="loginNewPwd" placeholder="Neues Passwort (min. 6 Zeichen)" autocomplete="new-password" onkeypress="if(event.key==='Enter')doSetFirstPassword()">
@@ -581,15 +582,15 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="login-error" id="loginPwdSetError" style="display:none;"><span id="lt_errPwdSet">Passw&#246;rter stimmen nicht &#252;berein.</span></div>
     <button class="login-btn" onclick="doSetFirstPassword()" id="lt_pwdSetBtn">Passwort setzen &#8594;</button>
     <div style="text-align:center;margin-top:10px;">
-     <button onclick="skipPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;" id="lt_skipPwd">&#220;berspringen</button>
+     <button onclick="skipPassword()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;" id="lt_skipPwd">&#220;berspringen</button>
     </div>
    </div>
 
    <!-- ── CODE: Schritt 4 – Profil ────────────────────── -->
    <div id="loginStep4" style="display:none;">
-    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
-     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;" id="lt_profileTitle">&#128100; Profil vervollst&#228;ndigen</div>
-     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_profileInfo">Diese Angaben helfen dem Dozenten, dir besser Feedback zu geben.</div>
+    <div style="background:#EFF6FF;border:1px solid #DBEAFE;border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px;" id="lt_profileTitle">&#128100; Profil vervollst&#228;ndigen</div>
+     <div style="font-size:11px;color:#6b7280;line-height:1.55;" id="lt_profileInfo">Diese Angaben helfen dem Dozenten, dir besser Feedback zu geben.</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
      <div class="login-input-wrap"><input type="text" id="profileFirstName" placeholder="Vorname"></div>
@@ -599,31 +600,37 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="login-input-wrap" style="margin-bottom:12px;"><input type="tel" id="profileMobile" placeholder="Mobil (optional)"></div>
     <button class="login-btn" onclick="saveProfileAndLogin()" id="lt_profileSaveBtn">Speichern &amp; einloggen &#8594;</button>
     <div style="text-align:center;margin-top:10px;">
-     <button onclick="skipProfile()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;" id="lt_profileSkip">&#220;berspringen</button>
+     <button onclick="skipProfile()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;" id="lt_profileSkip">&#220;berspringen</button>
     </div>
    </div>
 
    <!-- ── CODE: Schritt 5 – Passwort-Reset (E-Mail) ───── -->
    <div id="loginStep5" style="display:none;">
-    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:14px;" id="lt_resetInfo">Gib deine E-Mail ein, um einen Reset-Code zu erhalten.</p>
+    <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:#9a3412;margin-bottom:4px;">&#128273; Passwort zur&#252;cksetzen</div>
+     <div style="font-size:11px;color:#6b7280;line-height:1.55;" id="lt_resetInfo">Gib deine E-Mail ein &#8211; du bekommst einen 6-stelligen Reset-Code. Deine E-Mail muss im System hinterlegt sein. Falls nicht, wende dich an den Dozenten.</div>
+    </div>
     <div class="login-input-wrap" style="margin-bottom:8px;">
      <input type="email" id="resetEmail" placeholder="deine@email.de" style="letter-spacing:0;text-transform:none!important;" onkeypress="if(event.key==='Enter')sendPwdResetToken()">
     </div>
-    <div class="login-error" id="loginResetError" style="display:none;">E-Mail nicht gefunden.</div>
+    <div class="login-error" id="loginResetError" style="display:none;">E-Mail nicht im System gefunden. Bitte Dozenten kontaktieren.</div>
     <button class="login-btn" onclick="sendPwdResetToken()" id="lt_resetBtn">Reset-Code senden &#8594;</button>
     <div style="text-align:center;margin-top:12px;">
-     <button onclick="loginBack()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+     <button onclick="loginBack()" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
     </div>
    </div>
 
    <!-- ── CODE: Schritt 6 – Passwort-Reset (Code + Pwd) ─ -->
    <div id="loginStep6" style="display:none;">
-    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px;" id="lt_resetCodeInfo">Code aus E-Mail eingeben &amp; neues Passwort setzen.</p>
+    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:2px;">&#9989; Reset-Code gesendet</div>
+     <div style="font-size:11px;color:#6b7280;" id="lt_resetCodeInfo">Code aus E-Mail eingeben &amp; neues Passwort setzen. G&#252;ltig 15 Minuten.</div>
+    </div>
     <div class="login-input-wrap" style="margin-bottom:8px;">
      <input type="text" id="resetToken" placeholder="6-stelliger Code" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;" onkeypress="if(event.key==='Enter')document.getElementById('resetNewPwd1').focus()">
     </div>
     <div class="login-input-wrap" style="margin-bottom:8px;">
-     <input type="password" id="resetNewPwd1" placeholder="Neues Passwort" autocomplete="new-password" onkeypress="if(event.key==='Enter')document.getElementById('resetNewPwd2').focus()">
+     <input type="password" id="resetNewPwd1" placeholder="Neues Passwort (min. 6 Zeichen)" autocomplete="new-password" onkeypress="if(event.key==='Enter')document.getElementById('resetNewPwd2').focus()">
     </div>
     <div class="login-input-wrap" style="margin-bottom:8px;">
      <input type="password" id="resetNewPwd2" placeholder="Passwort wiederholen" autocomplete="new-password" onkeypress="if(event.key==='Enter')verifyAndResetPwd()">
@@ -631,7 +638,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
     <div class="login-error" id="loginResetTokenError" style="display:none;"></div>
     <button class="login-btn" onclick="verifyAndResetPwd()" id="lt_resetCodeBtn">Passwort zur&#252;cksetzen &#8594;</button>
     <div style="text-align:center;margin-top:12px;">
-     <button onclick="document.getElementById('loginStep6').style.display='none';document.getElementById('loginStep5').style.display='block';" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+     <button onclick="document.getElementById('loginStep6').style.display='none';document.getElementById('loginStep5').style.display='block';" style="background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
     </div>
    </div>
 
@@ -655,7 +662,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
 <a href="changelog.html" target="_blank" rel="noopener"
    class="version-footer" id="versionFooter"
    style="text-decoration:none;cursor:pointer;display:block;"
-   title="Versionshistorie öffnen">v0.91 &#128196;</a>
+   title="Versionshistorie öffnen">v0.92 &#128196;</a>
 
 <!-- APP -->
 <div id="appShell">
@@ -2538,7 +2545,7 @@ function setLoginLang(lang){
   const de=document.getElementById('langBtnDE'); if(de) de.classList.toggle('active',lang==='de');
   const en=document.getElementById('langBtnEN'); if(en) en.classList.toggle('active',lang==='en');
   if(lang==='en'){
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.91)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.92)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 by Email (recommended)');
     _t('lt_magicLinkSub','Passwordless &amp; secure');
@@ -2558,10 +2565,11 @@ function setLoginLang(lang){
     _t('lt_code','Access code');
     _t('lt_codeLoginBtn','Log in \u2192');
     _t('lt_back','\u2190 Back');
+    _t('lt_forgotPwdStep1','Forgot password?');
     _t('lt_pwdFor','Password for:');
     _t('lt_loginBtn2','Continue \u2192');
     _t('lt_back2','\u2190 Back');
-    _t('lt_forgotPwd','Forgot password?');
+    _t('lt_forgotPwd','&#128273; Forgot password?');
     _t('lt_pwdSetTitle','&#128272; Set password');
     _t('lt_pwdSetInfo','Set a personal password for future logins.');
     _t('lt_errPwdSet','Passwords do not match.');
@@ -2571,12 +2579,12 @@ function setLoginLang(lang){
     _t('lt_profileInfo','This information helps your lecturer give you better feedback.');
     _t('lt_profileSaveBtn','Save &amp; log in \u2192');
     _t('lt_profileSkip','Skip');
-    _t('lt_resetInfo','Enter your email to receive a reset code.');
+    _t('lt_resetInfo','Enter your email \u2013 you\u2019ll receive a 6-digit reset code. Your email must be in the system. If not, contact your lecturer.');
     _t('lt_resetBtn','Send reset code \u2192');
-    _t('lt_resetCodeInfo','Enter the code from your email &amp; set new password.');
+    _t('lt_resetCodeInfo','Enter the code from your email &amp; set a new password. Valid 15 minutes.');
     _t('lt_resetCodeBtn','Reset password \u2192');
   } else {
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.91)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.92)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 per E-Mail (empfohlen)');
     _t('lt_magicLinkSub','Passwortlos &amp; sicher');
@@ -2596,10 +2604,11 @@ function setLoginLang(lang){
     _t('lt_code','Zugangscode');
     _t('lt_codeLoginBtn','Einloggen \u2192');
     _t('lt_back','\u2190 Zur\u00fcck');
+    _t('lt_forgotPwdStep1','Passwort vergessen?');
     _t('lt_pwdFor','Passwort f\u00fcr:');
     _t('lt_loginBtn2','Weiter \u2192');
     _t('lt_back2','\u2190 Zur\u00fcck');
-    _t('lt_forgotPwd','Passwort vergessen?');
+    _t('lt_forgotPwd','&#128273; Passwort vergessen?');
     _t('lt_pwdSetTitle','&#128272; Passwort festlegen');
     _t('lt_pwdSetInfo','Lege ein pers\u00f6nliches Passwort f\u00fcr zuk\u00fcnftige Anmeldungen fest.');
     _t('lt_errPwdSet','Passw\u00f6rter stimmen nicht \u00fcberein.');
@@ -2609,9 +2618,9 @@ function setLoginLang(lang){
     _t('lt_profileInfo','Diese Angaben helfen dem Dozenten, dir besser Feedback zu geben.');
     _t('lt_profileSaveBtn','Speichern &amp; einloggen \u2192');
     _t('lt_profileSkip','\u00dcberspringen');
-    _t('lt_resetInfo','Gib deine E-Mail ein, um einen Reset-Code zu erhalten.');
+    _t('lt_resetInfo','Gib deine E-Mail ein \u2013 du bekommst einen 6-stelligen Reset-Code. Deine E-Mail muss im System sein. Falls nicht, wende dich an den Dozenten.');
     _t('lt_resetBtn','Reset-Code senden \u2192');
-    _t('lt_resetCodeInfo','Code aus E-Mail eingeben &amp; neues Passwort setzen.');
+    _t('lt_resetCodeInfo','Code aus E-Mail eingeben &amp; neues Passwort setzen. G\u00fcltig 15 Minuten.');
     _t('lt_resetCodeBtn','Passwort zur\u00fccksetzen \u2192');
   }
 }
@@ -2648,6 +2657,21 @@ function showPwdResetRequest(){
   document.getElementById('loginStep2').style.display='none';
   document.getElementById('loginStep5').style.display='block';
   document.getElementById('loginResetError').style.display='none';
+  // Prefill email if code user has one
+  const member=_loginTempCode?MEMBERS.find(m=>m.code===_loginTempCode)||ADMINS.find(a=>a.code===_loginTempCode):null;
+  const re=document.getElementById('resetEmail');
+  if(re&&member&&member.email) re.value=member.email;
+  setTimeout(()=>document.getElementById('resetEmail')?.focus(),50);
+}
+function showPwdResetFromCode(){
+  // Called from Step 1 — try to prefill email from the typed code
+  const typedCode=(document.getElementById('loginCode')?.value||'').trim().toUpperCase();
+  const member=typedCode?MEMBERS.find(m=>m.code===typedCode)||ADMINS.find(a=>a.code===typedCode):null;
+  document.getElementById('loginStep1').style.display='none';
+  document.getElementById('loginStep5').style.display='block';
+  document.getElementById('loginResetError').style.display='none';
+  const re=document.getElementById('resetEmail');
+  if(re&&member&&member.email) re.value=member.email;
   setTimeout(()=>document.getElementById('resetEmail')?.focus(),50);
 }
 function showLoginStep5(){
@@ -5701,7 +5725,8 @@ function renderKonzept(){
           ['v0.8.4','🔍 3 Features &amp; 5 Bugfixes: (1) Wochenberichte vollständig für alle Teammitglieder sichtbar inkl. Admin-Feedback (blauer Kasten); (2) Bericht bearbeitbar für alle Mitglieder – Einreichen weiterhin nur CEO; (3) Admin-Vorschau als User (Impersonation): neuer Tab mit Mitglieder-Auswahl, blauer Vorschau-Banner, Schreibschutz während Vorschau; (4) Fix: b.challenge→b.challenges; (5) Fix: openDraftForEdit befüllt alle Felder; (6) Fix: isCeo-Logik; (7) Fix: gameId-Vererbung; (8) Code-Audit'],
           ['v0.8.5','🚀 4 Features &amp; 4 Bugfixes: (1) Feedback-Persistenz: saveData() nach FEEDBACKS.push() – Einträge gehen nicht mehr verloren; (2) E-Mail-Versand: Apps Script sendet jetzt auch an game.adminEmail; (3) Dateianhänge (PDF/Bild bis 500KB) für Wochenberichte und Reflexionen; (4) Admin-Ranking: Gewinner-Übersicht aller Wochen mit GdW-Team und MVP-Mitgliedern; (5) Reflexionen-Admin: neueste Woche oben; (6) Fix: Anhänge gehen beim Bearbeiten von Entwürfen nicht verloren; (7) Fix: Reflexions-Anhänge beim Bearbeiten korrekt wiederhergestellt; (8) Admin-Bericht-Restore-Tool im Berichte-Tab'],
           ['v0.9.0','🔒 Security-Upgrade: Firebase Auth Magic Link (passwortloser E-Mail-Login), serverseitige Authentifizierung ersetzt client-seitige Codes; DB-Regeln auf auth != null gesichert; CODES-Sichtbarkeit im Client eliminiert; Passwort-Node aus Firebase entfernt; Setup-Guide FIREBASE_SETUP_v0.9.md'],
-          ['v0.91','🔀 Hybrid-Login: Magic Link (empfohlen) + Zugangscode + Testmodus gleichwertig als drei prominente Buttons; ☕ Spenden-Link (Buy Me a Coffee) wiederhergestellt; Code-User erhalten anonyme Firebase-Session (auth != null bleibt erfüllt); Session-Restore via sessionStorage für Code-Nutzer reaktiviert; Versions-Badge mit direktem Link zur Änderungshistorie auf allen Screens', true],
+          ['v0.91','🔀 Hybrid-Login: Magic Link (empfohlen) + Zugangscode + Testmodus gleichwertig als drei prominente Buttons; ☕ Spenden-Link (Buy Me a Coffee) wiederhergestellt; Code-User erhalten anonyme Firebase-Session (auth != null bleibt erfüllt); Session-Restore via sessionStorage für Code-Nutzer reaktiviert; Versions-Badge mit direktem Link zur Änderungshistorie auf allen Screens'],
+          ['v0.92','🔑 Login-UX-Fix: Alle Texte in Login-Steps auf weiße Karte angepasst (vorher unsichtbar); "Passwort vergessen?" prominenter und auch direkt aus Schritt 1 zugänglich; Auto-Befüllung der E-Mail im Reset-Flow; verbesserter Reset-Hinweistext (Dozenten-Fallback); v0.92-Badge', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>

@@ -56,7 +56,7 @@
 <div class="header">
   <span class="header-logo">🚀</span>
   <h1>VentureLab – Versionshistorie</h1>
-  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich</p>
+  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich &nbsp;·&nbsp; Aktuell: v0.92</p>
   <a href="index.html" class="back-btn">← Zurück zu VentureLab</a>
 </div>
 
@@ -67,8 +67,24 @@
 
   <div class="version-card current">
     <div class="version-header">
-      <span class="version-badge current">v0.91</span>
+      <span class="version-badge current">v0.92</span>
       <span class="current-pill">AKTUELL</span>
+      <span class="version-title">🔑 Login-UX-Fix &amp; Passwort-Reset</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Alle Login-Texte (Steps 1–6) auf weiße Karte angepasst — waren vorher weiß-auf-weiß und unsichtbar</li>
+        <li>"Passwort vergessen?" jetzt prominent sichtbar in blau (Step 2) und zusätzlich direkt aus Step 1 (Code-Eingabe) zugänglich</li>
+        <li>Auto-Befüllung der E-Mail im Reset-Flow, wenn Code bereits bekannt</li>
+        <li>Verbesserter Reset-Hinweistext mit Dozenten-Fallback</li>
+        <li>Neue Funktion <code>showPwdResetFromCode()</code> für Reset ohne vorherigen Passwortversuch</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.91</span>
       <span class="version-title">🔀 Hybrid-Login + Versionshistorie</span>
     </div>
     <div class="version-body">
