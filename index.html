@@ -470,14 +470,34 @@ textarea.form-control{resize:vertical;min-height:70px;}
    <button class="lang-btn" id="langBtnEN" onclick="setLoginLang('en')">EN</button>
   </div>
 
-  <!-- ── MAGIC LINK LOGIN ─────────────────────────────── -->
+  <!-- ── LOGIN MODE ──────────────────────────────────────── -->
   <div id="loginMode">
-   <div class="login-logo">🚀</div>
+   <div class="login-logo">&#x1F680;</div>
    <h2 class="login-title">VentureLab</h2>
    <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span></p>
 
-   <!-- Step 1: Email input -->
-   <div id="loginStep1">
+   <!-- ── MODE SELECT ──────────────────────────────────── -->
+   <div id="loginModeSelect" style="margin-top:4px;">
+    <button class="login-btn" onclick="showMagicLinkFlow()" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:13px 16px;">
+     <span style="font-size:20px;">&#128233;</span>
+     <span style="text-align:left;"><strong style="display:block;font-size:13px;" id="lt_magicLinkBtn">Magic Link – per E-Mail (empfohlen)</strong><small style="font-size:11px;opacity:.7;" id="lt_magicLinkSub">Passwortlos &amp; sicher</small></span>
+    </button>
+    <button class="login-btn" onclick="showCodeFlow()" style="margin-bottom:12px;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:13px 16px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);">
+     <span style="font-size:20px;">&#128273;</span>
+     <span style="text-align:left;"><strong style="display:block;font-size:13px;" id="lt_codeBtn">Zugangscode</strong><small style="font-size:11px;opacity:.7;" id="lt_codeSub">Code + Passwort</small></span>
+    </button>
+    <button onclick="showTestMode()" id="lt_testModeBtn" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;text-decoration:underline;width:100%;margin-bottom:8px;">&#129514; Demo / Testmodus</button>
+    <a href="https://www.buymeacoffee.com/cneusser" target="_blank" rel="noopener"
+       style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;text-decoration:none;background:linear-gradient(135deg,#4A60CC,#5F7FFF);color:white;font-family:inherit;transition:opacity .2s;"
+       onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+     <span style="font-size:22px;">&#9749;</span>
+     <span><strong style="font-size:13px;font-weight:700;" id="lt_coffeeTitle">Support VentureLab</strong><br><small style="opacity:.8;font-size:11px;" id="lt_coffeeSub">Dieses Projekt unterst&#252;tzen &#8211; Buy Me a Coffee</small></span>
+     <span style="margin-left:auto;font-size:11px;opacity:.75;">&#8599;</span>
+    </a>
+   </div>
+
+   <!-- ── MAGIC LINK: E-Mail-Eingabe ──────────────────── -->
+   <div id="magicLinkFlow" style="display:none;">
     <div style="margin-bottom:16px;">
      <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px;" id="lt_emailLabel">E-Mail-Adresse</label>
      <div class="login-input-wrap">
@@ -486,27 +506,133 @@ textarea.form-control{resize:vertical;min-height:70px;}
        oninput="document.getElementById('loginEmailError').style.display='none'"
        onkeypress="if(event.key==='Enter')sendMagicLink()">
      </div>
-     <div class="login-error" id="loginEmailError" style="display:none;">Bitte gib eine g&#252;ltige E-Mail-Adresse ein.</div>
+     <div class="login-error" id="loginEmailError" style="display:none;"></div>
     </div>
     <button class="login-btn" id="loginSendBtn" onclick="sendMagicLink()">&#128233; Magic Link senden</button>
     <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-top:14px;text-align:left;">
      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;">&#128274; Passwortlos &amp; sicher</div>
-     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;">Du bekommst einen Einmal-Link per E-Mail &#8211; kein Passwort n&#246;tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_magicInfo">Du bekommst einen Einmal-Link per E-Mail &#8211; kein Passwort n&#246;tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.</div>
     </div>
     <div style="text-align:center;margin-top:14px;">
-     <button onclick="showTestMode()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;text-decoration:underline;">&#129514; Demo / Testmodus</button>
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_backToSelect">&#8592; Zur&#252;ck</button>
     </div>
    </div>
 
-   <!-- Step 2: Link sent confirmation -->
-   <div id="loginStep2" style="display:none;text-align:center;padding:10px 0;">
+   <!-- ── MAGIC LINK: Best&#228;tigung ──────────────────────── -->
+   <div id="magicLinkSentStep" style="display:none;text-align:center;padding:10px 0;">
     <div style="font-size:52px;margin-bottom:12px;">&#128236;</div>
-    <h3 style="font-size:17px;font-weight:800;color:rgba(255,255,255,.95);margin-bottom:8px;">Link unterwegs!</h3>
+    <h3 style="font-size:17px;font-weight:800;color:rgba(255,255,255,.95);margin-bottom:8px;" id="lt_linkSentTitle">Link unterwegs!</h3>
     <p style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.6;">Wir haben einen Magic Link an<br><strong id="loginSentEmail" style="color:white;"></strong><br>gesendet. Klick auf den Link &#8211; fertig.</p>
-    <p style="font-size:11px;color:rgba(255,255,255,.45);margin-top:16px;">Kein Link? Pr&#252;f den Spam-Ordner oder <a href="#" onclick="event.preventDefault();document.getElementById('loginStep2').style.display='none';document.getElementById('loginStep1').style.display='block';" style="color:rgba(255,255,255,.65);">erneut senden</a>.</p>
+    <p style="font-size:11px;color:rgba(255,255,255,.45);margin-top:16px;">Kein Link? Pr&#252;f den Spam-Ordner oder <a href="#" onclick="event.preventDefault();document.getElementById('magicLinkSentStep').style.display='none';document.getElementById('magicLinkFlow').style.display='block';" style="color:rgba(255,255,255,.65);">erneut senden</a>.</p>
+    <div style="margin-top:12px;">
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+    </div>
    </div>
 
-  </div>
+   <!-- ── CODE: Schritt 1 – Code-Eingabe ──────────────── -->
+   <div id="loginStep1" style="display:none;">
+    <div style="margin-bottom:16px;">
+     <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px;" id="lt_code">Zugangscode</label>
+     <div class="login-input-wrap">
+      <input type="text" id="loginCode" placeholder="Z.B. TEAM-ALPHA01" autocomplete="off"
+       oninput="this.value=this.value.toUpperCase();showLoginRolePreview(this.value);document.getElementById('loginError').style.display='none'"
+       onkeypress="if(event.key==='Enter')doLoginStep1()">
+     </div>
+     <div class="login-error" id="loginError" style="display:none;">Ung&#252;ltiger Code &#8211; bitte pr&#252;fen.</div>
+    </div>
+    <div id="loginRolePreview" style="display:none;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.85);"></div>
+    <button class="login-btn" onclick="doLoginStep1()" id="lt_codeLoginBtn">Einloggen &#8594;</button>
+    <div style="text-align:center;margin-top:14px;">
+     <button onclick="showLoginModeSelect()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_back">&#8592; Zur&#252;ck</button>
+    </div>
+   </div>
+
+   <!-- ── CODE: Schritt 2 – Passwort ──────────────────── -->
+   <div id="loginStep2" style="display:none;">
+    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:14px;" id="lt_pwdFor">Passwort f&#252;r: <strong id="lt_pwdUser" style="color:white;"></strong></p>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="loginPwd" placeholder="Passwort" autocomplete="current-password"
+      oninput="document.getElementById('loginPwdError').style.display='none'"
+      onkeypress="if(event.key==='Enter')doLoginStep2()">
+    </div>
+    <div class="login-error" id="loginPwdError" style="display:none;">Falsches Passwort.</div>
+    <button class="login-btn" onclick="doLoginStep2()" id="lt_loginBtn2">Weiter &#8594;</button>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;">
+     <button onclick="loginBack()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_back2">&#8592; Zur&#252;ck</button>
+     <button onclick="showPwdResetRequest()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;" id="lt_forgotPwd">Passwort vergessen?</button>
+    </div>
+   </div>
+
+   <!-- ── CODE: Schritt 3 – Erstpasswort setzen ───────── -->
+   <div id="loginStep3" style="display:none;">
+    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;" id="lt_pwdSetTitle">&#128272; Passwort festlegen</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_pwdSetInfo">Lege ein pers&#246;nliches Passwort f&#252;r zuk&#252;nftige Anmeldungen fest.</div>
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="loginNewPwd" placeholder="Neues Passwort (min. 6 Zeichen)" autocomplete="new-password" onkeypress="if(event.key==='Enter')doSetFirstPassword()">
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="loginNewPwd2" placeholder="Passwort wiederholen" autocomplete="new-password" onkeypress="if(event.key==='Enter')doSetFirstPassword()">
+    </div>
+    <div class="login-error" id="loginPwdSetError" style="display:none;"><span id="lt_errPwdSet">Passw&#246;rter stimmen nicht &#252;berein.</span></div>
+    <button class="login-btn" onclick="doSetFirstPassword()" id="lt_pwdSetBtn">Passwort setzen &#8594;</button>
+    <div style="text-align:center;margin-top:10px;">
+     <button onclick="skipPassword()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;" id="lt_skipPwd">&#220;berspringen</button>
+    </div>
+   </div>
+
+   <!-- ── CODE: Schritt 4 – Profil ────────────────────── -->
+   <div id="loginStep4" style="display:none;">
+    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+     <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;" id="lt_profileTitle">&#128100; Profil vervollst&#228;ndigen</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.55;" id="lt_profileInfo">Diese Angaben helfen dem Dozenten, dir besser Feedback zu geben.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+     <div class="login-input-wrap"><input type="text" id="profileFirstName" placeholder="Vorname"></div>
+     <div class="login-input-wrap"><input type="text" id="profileLastName" placeholder="Nachname"></div>
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;"><input type="email" id="profileEmail" placeholder="E-Mail" style="letter-spacing:0;text-transform:none!important;"></div>
+    <div class="login-input-wrap" style="margin-bottom:12px;"><input type="tel" id="profileMobile" placeholder="Mobil (optional)"></div>
+    <button class="login-btn" onclick="saveProfileAndLogin()" id="lt_profileSaveBtn">Speichern &amp; einloggen &#8594;</button>
+    <div style="text-align:center;margin-top:10px;">
+     <button onclick="skipProfile()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;" id="lt_profileSkip">&#220;berspringen</button>
+    </div>
+   </div>
+
+   <!-- ── CODE: Schritt 5 – Passwort-Reset (E-Mail) ───── -->
+   <div id="loginStep5" style="display:none;">
+    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:14px;" id="lt_resetInfo">Gib deine E-Mail ein, um einen Reset-Code zu erhalten.</p>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="email" id="resetEmail" placeholder="deine@email.de" style="letter-spacing:0;text-transform:none!important;" onkeypress="if(event.key==='Enter')sendPwdResetToken()">
+    </div>
+    <div class="login-error" id="loginResetError" style="display:none;">E-Mail nicht gefunden.</div>
+    <button class="login-btn" onclick="sendPwdResetToken()" id="lt_resetBtn">Reset-Code senden &#8594;</button>
+    <div style="text-align:center;margin-top:12px;">
+     <button onclick="loginBack()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+    </div>
+   </div>
+
+   <!-- ── CODE: Schritt 6 – Passwort-Reset (Code + Pwd) ─ -->
+   <div id="loginStep6" style="display:none;">
+    <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px;" id="lt_resetCodeInfo">Code aus E-Mail eingeben &amp; neues Passwort setzen.</p>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="text" id="resetToken" placeholder="6-stelliger Code" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;" onkeypress="if(event.key==='Enter')document.getElementById('resetNewPwd1').focus()">
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="resetNewPwd1" placeholder="Neues Passwort" autocomplete="new-password" onkeypress="if(event.key==='Enter')document.getElementById('resetNewPwd2').focus()">
+    </div>
+    <div class="login-input-wrap" style="margin-bottom:8px;">
+     <input type="password" id="resetNewPwd2" placeholder="Passwort wiederholen" autocomplete="new-password" onkeypress="if(event.key==='Enter')verifyAndResetPwd()">
+    </div>
+    <div class="login-error" id="loginResetTokenError" style="display:none;"></div>
+    <button class="login-btn" onclick="verifyAndResetPwd()" id="lt_resetCodeBtn">Passwort zur&#252;cksetzen &#8594;</button>
+    <div style="text-align:center;margin-top:12px;">
+     <button onclick="document.getElementById('loginStep6').style.display='none';document.getElementById('loginStep5').style.display='block';" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;">&#8592; Zur&#252;ck</button>
+    </div>
+   </div>
+
+  </div><!-- end #loginMode -->
 
   <!-- ── TEST MODE ─────────────────────────────────────── -->
   <div id="testModePanel" style="display:none;">
@@ -1493,13 +1619,14 @@ function showLoginScreen(){
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('appShell').style.display='none';
   const vf=document.getElementById('versionFooter'); if(vf) vf.style.display='block';
-  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='block';
-  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='none';
-  const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='block';
-  const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='none';
+  // Reset all input fields
   const le=document.getElementById('loginEmail'); if(le) le.value='';
   const ee=document.getElementById('loginEmailError'); if(ee) ee.style.display='none';
-  const sb=document.getElementById('loginSendBtn'); if(sb){ sb.disabled=false; sb.textContent='📩 Magic Link senden'; }
+  const sb=document.getElementById('loginSendBtn'); if(sb){ sb.disabled=false; sb.innerHTML='&#128233; Magic Link senden'; }
+  const lce=document.getElementById('loginCode'); if(lce) lce.value='';
+  const lcerr=document.getElementById('loginError'); if(lcerr) lcerr.style.display='none';
+  const lrp=document.getElementById('loginRolePreview'); if(lrp) lrp.style.display='none';
+  showLoginModeSelect();
 }
 
 async function sendMagicLink(){
@@ -1518,8 +1645,8 @@ async function sendMagicLink(){
       handleCodeInApp: true
     });
     localStorage.setItem('vlEmailForSignIn', email);
-    const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='none';
-    const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='block';
+    const mf=document.getElementById('magicLinkFlow'); if(mf) mf.style.display='none';
+    const ms=document.getElementById('magicLinkSentStep'); if(ms) ms.style.display='block';
     const se=document.getElementById('loginSentEmail'); if(se) se.textContent=email;
   }catch(e){
     console.error('sendMagicLink error:',e);
@@ -1597,6 +1724,8 @@ async function _onAuthUser(firebaseUser){
     firebase.auth().signOut().catch(()=>{});
     _hideLoadingOverlay();
     showLoginScreen();
+    // Show magic link flow so error is visible
+    showMagicLinkFlow();
     const errEl=document.getElementById('loginEmailError');
     if(errEl){
       errEl.textContent='E-Mail (' + email + ') ist nicht im System registriert. Bitte wende dich an den Dozenten.';
@@ -1672,11 +1801,20 @@ function initDataAndStart(){
 
   // Watch auth state (fires immediately with current user or null on every page load)
   firebase.auth().onAuthStateChanged(async function(user){
-    if(user){
+    if(user && !user.isAnonymous){
+      // Email-Link-Authentifizierung (Magic Link) → Rolle per E-Mail auflösen
       await _onAuthUser(user);
+    } else if(user && user.isAnonymous){
+      // Anonyme Session (für Code-Login-Pfad) → Daten laden, Session-Restore versuchen
+      await _loadFirebaseDataForCodePath();
     } else {
-      _hideLoadingOverlay();
-      showLoginScreen();
+      // Nicht angemeldet → anonyme Session holen (erfüllt auth != null DB-Regeln)
+      firebase.auth().signInAnonymously().catch(function(e){
+        console.warn('signInAnonymously failed, falling back to local data:', e);
+        loadData(); rebuildCodes();
+        _finishStartup();
+        if(!state.currentUser && !window._testMode){ _hideLoadingOverlay(); showLoginScreen(); }
+      });
     }
   });
 }
@@ -1694,9 +1832,78 @@ function _finishStartup(){
       console.warn('_finishStartup: skipped Firebase write (data not confirmed empty)');
     }
   }
-  // v0.9.0: Firebase Auth onAuthStateChanged handles session restore automatically.
-  // CODES-based session restore removed for security.
+
+  // Session-Restore für Code-Nutzer (sessionStorage)
+  // Nur wenn noch kein User gesetzt UND kein Firebase-Email-Auth-User vorhanden
+  if(!state.currentUser && !window._testMode){
+    const fbUser = (typeof firebase!=='undefined' && firebase.apps && firebase.apps.length)
+      ? firebase.auth().currentUser : null;
+    const isEmailAuth = fbUser && !fbUser.isAnonymous;
+    if(!isEmailAuth){
+      try{
+        const saved = sessionStorage.getItem('venturelab_session');
+        if(saved){
+          const sess = JSON.parse(saved);
+          const code = sess.code;
+          if(code && CODES[code]){
+            state.currentUser = {...CODES[code], code};
+            if(sess.lang) state.lang = sess.lang;
+            if(sess.managingGameId) state.managingGameId = sess.managingGameId;
+            _hideLoadingOverlay();
+            document.getElementById('loginScreen').style.display='none';
+            document.getElementById('appShell').style.display='block';
+            initApp();
+            if(state.lang==='en') setTimeout(applyLang,150);
+          } else {
+            sessionStorage.removeItem('venturelab_session');
+          }
+        }
+      }catch(e){ sessionStorage.removeItem('venturelab_session'); }
+    }
+  }
 }
+async function _loadFirebaseDataForCodePath(){
+  // Daten für den Code-Login-Pfad laden (anonyme Firebase-Auth)
+  _setFbStatus('online','Online');
+
+  if(_db && !_fbDataLoaded){
+    _setLoadingMsg('Lade Daten…');
+    try{
+      const fbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
+      const snap=await Promise.race([_db.ref(STORAGE_KEY).once('value'), fbTimeout]);
+      const d=snap.val();
+      if(d){
+        _fbDataLoaded=true;
+        _replaceArrays(d); _postLoadCalc();
+        try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(_buildPayload())); }catch(e){}
+        console.log('✅ Loaded from Firebase (code path)');
+      } else {
+        _fbDataConfirmedEmpty=true;
+        loadData();
+        if(GAMES.length||TEAMS.length){
+          _db.ref(STORAGE_KEY).set(_buildPayload()).catch(e=>console.warn('Initial push failed',e));
+          console.log('📤 Pushed local data to Firebase (code path)');
+        }
+      }
+    }catch(e){
+      console.warn('Firebase data load error (code path):', e);
+      loadData();
+      _setFbStatus('offline','Offline – lokale Daten');
+    }
+  } else if(!_fbDataLoaded){
+    loadData();
+  }
+
+  rebuildCodes();
+  _finishStartup();
+  _setupRealtimeListener();
+
+  if(!state.currentUser && !window._testMode){
+    _hideLoadingOverlay();
+    showLoginScreen();
+  }
+}
+
 function resetToDemo(){
   if(!confirm('Demo-Daten wiederherstellen? Alle eigenen Daten gehen verloren.')) return;
   localStorage.removeItem(STORAGE_KEY);
@@ -2069,20 +2276,49 @@ function showTestMode(){
 }
 
 function showLogin(){
-  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='block';
-  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='none';
-  const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='block';
-  const s2=document.getElementById('loginStep2'); if(s2) s2.style.display='none';
+  showLoginModeSelect();
   const banner=document.getElementById('testModeBanner'); if(banner) banner.remove();
   if(window._testModeActive){ window._testModeActive=false; }
 }
+
 function showLoginModeSelect(){
-  ['loginStep1','loginStep2','loginStep3','loginStep4'].forEach(function(id){
-    const el=document.getElementById(id);if(el) el.style.display='none';
+  ['loginStep1','loginStep2','loginStep3','loginStep4','loginStep5','loginStep6',
+   'magicLinkFlow','magicLinkSentStep'].forEach(function(id){
+    const el=document.getElementById(id); if(el) el.style.display='none';
   });
-  const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='block';
-  const banner=document.getElementById('testModeBanner');if(banner) banner.remove();
-  if(window._testModeActive){window._testModeActive=false;}
+  const msel=document.getElementById('loginModeSelect'); if(msel) msel.style.display='block';
+  const lm=document.getElementById('loginMode'); if(lm) lm.style.display='block';
+  const tp=document.getElementById('testModePanel'); if(tp) tp.style.display='none';
+  const banner=document.getElementById('testModeBanner'); if(banner) banner.remove();
+  if(window._testModeActive){ window._testModeActive=false; }
+}
+
+function showMagicLinkFlow(){
+  const msel=document.getElementById('loginModeSelect'); if(msel) msel.style.display='none';
+  const mf=document.getElementById('magicLinkFlow'); if(mf) mf.style.display='block';
+  const ms=document.getElementById('magicLinkSentStep'); if(ms) ms.style.display='none';
+  const le=document.getElementById('loginEmail'); if(le) le.value='';
+  const ee=document.getElementById('loginEmailError'); if(ee) ee.style.display='none';
+  const sb=document.getElementById('loginSendBtn'); if(sb){ sb.disabled=false; sb.innerHTML='&#128233; Magic Link senden'; }
+  setTimeout(()=>document.getElementById('loginEmail')?.focus(), 50);
+}
+
+function showCodeFlow(){
+  const msel=document.getElementById('loginModeSelect'); if(msel) msel.style.display='none';
+  const s1=document.getElementById('loginStep1'); if(s1) s1.style.display='block';
+  setTimeout(()=>document.getElementById('loginCode')?.focus(), 50);
+}
+
+function skipProfile(){
+  const s4=document.getElementById('loginStep4'); if(s4) s4.style.display='none';
+  _profileLoginCode=null;
+  if(!window._testMode && state.currentUser){
+    try{ sessionStorage.setItem('venturelab_session',JSON.stringify({code:state.currentUser.code,lang:state.lang||'de'})); }catch(e){}
+  }
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  initApp();
+  if(state.lang==='en') setTimeout(applyLang,150);
 }
 function showLoginStep1(){
   const msel=document.getElementById('loginModeSelect');if(msel) msel.style.display='none';
@@ -2292,21 +2528,82 @@ let _loginTempCode='';
 function setLoginLang(lang){
   _loginLang=lang;
   const _t=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
-  _t('langBtnDE','DE'); _t('langBtnEN','EN');
   const de=document.getElementById('langBtnDE'); if(de) de.classList.toggle('active',lang==='de');
   const en=document.getElementById('langBtnEN'); if(en) en.classList.toggle('active',lang==='en');
   if(lang==='en'){
     _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
-    _t('lt_emailLabel','Email address');
-    _t('lt_linkSentTitle','Link on the way!');
-    _t('loginSendBtn','&#128233; Send Magic Link');
+    // Mode select
+    _t('lt_magicLinkBtn','Magic Link \u2013 by Email (recommended)');
+    _t('lt_magicLinkSub','Passwordless &amp; secure');
+    _t('lt_codeBtn','Access Code');
+    _t('lt_codeSub','Code + Password');
     _t('lt_testModeBtn','&#129514; Demo / Test mode');
+    _t('lt_coffeeTitle','Support VentureLab');
+    _t('lt_coffeeSub','Support this project \u2013 Buy Me a Coffee');
+    // Magic Link flow
+    _t('lt_emailLabel','Email address');
+    _t('loginSendBtn','&#128233; Send Magic Link');
+    _t('lt_magicInfo','You will receive a one-time link by email \u2013 no password needed. Your email must be registered by the lecturer.');
+    _t('lt_backToSelect','\u2190 Back');
+    _t('lt_linkSentTitle','Link on the way!');
+    // Code flow
+    _t('lt_code','Access code');
+    _t('lt_codeLoginBtn','Log in \u2192');
+    _t('lt_back','\u2190 Back');
+    _t('lt_pwdFor','Password for:');
+    _t('lt_loginBtn2','Continue \u2192');
+    _t('lt_back2','\u2190 Back');
+    _t('lt_forgotPwd','Forgot password?');
+    _t('lt_pwdSetTitle','&#128272; Set password');
+    _t('lt_pwdSetInfo','Set a personal password for future logins.');
+    _t('lt_errPwdSet','Passwords do not match.');
+    _t('lt_pwdSetBtn','Set password \u2192');
+    _t('lt_skipPwd','Skip');
+    _t('lt_profileTitle','&#128100; Complete profile');
+    _t('lt_profileInfo','This information helps your lecturer give you better feedback.');
+    _t('lt_profileSaveBtn','Save &amp; log in \u2192');
+    _t('lt_profileSkip','Skip');
+    _t('lt_resetInfo','Enter your email to receive a reset code.');
+    _t('lt_resetBtn','Send reset code \u2192');
+    _t('lt_resetCodeInfo','Enter the code from your email &amp; set new password.');
+    _t('lt_resetCodeBtn','Reset password \u2192');
   } else {
     _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
-    _t('lt_emailLabel','E-Mail-Adresse');
-    _t('lt_linkSentTitle','Link unterwegs!');
-    _t('loginSendBtn','&#128233; Magic Link senden');
+    // Mode select
+    _t('lt_magicLinkBtn','Magic Link \u2013 per E-Mail (empfohlen)');
+    _t('lt_magicLinkSub','Passwortlos &amp; sicher');
+    _t('lt_codeBtn','Zugangscode');
+    _t('lt_codeSub','Code + Passwort');
     _t('lt_testModeBtn','&#129514; Demo / Testmodus');
+    _t('lt_coffeeTitle','Support VentureLab');
+    _t('lt_coffeeSub','Dieses Projekt unterst\u00fctzen \u2013 Buy Me a Coffee');
+    // Magic Link flow
+    _t('lt_emailLabel','E-Mail-Adresse');
+    _t('loginSendBtn','&#128233; Magic Link senden');
+    _t('lt_magicInfo','Du bekommst einen Einmal-Link per E-Mail \u2013 kein Passwort n\u00f6tig. Deine E-Mail muss vom Dozenten im System hinterlegt sein.');
+    _t('lt_backToSelect','\u2190 Zur\u00fcck');
+    _t('lt_linkSentTitle','Link unterwegs!');
+    // Code flow
+    _t('lt_code','Zugangscode');
+    _t('lt_codeLoginBtn','Einloggen \u2192');
+    _t('lt_back','\u2190 Zur\u00fcck');
+    _t('lt_pwdFor','Passwort f\u00fcr:');
+    _t('lt_loginBtn2','Weiter \u2192');
+    _t('lt_back2','\u2190 Zur\u00fcck');
+    _t('lt_forgotPwd','Passwort vergessen?');
+    _t('lt_pwdSetTitle','&#128272; Passwort festlegen');
+    _t('lt_pwdSetInfo','Lege ein pers\u00f6nliches Passwort f\u00fcr zuk\u00fcnftige Anmeldungen fest.');
+    _t('lt_errPwdSet','Passw\u00f6rter stimmen nicht \u00fcberein.');
+    _t('lt_pwdSetBtn','Passwort setzen \u2192');
+    _t('lt_skipPwd','\u00dcberspringen');
+    _t('lt_profileTitle','&#128100; Profil vervollst\u00e4ndigen');
+    _t('lt_profileInfo','Diese Angaben helfen dem Dozenten, dir besser Feedback zu geben.');
+    _t('lt_profileSaveBtn','Speichern &amp; einloggen \u2192');
+    _t('lt_profileSkip','\u00dcberspringen');
+    _t('lt_resetInfo','Gib deine E-Mail ein, um einen Reset-Code zu erhalten.');
+    _t('lt_resetBtn','Reset-Code senden \u2192');
+    _t('lt_resetCodeInfo','Code aus E-Mail eingeben &amp; neues Passwort setzen.');
+    _t('lt_resetCodeBtn','Passwort zur\u00fccksetzen \u2192');
   }
 }
 function doLogin(){doLoginStep1();}
@@ -2566,6 +2863,10 @@ function finishLogin(code){
 function doLogout(){
   logEvent('logout', {duration: Math.round((Date.now() - new Date(_sessionStart).getTime())/1000)+'s'});
   flushTrackBuffer(true);
+  // Sofort Login-Screen zeigen (keine kurze Ladeanzeige nach Logout)
+  showLoginScreen();
+  // Code-User-Session löschen
+  try{ sessionStorage.removeItem('venturelab_session'); }catch(e){}
   // Restore original data if exiting test mode
   if(window._testMode || window._testModeActive){
     window._testMode=false; window._testModeActive=false;
