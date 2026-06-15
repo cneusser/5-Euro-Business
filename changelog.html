@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VentureLab – Versionshistorie</title>
+<style>
+  :root{
+    --blue-dark:#1F4E79;--blue-mid:#2E75B6;--blue-lt:#BDD7EE;--blue-xlt:#EBF3FB;
+    --green:#375623;--amber:#92400e;--gray-dark:#333;--gray-mid:#666;--gray-lt:#f0f0f0;
+    --bg:#f4f7fb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--gray-dark);min-height:100vh;}
+
+  /* ── Header ── */
+  .header{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));color:white;padding:36px 24px 28px;text-align:center;}
+  .header-logo{font-size:48px;margin-bottom:10px;display:block;}
+  .header h1{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;}
+  .header p{font-size:13px;opacity:.8;margin-bottom:18px;}
+  .back-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;transition:background .15s;}
+  .back-btn:hover{background:rgba(255,255,255,.28);}
+
+  /* ── Content ── */
+  .container{max-width:760px;margin:0 auto;padding:28px 16px 60px;}
+
+  /* ── Phase header ── */
+  .phase-header{display:flex;align-items:center;gap:10px;margin:32px 0 12px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;}
+  .phase-header.phase1{background:var(--gray-lt);color:var(--gray-mid);}
+  .phase-header.phase2{background:var(--blue-xlt);color:var(--blue-dark);}
+  .phase-header span{font-size:16px;}
+
+  /* ── Version card ── */
+  .version-card{background:white;border-radius:12px;margin-bottom:10px;border:1px solid #e5e7eb;overflow:hidden;transition:box-shadow .15s;}
+  .version-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+  .version-card.current{border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(46,117,182,.12);}
+
+  .version-header{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+  .version-badge{flex-shrink:0;background:var(--blue-dark);color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;font-family:monospace;letter-spacing:.3px;}
+  .version-badge.current{background:var(--blue-mid);}
+  .current-pill{background:var(--blue-mid);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+  .version-title{flex:1;font-size:13px;color:var(--gray-dark);line-height:1.45;}
+  .version-toggle{font-size:11px;color:#aaa;flex-shrink:0;}
+
+  .version-body{padding:0 16px 14px;font-size:12px;color:var(--gray-mid);line-height:1.7;border-top:1px solid #f0f0f0;margin-top:0;}
+  .version-body ul{margin:8px 0 0 16px;}
+  .version-body li{margin-bottom:3px;}
+
+  /* ── Footer ── */
+  .footer{text-align:center;padding:24px;color:var(--gray-mid);font-size:11px;}
+  .footer a{color:var(--blue-mid);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-logo">🚀</span>
+  <h1>VentureLab – Versionshistorie</h1>
+  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich</p>
+  <a href="index.html" class="back-btn">← Zurück zu VentureLab</a>
+</div>
+
+<div class="container">
+
+  <!-- ── Phase 2: Firebase / Auth (aktuell) ────────────── -->
+  <div class="phase-header phase2"><span>🔥</span> Phase 2 – Firebase &amp; Auth (SoSe 2026)</div>
+
+  <div class="version-card current">
+    <div class="version-header">
+      <span class="version-badge current">v0.91</span>
+      <span class="current-pill">AKTUELL</span>
+      <span class="version-title">🔀 Hybrid-Login + Versionshistorie</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Drei gleichwertige Login-Optionen: Magic Link (empfohlen), Zugangscode, Demo/Testmodus</li>
+        <li>☕ Spenden-Link (Buy Me a Coffee) wiederhergestellt</li>
+        <li>Code-Nutzer erhalten anonyme Firebase-Session → <code>auth != null</code> bleibt erfüllt</li>
+        <li>Session-Restore via sessionStorage für Code-Nutzer reaktiviert</li>
+        <li>Passwort-Reset-Flow (Steps 5/6) wiederhergestellt</li>
+        <li>Profil-Schritt (Step 4) für neue Mitglieder wiederhergestellt</li>
+        <li>Versions-Badge auf allen Screens sichtbar mit Link zur Änderungshistorie</li>
+        <li>Separate <code>changelog.html</code> ohne Login einsehbar</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.9.0</span>
+      <span class="version-title">🔒 Security-Upgrade: Firebase Auth Magic Link</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Firebase Auth Email Link (Magic Link) – passwortloser, serverseitig verifizierter Login</li>
+        <li>Client-seitige CODES-Sichtbarkeit eliminiert (keine Zugangscodes mehr im Quellcode)</li>
+        <li>PASSWORDS-Node aus Firebase entfernt</li>
+        <li>Realtime Database Regeln: <code>auth != null</code> (war zuvor öffentlich offen)</li>
+        <li>Testmodus weiterhin verfügbar (ohne Firebase Auth)</li>
+        <li>Setup-Guide <code>FIREBASE_SETUP_v0.9.md</code> für Dozenten</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.5</span>
+      <span class="version-title">🚀 Anhänge, Admin-Ranking, Bericht-Restore</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Feedback-Persistenz: saveData() nach FEEDBACKS.push() – Einträge gehen nicht mehr verloren</li>
+        <li>E-Mail-Versand: Apps Script sendet jetzt auch an game.adminEmail</li>
+        <li>Dateianhänge (PDF/Bild bis 500 KB) für Wochenberichte und Reflexionen</li>
+        <li>Admin-Ranking: Gewinner-Übersicht aller Wochen mit GdW-Team und MVP-Mitgliedern</li>
+        <li>Reflexionen-Admin: neueste Woche oben</li>
+        <li>Bugfix: Anhänge gehen beim Bearbeiten von Entwürfen nicht verloren</li>
+        <li>Bugfix: Reflexions-Anhänge beim Bearbeiten korrekt wiederhergestellt</li>
+        <li>Admin-Bericht-Restore-Tool im Berichte-Tab</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.4</span>
+      <span class="version-title">🔍 Impersonation, Berichte für alle, Bugfixes</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Wochenberichte vollständig für alle Teammitglieder sichtbar inkl. Admin-Feedback</li>
+        <li>Bericht bearbeitbar für alle Mitglieder – Einreichen weiterhin nur CEO</li>
+        <li>Admin-Vorschau als User (Impersonation): Mitglieder-Auswahl, blauer Vorschau-Banner, Schreibschutz</li>
+        <li>Bugfixes: b.challenge→b.challenges, openDraftForEdit, isCeo-Logik, gameId-Vererbung</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.3</span>
+      <span class="version-title">🐛 Superadmin Berichte, Abgabe-Status-Grid, Stimmungsbarometer-Fix</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Superadmin: neuer Tab „Alle Wochenberichte" mit Volltext, Spiel-Filter, CSV- und PDF-Export</li>
+        <li>Berichte-Tab: Abgabe-Status-Grid pro Woche mit klickbaren Team-Badges</li>
+        <li>Doppelte Vornamen in Status-Badges: Nachname-Initial zur Unterscheidung</li>
+        <li>Reflexionen-Badge: Pill-Form statt Kreis, Zähllogik pro-Team</li>
+        <li>Firebase-Sync-Bugfix: Race Condition bei Blog-Freigabe behoben</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.2</span>
+      <span class="version-title">✨ Dashboard-Wochengewinner, Stimmungsbarometer, Blog-Fixes</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Dashboard: Laufende Woche als prominente Stat-Karte</li>
+        <li>Dashboard: Wochengewinner-Banner (Vorwoche) + Verlaufsübersicht aller Sieger</li>
+        <li>Reflexionen-Badge zeigt eingereicht/gesamt für laufende Woche</li>
+        <li>Stimmungsbarometer reagiert auf Team- und Wochenfilter</li>
+        <li>Blog-Tab: b.tags-Crash behoben, Admin sieht alle Berichte inkl. ausstehende</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.1</span>
+      <span class="version-title">🛠️ 14 Bugfixes &amp; Features (CSV, Admin-Berichte, Passwort-Reset…)</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>CSV-Export mit Team/Wochen-Filtern; Admin-Berichte-Tab mit Filtern</li>
+        <li>Gruppe der Woche: Balkendiagramm, konfigurierbare Gewichtung, Eigene Einschätzung</li>
+        <li>Passwort-Reset-Flow + Login via E-Mail</li>
+        <li>E-Mail-Erinnerungen (Reflexion/Bericht/Buchung) mit Opt-Out</li>
+        <li>Reflexions-Status-Badges klickbar; Hochschulen bearbeiten/löschen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8.0</span>
+      <span class="version-title">🚀 6 neue Features: Admin-Fragen, BMC, Erinnerungen, CSV, Gastadmin</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Admin-Zusatzfragen pro Woche für Reflexion &amp; Bericht</li>
+        <li>Business Model Canvas für CMO mit CEO-Genehmigung &amp; Dozenten-Feedback</li>
+        <li>Automatische In-App-Erinnerungen vor Abgabe-Deadlines</li>
+        <li>CSV-Export für Reflexionen &amp; Buchungen</li>
+        <li>Vollständiger Aktivitätslog aller Aktionen (alle Rollen)</li>
+        <li>Gastadmin-Rolle: Superadmin vergibt Co-Dozenten-Zugang pro Spiel</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.7.7</span>
+      <span class="version-title">🐛 Vollständiger Code-Audit (6 Bugs)</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>copyRegCode()-Shadowing (Copy-Button defekt) behoben</li>
+        <li>showRegister()-Shadowing (alte Funktion überschrieb aktive) behoben</li>
+        <li>openAddMemberModal()-Crash (fehlende DOM-Elemente) behoben</li>
+        <li>addMemberToTeam()-fehlende Felder (firstName/lastName/email/mobile) ergänzt</li>
+        <li>Superadmin-Zugriffsgate und E-Mail-Feld im Mitglied-Modal korrigiert</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.7.4–7.6</span>
+      <span class="version-title">Session-Persistenz, MVP-Ticker, Soft-Delete, Firebase-Timeout-Fix</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>v0.7.4: Auto-Login nach Refresh, MVP-Ticker, Passwort-Reset via Admin, Team-Aktivierung</li>
+        <li>v0.7.5: Soft-Delete mit 10-Sekunden Undo-Toast; Papierkorb-Tab im Admin-Panel</li>
+        <li>v0.7.6: Firebase-Timeout auf 10s erhöht – verhindert Datenverlust bei langsamer Verbindung</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.7.0–7.3</span>
+      <span class="version-title">Firebase Realtime Database, Nachrichten, Kassenbuch</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>v0.7.0: Firebase Realtime Database (Cross-Device-Sync), Kontakt-Seite, Direktnachrichten</li>
+        <li>v0.7.1: Admin-Nachrichten immer zugestellt (In-App-Postfach), ID-Kollision behoben</li>
+        <li>v0.7.2: Ghost-Teams ausgeblendet, Kontakt-Verzeichnis korrigiert</li>
+        <li>v0.7.3: Kassenbuch (Soll/Haben/Saldo), Reflexion-Detail-Modal, Stimmungsbarometer</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── Phase 1: localStorage ─────────────────────────── -->
+  <div class="phase-header phase1"><span>📦</span> Phase 1 – Aufbau &amp; Prototyping (localStorage)</div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.13</span>
+      <span class="version-title">Bug-Fixes: SUPER-NEUSS Persistenz, Sprach-Button, Rollen-Anzeige</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.12</span>
+      <span class="version-title">Sprach-Toggle, Admin PDF-Upload, Dozenten-E-Mail, Pinnwand, Messaging</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.11</span>
+      <span class="version-title">PDF-Viewer, Session-Tracking → Google Sheet, Backup-System, Konzept-Seite</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.10</span>
+      <span class="version-title">Rollen-Einzigartigkeit (CEO/CFO etc.), Inline-Editierung, CFO-only Buchungen</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.9</span>
+      <span class="version-title">Passwort-System (SHA-256), E-Mail-Benachrichtigungen, CEO-Tab, FAQ-PDFs, DE/EN i18n</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.8</span>
+      <span class="version-title">Chart: echte Wochendaten statt Zufallszahlen, Wochen-Rollback</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.7</span>
+      <span class="version-title">Superadmin: Profil bearbeiten, zusätzliche Superadmins anlegen</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.6</span>
+      <span class="version-title">Bug-Fixes: Syntax-Fehler, Feedback-Layout, Superadmin Verwalten</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.5</span>
+      <span class="version-title">Self-Registration, Ticker, Team-Profil, Logo-Upload</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.4</span>
+      <span class="version-title">Superadmin-Panel, GitHub Pages Deployment, Demo-Daten</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.3</span>
+      <span class="version-title">Multi-Game-Support, Hochschulen, Admin-Konsole</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.2</span>
+      <span class="version-title">Ranking-Dashboard, Umsatz-Chart, Blog-System</span>
+    </div>
+  </div>
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.1</span>
+      <span class="version-title">Initiales Prototyp: Grundstruktur, Teams, Buchungen (localStorage)</span>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  VentureLab &copy; 2026 &nbsp;·&nbsp;
+  <a href="index.html">Zurück zur App</a> &nbsp;·&nbsp;
+  Entwickelt von <a href="mailto:christian.neusser@googlemail.com">Dr. Christian Neusser</a>
+</div>
+
+</body>
+</html>

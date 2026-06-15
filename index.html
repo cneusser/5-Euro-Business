@@ -474,7 +474,7 @@ textarea.form-control{resize:vertical;min-height:70px;}
   <div id="loginMode">
    <div class="login-logo">&#x1F680;</div>
    <h2 class="login-title">VentureLab</h2>
-   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span></p>
+   <p class="login-sub" id="lt_sub">Tracker &#183; Management &#183; Reflexion <span style="font-size:10px;color:#999;">(v0.91)</span></p>
 
    <!-- ── MODE SELECT ──────────────────────────────────── -->
    <div id="loginModeSelect" style="margin-top:4px;">
@@ -649,8 +649,13 @@ textarea.form-control{resize:vertical;min-height:70px;}
   </div>
 
  </div>
- <div class="version-footer" id="versionFooter">v0.9.0</div>
 </div>
+
+<!-- VERSION BADGE – immer sichtbar, Login + App -->
+<a href="changelog.html" target="_blank" rel="noopener"
+   class="version-footer" id="versionFooter"
+   style="text-decoration:none;cursor:pointer;display:block;"
+   title="Versionshistorie öffnen">v0.91 &#128196;</a>
 
 <!-- APP -->
 <div id="appShell">
@@ -1621,7 +1626,6 @@ const SUPERADMIN_EMAILS = [
 function showLoginScreen(){
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('appShell').style.display='none';
-  const vf=document.getElementById('versionFooter'); if(vf) vf.style.display='block';
   // Reset all input fields
   const le=document.getElementById('loginEmail'); if(le) le.value='';
   const ee=document.getElementById('loginEmailError'); if(ee) ee.style.display='none';
@@ -2534,7 +2538,7 @@ function setLoginLang(lang){
   const de=document.getElementById('langBtnDE'); if(de) de.classList.toggle('active',lang==='de');
   const en=document.getElementById('langBtnEN'); if(en) en.classList.toggle('active',lang==='en');
   if(lang==='en'){
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.91)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 by Email (recommended)');
     _t('lt_magicLinkSub','Passwordless &amp; secure');
@@ -2572,7 +2576,7 @@ function setLoginLang(lang){
     _t('lt_resetCodeInfo','Enter the code from your email &amp; set new password.');
     _t('lt_resetCodeBtn','Reset password \u2192');
   } else {
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.9.0)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.91)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 per E-Mail (empfohlen)');
     _t('lt_magicLinkSub','Passwortlos &amp; sicher');
@@ -5695,7 +5699,9 @@ function renderKonzept(){
           ['v0.8.2.2','🛠️ 2 Verbesserungen: (1) Team-Verwaltung: Aktive Teams werden jetzt oben angezeigt, freie Slots darunter – und nach Abschluss von KW1 werden leere Slots automatisch ausgeblendet; (2) Gruppe der Woche: Wochenauswahl-Dropdown ermöglicht nachträgliche Bewertung vergangener Wochen (Woche auswählen → Scoring + Auszeichnung für beliebige Woche)'],
           ['v0.8.3','✨ 3 Features &amp; Bugfixes: (1) Berichte-Tab: Volltext-Anzeige aller Wochenberichte mit Aufklapp-Funktion, CEO-Button nur für CEO sichtbar; (2) Berichte-Tab: Neue Sektion „Meine Reflexionen" mit allen eigenen vergangenen Reflexionen (nur für den jeweiligen User einsehbar); (3) ROI-Berechnung nutzt jetzt das tatsächliche Startkapital statt hartkodierter 5€; (4) Bugfix: mergeDuplicateMember überträgt E-Mail und Passwort-Hash auf kept-Member – behebt Login-Probleme nach Duplikat-Zusammenführung'],
           ['v0.8.4','🔍 3 Features &amp; 5 Bugfixes: (1) Wochenberichte vollständig für alle Teammitglieder sichtbar inkl. Admin-Feedback (blauer Kasten); (2) Bericht bearbeitbar für alle Mitglieder – Einreichen weiterhin nur CEO; (3) Admin-Vorschau als User (Impersonation): neuer Tab mit Mitglieder-Auswahl, blauer Vorschau-Banner, Schreibschutz während Vorschau; (4) Fix: b.challenge→b.challenges; (5) Fix: openDraftForEdit befüllt alle Felder; (6) Fix: isCeo-Logik; (7) Fix: gameId-Vererbung; (8) Code-Audit'],
-          ['v0.8.5','🚀 4 Features &amp; 4 Bugfixes: (1) Feedback-Persistenz: saveData() nach FEEDBACKS.push() – Einträge gehen nicht mehr verloren; (2) E-Mail-Versand: Apps Script sendet jetzt auch an game.adminEmail; (3) Dateianhänge (PDF/Bild bis 500KB) für Wochenberichte und Reflexionen; (4) Admin-Ranking: Gewinner-Übersicht aller Wochen mit GdW-Team und MVP-Mitgliedern; (5) Reflexionen-Admin: neueste Woche oben; (6) Fix: Anhänge gehen beim Bearbeiten von Entwürfen nicht verloren; (7) Fix: Reflexions-Anhänge beim Bearbeiten korrekt wiederhergestellt; (8) Admin-Bericht-Restore-Tool im Berichte-Tab', true],
+          ['v0.8.5','🚀 4 Features &amp; 4 Bugfixes: (1) Feedback-Persistenz: saveData() nach FEEDBACKS.push() – Einträge gehen nicht mehr verloren; (2) E-Mail-Versand: Apps Script sendet jetzt auch an game.adminEmail; (3) Dateianhänge (PDF/Bild bis 500KB) für Wochenberichte und Reflexionen; (4) Admin-Ranking: Gewinner-Übersicht aller Wochen mit GdW-Team und MVP-Mitgliedern; (5) Reflexionen-Admin: neueste Woche oben; (6) Fix: Anhänge gehen beim Bearbeiten von Entwürfen nicht verloren; (7) Fix: Reflexions-Anhänge beim Bearbeiten korrekt wiederhergestellt; (8) Admin-Bericht-Restore-Tool im Berichte-Tab'],
+          ['v0.9.0','🔒 Security-Upgrade: Firebase Auth Magic Link (passwortloser E-Mail-Login), serverseitige Authentifizierung ersetzt client-seitige Codes; DB-Regeln auf auth != null gesichert; CODES-Sichtbarkeit im Client eliminiert; Passwort-Node aus Firebase entfernt; Setup-Guide FIREBASE_SETUP_v0.9.md'],
+          ['v0.91','🔀 Hybrid-Login: Magic Link (empfohlen) + Zugangscode + Testmodus gleichwertig als drei prominente Buttons; ☕ Spenden-Link (Buy Me a Coffee) wiederhergestellt; Code-User erhalten anonyme Firebase-Session (auth != null bleibt erfüllt); Session-Restore via sessionStorage für Code-Nutzer reaktiviert; Versions-Badge mit direktem Link zur Änderungshistorie auf allen Screens', true],
         ].map(([v,d,current])=>`<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg-mid);${current?'background:var(--blue-xlt);border-radius:6px;padding-left:6px;':''}">
           <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">
             <span style="background:var(--blue-dark);color:white;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${v}</span>
