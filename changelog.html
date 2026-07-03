@@ -56,7 +56,7 @@
 <div class="header">
   <span class="header-logo">🚀</span>
   <h1>VentureLab – Versionshistorie</h1>
-  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich &nbsp;·&nbsp; Aktuell: v0.92</p>
+  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich &nbsp;·&nbsp; Aktuell: v0.93</p>
   <a href="index.html" class="back-btn">← Zurück zu VentureLab</a>
 </div>
 
@@ -67,8 +67,25 @@
 
   <div class="version-card current">
     <div class="version-header">
-      <span class="version-badge current">v0.92</span>
+      <span class="version-badge current">v0.93</span>
       <span class="current-pill">AKTUELL</span>
+      <span class="version-title">&#129521; Modul-Split: Monolith in 37 Module zerlegt (reines Refactoring)</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Gesamten JavaScript-Code (~7.300 Zeilen) aus <code>index.html</code> in 37 Dateien unter <code>/core</code>, <code>/modules</code>, <code>/ui</code> und <code>/i18n</code> ausgelagert &#8211; <code>index.html</code> von 8.922 auf 1.650 Zeilen reduziert</li>
+        <li><strong>Keine funktionalen &#196;nderungen:</strong> Konkatenation aller Module ist byte-identisch zum Original verifiziert (SHA-256); klassische Script-Tags in Original-Ladereihenfolge</li>
+        <li>Neues Feature-Flag-System <code>game.modules</code> (<code>core/feature-flags.js</code>): Module wie Canvas, Reports oder Reflexion k&#246;nnen k&#252;nftig pro Spiel ausgeblendet werden &#8211; Standard: alles aktiv</li>
+        <li>i18n vorbereitet: <code>TRANS_MAP</code>, <code>applyLang()</code> und <code>setLoginLang()</code> nach <code>/i18n/en.js</code> verschoben (unver&#228;ndert)</li>
+        <li>Refactoring-Dokumentation inkl. Datei-Mapping und Testanleitung: <code>REFACTORING.md</code>; Rollback via <code>index.html.v092-monolith.bak</code></li>
+        <li>Grundlage f&#252;r die n&#228;chsten Schritte: pfadgenaue Firebase Security Rules, granulare Writes, Passwort-H&#228;rtung</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.92</span>
       <span class="version-title">🔑 Login-UX-Fix &amp; Passwort-Reset</span>
     </div>
     <div class="version-body">
