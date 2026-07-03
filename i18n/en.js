@@ -10,7 +10,7 @@ function setLoginLang(lang){
   const de=document.getElementById('langBtnDE'); if(de) de.classList.toggle('active',lang==='de');
   const en=document.getElementById('langBtnEN'); if(en) en.classList.toggle('active',lang==='en');
   if(lang==='en'){
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.93)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflection <span style="font-size:10px;color:#999;">(v0.94)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 by Email (recommended)');
     _t('lt_magicLinkSub','Passwordless &amp; secure');
@@ -49,7 +49,7 @@ function setLoginLang(lang){
     _t('lt_resetCodeInfo','Enter the code from your email &amp; set a new password. Valid 15 minutes.');
     _t('lt_resetCodeBtn','Reset password \u2192');
   } else {
-    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.93)</span>');
+    _t('lt_sub','Tracker \u00b7 Management \u00b7 Reflexion <span style="font-size:10px;color:#999;">(v0.94)</span>');
     // Mode select
     _t('lt_magicLinkBtn','Magic Link \u2013 per E-Mail (empfohlen)');
     _t('lt_magicLinkSub','Passwortlos &amp; sicher');

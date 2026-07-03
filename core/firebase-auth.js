@@ -64,7 +64,16 @@ async function _completeMagicLink(){
     await firebase.auth().signInWithEmailLink(email, window.location.href);
     localStorage.removeItem('vlEmailForSignIn');
     window.history.replaceState({}, document.title, window.location.pathname);
-    // onAuthStateChanged will fire next with the signed-in user
+    // Bugfix v0.94: onAuthStateChanged wird in diesem Pfad NICHT registriert
+    // (initDataAndStart returnt vorher). Daher hier den Login-Flow direkt anstoßen,
+    // sonst bleibt der Spinner auf "Bestätige E-Mail-Link…" stehen.
+    const signedInUser = firebase.auth().currentUser;
+    if(signedInUser && !signedInUser.isAnonymous){
+      await _onAuthUser(signedInUser);
+    } else {
+      _hideLoadingOverlay();
+      showLoginScreen();
+    }
   }catch(e){
     console.error('_completeMagicLink error:',e);
     _hideLoadingOverlay();

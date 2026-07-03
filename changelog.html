@@ -56,7 +56,7 @@
 <div class="header">
   <span class="header-logo">🚀</span>
   <h1>VentureLab – Versionshistorie</h1>
-  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich &nbsp;·&nbsp; Aktuell: v0.93</p>
+  <p>Alle Änderungen, Features und Bugfixes – öffentlich einsehbar, kein Login erforderlich &nbsp;·&nbsp; Aktuell: v0.94</p>
   <a href="index.html" class="back-btn">← Zurück zu VentureLab</a>
 </div>
 
@@ -67,8 +67,22 @@
 
   <div class="version-card current">
     <div class="version-header">
-      <span class="version-badge current">v0.93</span>
+      <span class="version-badge current">v0.94</span>
       <span class="current-pill">AKTUELL</span>
+      <span class="version-title">&#128027; Bugfix: Magic-Link-Login blieb h&#228;ngen</span>
+    </div>
+    <div class="version-body">
+      <ul>
+        <li>Nach Klick auf den Magic Link blieb der Ladescreen dauerhaft bei &#8222;Best&#228;tige E-Mail-Link&#8230;&#8220; stehen &#8211; Login kam nie an</li>
+        <li>Ursache: der <code>onAuthStateChanged</code>-Listener wurde im Magic-Link-Pfad nicht registriert (bereits seit v0.92 latent). Nach erfolgreichem <code>signInWithEmailLink</code> wird der Login-Flow jetzt direkt angesto&#223;en</li>
+        <li>Betrifft nur den E-Mail-Link-Login; Zugangscode- und Testmodus-Login waren nie betroffen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-header">
+      <span class="version-badge">v0.93</span>
       <span class="version-title">&#129521; Modul-Split: Monolith in 37 Module zerlegt (reines Refactoring)</span>
     </div>
     <div class="version-body">
